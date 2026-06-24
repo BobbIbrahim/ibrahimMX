@@ -1,0 +1,507 @@
+/* ==================================================
+                    "builder-header">
+   ========================================================= */
+
+.builder-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.builder-header__left {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.back-link {
+  flex: 0 0 auto;
+  color: var(--color-text-primary);
+  border-color: var(--color-border);
+}
+
+.back-link mat-icon {
+  margin-right: 0.35rem;
+}
+
+.builder-header__eyebrow {
+  display: inline-flex;
+  margin-bottom: 0.35rem;
+  color: var(--color-accent);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.builder-header h1 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: clamp(1.8rem, 3vw, 2.65rem);
+  line-height: 1.05;
+  letter-spacing: -0.045em;
+  text-shadow: none;
+  filter: none;
+}
+
+.builder-header p {
+  margin: 0.45rem 0 0;
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+}
+
+.builder-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+.builder-header__actions button mat-icon {
+  margin-right: 0.35rem;
+}
+
+.save-button {
+  background: var(--color-accent);
+  color: white;
+}
+
+
+/* =========================================================
+   3. Stats
+   Related HTML:
+   <section class="builder-stats">
+   ========================================================= */
+
+.builder-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.builder-stats article {
+  padding: 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+}
+
+.builder-stats span {
+  display: block;
+  color: var(--color-text-secondary);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.builder-stats strong {
+  display: block;
+  margin-top: 0.45rem;
+  color: var(--color-text-primary);
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1;
+  text-shadow: none;
+  filter: none;
+}
+
+
+/* =========================================================
+   4. Main layout
+   Related HTML:
+   <section class="builder-layout">
+   ========================================================= */
+
+.builder-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
+  gap: 1rem;
+}
+
+
+/* =========================================================
+   5. Canvas
+   Related HTML:
+   <main class="builder-canvas">
+   ========================================================= */
+
+.builder-canvas {
+  min-height: 36rem;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 1.35rem;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+}
+
+.builder-canvas__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.builder-tab {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.4rem 0.75rem;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.builder-tab:hover {
+  color: var(--color-text-primary);
+  border-color: var(--color-border);
+}
+
+.builder-tab--active {
+  color: white;
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+}
+
+.canvas-grid {
+  position: relative;
+  min-height: 32rem;
+  overflow: auto;
+  background-image:
+    linear-gradient(
+      color-mix(in srgb, var(--color-border) 52%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--color-border) 52%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 32px 32px;
+  background-position: -1px -1px;
+}
+
+.canvas-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  padding: 2rem;
+  text-align: center;
+}
+
+.canvas-empty__icon {
+  width: 4rem;
+  height: 4rem;
+  display: grid;
+  place-items: center;
+  margin-bottom: 1rem;
+  border-radius: 1.25rem;
+  color: white;
+  background: linear-gradient(135deg, var(--color-accent), #7c3aed);
+}
+
+.canvas-empty__icon mat-icon {
+  font-size: 1.75rem;
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.canvas-empty h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.canvas-empty p {
+  max-width: 28rem;
+  margin: 0.75rem 0 0;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+
+/* =========================================================
+   6. Step node
+   Related HTML:
+   <button class="step-node">
+   ========================================================= */
+
+.step-node {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 13rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--color-bg-elevated) 90%, transparent);
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.16);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.step-node:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--color-accent) 38%, var(--color-border));
+}
+
+.step-node--selected {
+  border-color: var(--color-accent);
+  box-shadow:
+    0 1rem 2.5rem rgba(0, 0, 0, 0.18),
+    0 0 0 2px color-mix(in srgb, var(--color-accent) 24%, transparent);
+}
+
+.step-node__icon {
+  width: 2.2rem;
+  height: 2.2rem;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 0.75rem;
+  color: white;
+  background: linear-gradient(135deg, var(--color-accent), #7c3aed);
+}
+
+.step-node__icon mat-icon {
+  font-size: 1.1rem;
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.step-node__content {
+  min-width: 0;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.step-node__content strong {
+  color: var(--color-text-primary);
+  font-size: 0.9rem;
+  line-height: 1.2;
+  text-shadow: none;
+  filter: none;
+}
+
+.step-node__content small {
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   7. Side panel
+   Related HTML:
+   <aside class="builder-side-panel">
+   ========================================================= */
+
+.builder-side-panel {
+  min-height: 36rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1.35rem;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+}
+
+.side-panel__eyebrow {
+  display: inline-flex;
+  margin-bottom: 0.45rem;
+  color: var(--color-accent);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.builder-side-panel h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.step-summary {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.step-summary div {
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--color-bg-elevated) 72%, transparent);
+}
+
+.step-summary dt {
+  color: var(--color-text-secondary);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.step-summary dd {
+  margin: 0.3rem 0 0;
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.side-panel__hint,
+.side-panel-empty p {
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.side-panel-empty {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  text-align: center;
+}
+
+.side-panel-empty mat-icon {
+  color: var(--color-accent);
+  font-size: 2rem;
+  width: 2rem;
+  height: 2rem;
+}
+
+.side-panel-empty h2 {
+  margin: 0.75rem 0 0;
+}
+
+
+/* =========================================================
+   8. JSON preview
+   Related HTML:
+   <section class="json-preview">
+   ========================================================= */
+
+.json-preview {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1.35rem;
+  background: var(--color-surface);
+}
+
+.json-preview h2 {
+  margin: 0 0 0.75rem;
+  color: var(--color-text-primary);
+  font-size: 1rem;
+}
+
+.json-preview pre {
+  max-height: 22rem;
+  overflow: auto;
+  margin: 0;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--color-bg) 86%, black);
+  color: var(--color-text-primary);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+
+/* =========================================================
+   9. No draft state
+   Related HTML:
+   <section class="no-draft">
+   ========================================================= */
+
+.no-draft {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  min-height: 28rem;
+  padding: 2rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 1.35rem;
+  background: var(--color-surface);
+}
+
+.no-draft__icon {
+  width: 4rem;
+  height: 4rem;
+  display: grid;
+  place-items: center;
+  margin-bottom: 1rem;
+  border-radius: 1.25rem;
+  color: white;
+  background: linear-gradient(135deg, var(--color-accent), #7c3aed);
+}
+
+.no-draft__icon mat-icon {
+  font-size: 1.75rem;
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.no-draft h1 {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.no-draft p {
+  max-width: 32rem;
+  margin: 0.75rem 0 1rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+
+/* =========================================================
+   10. Responsive layout
+   ========================================================= */
+
+@media (max-width: 1100px) {
+  .builder-header,
+  .builder-header__left {
+    flex-direction: column;
+  }
+
+  .builder-header__actions {
+    justify-content: flex-start;
+  }
+
+  .builder-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .builder-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .builder-stats {
+    grid-template-columns: 1fr;
+  }
+}
+/* =========================================================
+   1. Page wrapper
+   Related HTML:
+   <section class="squad-builder-page">
+   ========================================================= */
+
+.squad-builder-page {
+  min-height: calc(100vh - 4rem);
+}

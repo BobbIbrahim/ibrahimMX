@@ -1,0 +1,291 @@
+/* =========================================================
+   Squad create dialog container
+   ========================================================= */
+
+:host {
+  display: block;
+}
+
+.squad-dialog {
+  width: min(44rem, 92vw);
+  max-height: 88vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 1.5rem;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+}
+
+
+/* =========================================================
+   Header
+   ========================================================= */
+
+.squad-dialog__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.squad-dialog__eyebrow {
+  display: inline-flex;
+  margin-bottom: 0.45rem;
+  color: var(--color-accent);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.squad-dialog__header h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 1.7rem;
+  line-height: 1.1;
+  letter-spacing: -0.05em;
+  font-weight: 550;
+}
+
+.squad-dialog__header p {
+  margin: 0.45rem 0 0;
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+}
+
+
+/* =========================================================
+   Form layout
+   ========================================================= */
+
+.squad-dialog__form {
+  display: grid;
+  gap: 1rem;
+}
+
+
+/* =========================================================
+   Squad type cards
+   ========================================================= */
+
+.type-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.type-card {
+  position: relative;
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--color-bg-elevated) 68%, transparent);
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.type-card:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--color-accent) 34%, var(--color-border));
+}
+
+.type-card--active {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+.type-card input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.type-card__icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 0.85rem;
+  color: white;
+  background: linear-gradient(135deg, var(--color-accent), #7c3aed);
+}
+
+.type-card__icon mat-icon {
+  font-size: 1.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.type-card__content {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.type-card__content strong {
+  color: var(--color-text-primary);
+  font-size: 0.95rem;
+}
+
+.type-card__content small {
+  color: var(--color-text-secondary);
+  line-height: 1.45;
+}
+
+
+/* =========================================================
+   Field groups
+   ========================================================= */
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding-left: 0.15rem;
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.field-label span {
+  color: var(--color-danger);
+}
+
+
+/* =========================================================
+   Object types
+   ========================================================= */
+
+.object-types {
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--color-bg-elevated) 70%, transparent);
+}
+
+.object-types__header h3 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 1rem;
+  font-weight: 550;
+}
+
+.object-types__header p {
+  margin: 0.35rem 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.object-types__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.85rem;
+}
+
+
+/* =========================================================
+   Actions
+   ========================================================= */
+
+.squad-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 0.25rem;
+}
+
+.squad-dialog__submit {
+  background: var(--color-accent);
+  color: white;
+}
+
+
+/* =========================================================
+   Angular Material overrides
+   ========================================================= */
+
+.squad-dialog ::ng-deep .mat-mdc-form-field {
+  width: 100%;
+}
+
+.squad-dialog ::ng-deep .mat-mdc-form-field-infix {
+  min-height: 3.25rem;
+  padding-top: 0.85rem !important;
+  padding-bottom: 0.85rem !important;
+}
+
+.squad-dialog ::ng-deep .mat-mdc-text-field-wrapper {
+  background: transparent !important;
+}
+
+.squad-dialog ::ng-deep input.mat-mdc-input-element,
+.squad-dialog ::ng-deep textarea.mat-mdc-input-element {
+  color: var(--color-text-primary) !important;
+  caret-color: var(--color-accent) !important;
+}
+
+.squad-dialog ::ng-deep input.mat-mdc-input-element::placeholder,
+.squad-dialog ::ng-deep textarea.mat-mdc-input-element::placeholder {
+  color: var(--color-text-muted) !important;
+  opacity: 1;
+}
+
+.squad-dialog ::ng-deep .mat-mdc-floating-label,
+.squad-dialog ::ng-deep .mat-mdc-form-field-hint {
+  color: var(--color-text-secondary) !important;
+}
+
+.squad-dialog ::ng-deep .mdc-notched-outline__leading,
+.squad-dialog ::ng-deep .mdc-notched-outline__notch,
+.squad-dialog ::ng-deep .mdc-notched-outline__trailing {
+  border-color: var(--color-border) !important;
+}
+
+.squad-dialog ::ng-deep .mat-mdc-form-field.mat-focused .mdc-notched-outline__leading,
+.squad-dialog ::ng-deep .mat-mdc-form-field.mat-focused .mdc-notched-outline__notch,
+.squad-dialog ::ng-deep .mat-mdc-form-field.mat-focused .mdc-notched-outline__trailing {
+  border-color: var(--color-accent) !important;
+}
+
+.squad-dialog ::ng-deep .mat-mdc-checkbox label {
+  color: var(--color-text-primary) !important;
+}
+
+
+/* =========================================================
+   Responsive layout
+   ========================================================= */
+
+@media (max-width: 640px) {
+  .squad-dialog {
+    padding: 1rem;
+  }
+
+  .type-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .squad-dialog__actions {
+    flex-direction: column-reverse;
+  }
+
+  .squad-dialog__actions button {
+    width: 100%;
+  }
+}

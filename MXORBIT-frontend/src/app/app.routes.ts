@@ -7,6 +7,7 @@ import { ProjectRegistryPage } from './features/project-registry/pages/project-r
 import { SquadsPage } from './features/squads/pages/squads-page/squads-page';
 import { AgentDetailsPage } from './features/agent-registry/pages/agent-details-page/agent-details-page';
 import { ProjectDetailsPage } from './features/project-registry/pages/project-details-page/project-details-page';
+import { SquadBuilderPage } from './features/squads/pages/squad-builder-page/squad-builder-page';
 
 export const routes: Routes = [
   {
@@ -24,6 +25,11 @@ export const routes: Routes = [
         title: 'Agent Registry',
       },
       {
+        path: 'agents/:agentId',
+        component: AgentDetailsPage,
+        title: 'Agent Details',
+      },
+      {
         path: 'projects',
         component: ProjectRegistryPage,
         title: 'Project Registry',
@@ -39,15 +45,14 @@ export const routes: Routes = [
         title: 'Squads',
       },
       {
+        path: 'squads/builder/new',
+        component: SquadBuilderPage,
+        title: 'Squad Builder',
+      },
+      {
         path: 'autopilot',
         component: AutopilotPage,
         title: 'Autopilot',
-      },
-
-      {
-        path: 'agents/:agentId',
-        component: AgentDetailsPage,
-      title: 'Agent Details',
       },
     ],
   },

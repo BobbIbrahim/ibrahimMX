@@ -1,13 +1,48 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+
+/* =========================================================
+   Squad card container
+   Related HTML:
+   <article class="squad-card">
+   ========================================================= */
+
+
 .squad-card {
   position: relative;
-  min-height: 24rem;
+  min-height: 22rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   padding: 1.25rem;
   border: 1px solid var(--color-border);
   border-radius: 1.35rem;
-  background: var(--color-surface);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-surface) 92%, transparent),
+      var(--color-surface)
+    ),
+    var(--color-surface);
   color: var(--color-text-primary);
   overflow: hidden;
   box-shadow: 0 1.25rem 3rem rgba(0, 0, 0, 0.12);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.squad-card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--color-accent) 36%, var(--color-border));
+  box-shadow:
+    0 1.5rem 3.5rem rgba(0, 0, 0, 0.16),
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 12%, transparent);
 }
 
 .squad-card::before {
@@ -20,18 +55,37 @@
     color-mix(in srgb, var(--color-accent) 12%, transparent),
     transparent 16rem
   );
+  opacity: 0.85;
+  transition: opacity 180ms ease;
 }
 
-.squad-card__top,
-.squad-card__description,
+.squad-card:hover::before {
+  opacity: 1;
+}
+
+
+/* =========================================================
+   Shared card content layering
+   Purpose:
+   Keep real content above decorative ::before overlay.
+   ========================================================= */
+
+.squad-card__header,
+.squad-card__meta,
 .squad-card__tags,
-.squad-card__metrics,
-.squad-card__actions {
+.squad-card__metrics {
   position: relative;
   z-index: 1;
 }
 
-.squad-card__top {
+
+/* =========================================================
+   Header section
+   Related HTML:
+   <header class="squad-card__header">
+   ========================================================= */
+
+.squad-card__header {
   display: flex;
   gap: 0.95rem;
   align-items: flex-start;
@@ -40,10 +94,10 @@
 .squad-card__icon {
   width: 3.25rem;
   height: 3.25rem;
-  border-radius: 1.1rem;
+  flex: 0 0 auto;
   display: grid;
   place-items: center;
-  flex: 0 0 auto;
+  border-radius: 1.1rem;
   color: white;
   background: linear-gradient(135deg, var(--color-accent), #7c3aed);
   box-shadow: 0 0.9rem 1.75rem rgba(0, 0, 0, 0.18);
@@ -69,23 +123,31 @@
 
 .squad-card__title-row h2 {
   margin: 0;
-  font-size: 1.15rem;
-  letter-spacing: -0.03em;
+  color: var(--color-text-primary);
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  text-shadow: none;
+  filter: none;
 }
 
-.squad-card__badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  margin-top: 0.55rem;
+.squad-card__identity p {
+  margin: 0.45rem 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.55;
 }
 
-.type-badge,
-.tenant-badge,
+
+/* =========================================================
+   Status badge
+   Related HTML:
+   <span class="status-badge">
+   ========================================================= */
+
 .status-badge {
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
+  flex: 0 0 auto;
   padding: 0.28rem 0.6rem;
   border-radius: 999px;
   font-size: 0.68rem;
@@ -94,26 +156,14 @@
   letter-spacing: 0.08em;
 }
 
-.type-badge {
-  color: var(--color-accent);
-  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-accent) 22%, transparent);
-}
-
-.tenant-badge {
-  color: var(--color-text-primary);
-  background: color-mix(in srgb, var(--color-text-secondary) 10%, transparent);
-  border: 1px solid var(--color-border);
-}
-
-.status-badge--live {
+.status-badge--active {
   color: var(--color-success);
   background: color-mix(in srgb, var(--color-success) 14%, transparent);
 }
 
 .status-badge--draft {
-  color: var(--color-text-muted);
-  background: color-mix(in srgb, var(--color-text-muted) 14%, transparent);
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
 }
 
 .status-badge--paused {
@@ -121,81 +171,152 @@
   background: color-mix(in srgb, var(--color-warning) 14%, transparent);
 }
 
-.squad-card__description {
-  margin: 1rem 0 0;
-  color: var(--color-text-secondary);
-  font-size: 0.92rem;
-  line-height: 1.6;
+
+/* =========================================================
+   Meta section
+   Related HTML:
+   <section class="squad-card__meta">
+   ========================================================= */
+
+.squad-card__meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1.25rem;
 }
+
+.squad-card__meta > div {
+  min-width: 0;
+  padding: 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--color-bg-elevated) 72%, transparent);
+}
+
+.squad-card__meta span {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--color-text-secondary);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.squad-card__meta strong {
+  display: block;
+  color: var(--color-text-primary);
+  font-size: 0.88rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  text-shadow: none;
+  filter: none;
+  overflow-wrap: anywhere;
+}
+
+
+/* =========================================================
+   Tags
+   Related HTML:
+   <section class="squad-card__tags">
+   ========================================================= */
 
 .squad-card__tags {
   display: flex;
   flex-wrap: wrap;
   gap: 0.45rem;
-  margin-top: 1.1rem;
+  margin-top: 1rem;
 }
 
 .tag-chip {
   padding: 0.35rem 0.6rem;
   border-radius: 999px;
-  color: var(--color-text-primary);
   background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  color: var(--color-text-primary);
   border: 1px solid color-mix(in srgb, var(--color-accent) 18%, transparent);
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 600;
+  text-shadow: none;
+  filter: none;
 }
+
+
+/* =========================================================
+   Metrics
+   Related HTML:
+   <section class="squad-card__metrics">
+   ========================================================= */
 
 .squad-card__metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.75rem;
-  margin-top: 1.25rem;
+  margin-top: auto;
+  padding-top: 1rem;
 }
 
 .squad-card__metrics > div {
-  padding: 0.8rem;
-  border-radius: 1rem;
-  background: color-mix(in srgb, var(--color-bg-elevated) 72%, transparent);
+  min-width: 0;
+  padding: 0.75rem;
   border: 1px solid var(--color-border);
+  border-radius: 0.95rem;
+  background: color-mix(in srgb, var(--color-bg-elevated) 72%, transparent);
 }
 
 .metric-value {
   display: block;
-  font-size: 1.1rem;
+  color: var(--color-text-primary);
+  font-size: 1.15rem;
   font-weight: 800;
-  letter-spacing: -0.04em;
+  line-height: 1;
+  letter-spacing: -0.025em;
+  text-shadow: none;
+  filter: none;
 }
 
 .metric-label {
   display: block;
-  margin-top: 0.2rem;
+  margin-top: 0.25rem;
+  color: var(--color-text-secondary);
   font-size: 0.68rem;
-  color: var(--color-text-secondary);
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
 }
 
-.squad-card__actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 0.45rem;
-  margin-top: 1.15rem;
-  color: var(--color-text-secondary);
-}
 
-.spawn-button {
-  background: var(--color-accent);
-  color: white;
-}
+/* =========================================================
+   Responsive layout
+   ========================================================= */
 
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .squad-card__metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
 
-  .squad-card__actions {
-    justify-content: flex-start;
+@media (max-width: 760px) {
+  .squad-card__title-row {
+    flex-direction: column;
   }
+
+  .squad-card__meta {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .squad-card__header {
+    flex-direction: column;
+  }
+
+  .squad-card__metrics {
+    grid-template-columns: 1fr;
+  }
+}
+
+:host {
+  display: block;
+  height: 100%;
 }

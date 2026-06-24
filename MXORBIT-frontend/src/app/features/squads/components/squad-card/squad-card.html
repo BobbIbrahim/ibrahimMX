@@ -1,7 +1,9 @@
 <article class="squad-card">
-  <div class="squad-card__top">
+  <header class="squad-card__header">
     <div class="squad-card__icon">
-      <mat-icon>groups</mat-icon>
+      <mat-icon>
+        {{ squad().type === 'hardcoded-flow' ? 'account_tree' : 'auto_awesome' }}
+      </mat-icon>
     </div>
 
     <div class="squad-card__identity">
@@ -9,66 +11,51 @@
         <h2>{{ squad().name }}</h2>
 
         <span class="status-badge" [class]="'status-badge--' + squad().status">
-          {{ statusLabel }}
+          {{ squad().status }}
         </span>
       </div>
 
-      <div class="squad-card__badges">
-        <span class="type-badge">{{ typeLabel }}</span>
-        <span class="tenant-badge">{{ squad().tenant }}</span>
-      </div>
+      <p>{{ squad().description }}</p>
     </div>
-  </div>
+  </header>
 
-  <p class="squad-card__description">
-    {{ squad().description }}
-  </p>
+  <section class="squad-card__meta" aria-label="Squad metadata">
+    <div>
+      <span>Type</span>
+      <strong>{{ squad().type }}</strong>
+    </div>
 
-  <div class="squad-card__tags">
+    <div>
+      <span>Project</span>
+      <strong>{{ squad().projectKey }}</strong>
+    </div>
+  </section>
+
+  <section class="squad-card__tags" aria-label="Squad tags">
     @for (tag of squad().tags; track tag) {
       <span class="tag-chip">{{ tag }}</span>
     }
-  </div>
+  </section>
 
-  <div class="squad-card__metrics">
+  <section class="squad-card__metrics" aria-label="Squad metrics">
     <div>
-      <span class="metric-value">{{ squad().stepsCount }}</span>
+      <span class="metric-value">{{ squad().metrics.steps }}</span>
       <span class="metric-label">Steps</span>
     </div>
 
     <div>
-      <span class="metric-value">{{ squad().objectsCount }}</span>
+      <span class="metric-value">{{ squad().metrics.objects }}</span>
       <span class="metric-label">Objects</span>
     </div>
 
     <div>
-      <span class="metric-value">{{ squad().edgesCount }}</span>
+      <span class="metric-value">{{ squad().metrics.edges }}</span>
       <span class="metric-label">Edges</span>
     </div>
 
     <div>
-      <span class="metric-value">{{ squad().membersCount }}</span>
+      <span class="metric-value">{{ squad().metrics.members }}</span>
       <span class="metric-label">Members</span>
     </div>
-  </div>
-
-  <div class="squad-card__actions">
-    <button type="button" mat-stroked-button>
-      <mat-icon>open_in_new</mat-icon>
-      <span>Open</span>
-    </button>
-
-    <button type="button" mat-flat-button class="spawn-button">
-      <mat-icon>bolt</mat-icon>
-      <span>Spawn Run</span>
-    </button>
-
-    <button type="button" mat-icon-button aria-label="Copy squad">
-      <mat-icon>content_copy</mat-icon>
-    </button>
-
-    <button type="button" mat-icon-button aria-label="Delete squad">
-      <mat-icon>delete</mat-icon>
-    </button>
-  </div>
+  </section>
 </article>

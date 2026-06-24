@@ -1,0 +1,125 @@
+<section class="squad-dialog">
+  <header class="squad-dialog__header">
+    <div>
+      <span class="squad-dialog__eyebrow">SQUADS</span>
+      <h2>Create new squad</h2>
+      <p>
+        Choose the squad type and define the initial metadata before opening the builder.
+      </p>
+    </div>
+
+    <button type="button" mat-icon-button aria-label="Close dialog" (click)="cancel()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </header>
+
+  <form class="squad-dialog__form" [formGroup]="form" (ngSubmit)="submit()">
+    <section class="type-grid" aria-label="Squad type">
+      @for (squadType of squadTypes; track squadType.value) {
+        <label
+          class="type-card"
+          [class.type-card--active]="form.controls.type.value === squadType.value"
+        >
+          <input
+            type="radio"
+            formControlName="type"
+            [value]="squadType.value"
+          />
+
+          <span class="type-card__icon">
+            <mat-icon>
+              {{ squadType.value === 'hardcoded-flow' ? 'account_tree' : 'auto_awesome' }}
+            </mat-icon>
+          </span>
+
+          <span class="type-card__content">
+            <strong>{{ squadType.title }}</strong>
+            <small>{{ squadType.description }}</small>
+          </span>
+        </label>
+      }
+    </section>
+
+    <div class="field-group">
+      <label class="field-label" for="squad-name">Name <span>*</span></label>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <input
+          id="squad-name"
+          matInput
+          formControlName="name"
+          placeholder="Name your Squad"
+        />
+
+        @if (form.controls.name.hasError('required') && form.controls.name.touched) {
+          <mat-error>Name is required</mat-error>
+        }
+
+        @if (form.controls.name.hasError('minlength') && form.controls.name.touched) {
+          <mat-error>Name must be at least 3 characters</mat-error>
+        }
+      </mat-form-field>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="squad-description">Description <span>*</span></label>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <textarea
+          id="squad-description"
+          matInput
+          rows="4"
+          formControlName="description"
+          placeholder="Describe what this squad is responsible for."
+        ></textarea>
+
+        @if (form.controls.description.hasError('required') && form.controls.description.touched) {
+          <mat-error>Description is required</mat-error>
+        }
+
+        @if (form.controls.description.hasError('minlength') && form.controls.description.touched) {
+          <mat-error>Description must be at least 10 characters</mat-error>
+        }
+      </mat-form-field>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="project-key">Project key <span>*</span></label>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <input
+          id="project-key"
+          matInput
+          formControlName="projectKey"
+          placeholder="CORE"
+        />
+
+        @if (form.controls.projectKey.hasError('required') && form.controls.projectKey.touched) {
+          <mat-error>Project key is required</mat-error>
+        }
+      </mat-form-field>
+    </div>
+
+    <section class="object-types" aria-label="Object types">
+      <div class="object-types__header">
+        <h3>Object types</h3>
+        <p>Select which business objects this squad can work with.</p>
+      </div>
+
+      <div class="object-types__options">
+        <mat-checkbox formControlName="jiraEnabled">JIRA</mat-checkbox>
+        <mat-checkbox formControlName="pegaEnabled">PEGA</mat-checkbox>
+      </div>
+    </section>
+
+    <footer class="squad-dialog__actions">
+      <button type="button" mat-stroked-button (click)="cancel()">
+        Cancel
+      </button>
+
+      <button type="submit" mat-flat-button class="squad-dialog__submit">
+        Create
+      </button>
+    </footer>
+  </form>
+</section>

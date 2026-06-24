@@ -1,0 +1,172 @@
+<section class="squad-builder-page">
+  @if (draft(); as currentDraft) {
+    <header class="builder-header">
+      <div class="builder-header__left">
+        <a routerLink="/squads" mat-stroked-button class="back-link">
+          <mat-icon>arrow_back</mat-icon>
+          Back to Squads
+        </a>
+
+        <div>
+          <span class="builder-header__eyebrow">SQUAD BUILDER</span>
+          <h1>{{ currentDraft.name }}</h1>
+
+          <p>
+            {{ currentDraft.projectKey }} ·
+            {{ currentDraft.type | titlecase }} ·
+            {{ currentDraft.objectTypes.join(', ') }}
+          </p>
+        </div>
+      </div>
+
+      <div class="builder-header__actions">
+        <button type="button" mat-stroked-button (click)="addStep()">
+          <mat-icon>add</mat-icon>
+          Step
+        </button>
+
+        <button type="button" mat-stroked-button disabled>
+          <mat-icon>category</mat-icon>
+          Object
+        </button>
+
+        <button type="button" mat-flat-button class="save-button" (click)="saveDraft()">
+          <mat-icon>save</mat-icon>
+          Save
+        </button>
+      </div>
+    </header>
+
+    <section class="builder-stats">
+      <article>
+        <span>Steps</span>
+        <strong>{{ steps().length }}</strong>
+      </article>
+
+      <article>
+        <span>Objects</span>
+        <strong>{{ objects().length }}</strong>
+      </article>
+
+      <article>
+        <span>Edges</span>
+        <strong>{{ edges().length }}</strong>
+      </article>
+
+      <article>
+        <span>Type</span>
+        <strong>{{ currentDraft.type }}</strong>
+      </article>
+    </section>
+
+    <section class="builder-layout">
+      <main class="builder-canvas" (click)="clearSelection()">
+        <div class="builder-canvas__tabs">
+          <button type="button" class="builder-tab builder-tab--active">Canvas</button>
+          <button type="button" class="builder-tab">Objects</button>
+          <button type="button" class="builder-tab">Live Run</button>
+        </div>
+
+        <div class="canvas-grid">
+          @if (steps().length === 0) {
+            <div class="canvas-empty">
+              <div class="canvas-empty__icon">
+                <mat-icon>account_tree</mat-icon>
+              </div>
+
+              <h2>No steps yet</h2>
+
+              <p>
+                Click <strong>Step</strong> to add your first workflow node to this squad.
+              </p>
+            </div>
+          }
+
+          @for (step of steps(); track step.id) {
+            <button
+              type="button"
+              class="step-node"
+              [class.step-node--selected]="selectedStepId() === step.id"
+              [style.left.px]="step.position.x"
+              [style.top.px]="step.position.y"
+              (click)="$event.stopPropagation(); selectStep(step.id)"
+            >
+              <span class="step-node__icon">
+                <mat-icon>bolt</mat-icon>
+              </span>
+
+              <span class="step-node__content">
+                <strong>{{ step.name }}</strong>
+                <small>
+                  {{ step.assignedAgentId ?? 'Unassigned' }}
+                </small>
+              </span>
+            </button>
+          }
+        </div>
+      </main>
+
+      <aside class="builder-side-panel">
+        @if (selectedStep(); as step) {
+          <span class="side-panel__eyebrow">SELECTED STEP</span>
+
+          <h2>{{ step.name }}</h2>
+
+          <dl class="step-summary">
+            <div>
+              <dt>ID</dt>
+              <dd>{{ step.id }}</dd>
+            </div>
+
+            <div>
+              <dt>Assigned Agent</dt>
+              <dd>{{ step.assignedAgentId ?? 'Unassigned' }}</dd>
+            </div>
+
+            <div>
+              <dt>Trigger Object</dt>
+              <dd>{{ step.triggerObjectType }}</dd>
+            </div>
+          </dl>
+
+          <p class="side-panel__hint">
+            In the next step, this panel will become editable with fields for name,
+            description, assigned agent, trigger object type, and parameters.
+          </p>
+        } @else {
+          <div class="side-panel-empty">
+            <mat-icon>touch_app</mat-icon>
+
+            <h2>Select a step</h2>
+
+            <p>
+              Click a step node on the canvas to configure it from this panel.
+            </p>
+          </div>
+        }
+      </aside>
+    </section>
+
+    <section class="json-preview">
+      <h2>Draft JSON Preview</h2>
+
+      <pre>{{ currentDraft | json }}</pre>
+    </section>
+  } @else {
+    <section class="no-draft">
+      <div class="no-draft__icon">
+        <mat-icon>playlist_add</mat-icon>
+      </div>
+
+      <h1>No squad draft found</h1>
+
+      <p>
+        Create a new squad from the Squads page before opening the builder.
+      </p>
+
+      <a routerLink="/squads" mat-flat-button>
+        Back to Squads
+      </a>
+    </section>
+  }
+</section>

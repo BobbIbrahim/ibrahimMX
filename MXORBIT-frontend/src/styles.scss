@@ -270,3 +270,34 @@ html {
 :root[data-theme='light'] .registry-sort-panel .mat-mdc-option.mdc-list-item--selected .mdc-list-item__primary-text {
   color: #172033 !important;
 }
+
+/* =========================================================
+   Squad create dialog panel
+   Used by:
+   SquadCreateDialog through panelClass: 'squad-create-dialog-panel'
+
+   Purpose:
+   Style Angular Material dialog container globally because
+   Material dialogs render inside the CDK overlay container.
+   ========================================================= */
+
+.squad-create-dialog-panel {
+  --mat-dialog-container-color: var(--color-surface);
+  --mat-dialog-container-shape: 1.35rem;
+}
+
+.squad-create-dialog-panel .mat-mdc-dialog-container {
+  padding: 0;
+  border-radius: 1.35rem;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  box-shadow: 0 2rem 5rem rgba(0, 0, 0, 0.35);
+}
+
+.squad-create-dialog-panel .mdc-dialog__surface {
+  border-radius: 1.35rem !important;
+  background: var(--color-surface) !important;
+  color: var(--color-text-primary) !important;
+  overflow: hidden !important;
+}
