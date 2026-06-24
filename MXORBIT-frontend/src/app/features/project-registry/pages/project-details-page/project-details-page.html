@@ -1,0 +1,147 @@
+<section class="project-details-page">
+  <a routerLink="/projects" mat-stroked-button class="back-link">
+    <mat-icon>arrow_back</mat-icon>
+    Back to Project Registry
+  </a>
+
+  @if (project(); as selectedProject) {
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a routerLink="/projects">Project Registry</a>
+      <mat-icon>chevron_right</mat-icon>
+      <span>{{ selectedProject.name }}</span>
+    </nav>
+
+    <article class="details-card">
+      <section class="details-card__main">
+        <header class="details-card__header">
+          <div class="details-card__icon">
+            <mat-icon>folder_open</mat-icon>
+          </div>
+
+          <div class="details-card__identity">
+            <span class="details-card__eyebrow">PROJECT DETAILS</span>
+
+            <h1>{{ selectedProject.name }}</h1>
+
+            <p>{{ selectedProject.description }}</p>
+          </div>
+        </header>
+
+        <section class="metadata-strip" aria-label="Project metadata">
+          <div class="metadata-strip__item">
+            <span class="metadata-strip__label">Project ID</span>
+            <strong class="metadata-strip__value">{{ selectedProject.id }}</strong>
+          </div>
+        </section>
+
+        <section class="details-section">
+          <h2>Repository</h2>
+
+          <a
+            class="repository-link"
+            [href]="selectedProject.repositoryUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <mat-icon>link</mat-icon>
+            <span>{{ selectedProject.repositoryUrl }}</span>
+          </a>
+        </section>
+
+        <section class="details-section">
+          <h2>Technology Stack</h2>
+
+          <div class="stack-list">
+            @for (technology of selectedProject.stack; track technology) {
+              <span class="stack-chip">{{ technology }}</span>
+            }
+          </div>
+        </section>
+
+        <section class="details-section">
+          <h2>Assigned Agents</h2>
+
+          @if (assignedAgents().length > 0) {
+            <div class="assigned-agent-list">
+              @for (agent of assignedAgents(); track agent.id) {
+                <a
+                  [routerLink]="['/agents', agent.id]"
+                  [queryParams]="{ returnUrl: '/projects/' + selectedProject.id }"
+                  class="assigned-agent"
+                >
+                  <span
+                    class="assigned-agent__avatar"
+                    [style.background]="agent.accentColor"
+                  >
+                    {{ agent.avatar }}
+                  </span>
+
+                  <span class="assigned-agent__content">
+                    <strong>{{ agent.name }}</strong>
+                    <small>{{ agent.role }}</small>
+                  </span>
+
+                  <mat-icon>arrow_forward</mat-icon>
+                </a>
+              }
+            </div>
+          } @else {
+            <p class="muted-text">No agents are assigned to this project.</p>
+          }
+        </section>
+      </section>
+
+      <aside class="details-card__side-panel" aria-label="Project operational summary">
+        <div class="status-panel">
+          <span class="side-panel-label">Status</span>
+
+          <span class="status-badge" [class]="'status-badge--' + selectedProject.status">
+            {{ selectedProject.status }}
+          </span>
+        </div>
+
+        <div class="side-panel-block">
+          <span class="side-panel-label">Default Branch</span>
+
+          <div class="branch-pill">
+            <mat-icon>account_tree</mat-icon>
+            <span>{{ selectedProject.defaultBranch }}</span>
+          </div>
+        </div>
+
+        <div class="side-panel-block">
+          <span class="side-panel-label">Assigned Agents</span>
+          <strong class="side-panel-value">{{ selectedProject.agentIds.length }}</strong>
+        </div>
+
+        <div class="date-grid">
+          <div class="date-card">
+            <span class="date-label">Created</span>
+            <strong>{{ selectedProject.createdAt }}</strong>
+          </div>
+
+          <div class="date-card">
+            <span class="date-label">Updated</span>
+            <strong>{{ selectedProject.updatedAt }}</strong>
+          </div>
+        </div>
+      </aside>
+    </article>
+  } @else {
+    <section class="not-found">
+      <div class="not-found__icon">
+        <mat-icon>search_off</mat-icon>
+      </div>
+
+      <h1>Project not found</h1>
+
+      <p>
+        The selected project does not exist or is no longer available in the registry.
+      </p>
+
+      <a routerLink="/projects" mat-flat-button>
+        Back to Project Registry
+      </a>
+    </section>
+  }
+</section>

@@ -1,0 +1,73 @@
+<article class="project-card">
+  <div class="project-card__top">
+    <div class="project-card__icon">
+      <mat-icon>folder_open</mat-icon>
+    </div>
+
+    <div class="project-card__identity">
+      <div class="project-card__title-row">
+        <h2>
+          <a [routerLink]="['/projects', project().id]" class="project-card__name-link">
+            {{ project().name }}
+          </a>
+        </h2>
+
+        <span class="status-badge" [class]="'status-badge--' + project().status">
+          {{ project().status }}
+        </span>
+      </div>
+
+      <p>{{ project().description }}</p>
+    </div>
+  </div>
+
+  <section class="project-card__codebase" aria-label="Project codebase metadata">
+    <div class="codebase-row">
+      <mat-icon>link</mat-icon>
+
+      <div>
+        <span class="codebase-label">Repository</span>
+        <a
+          class="repository-link"
+          [href]="project().repositoryUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {{ project().repositoryUrl }}
+        </a>
+      </div>
+    </div>
+
+    <div class="codebase-row">
+      <mat-icon>account_tree</mat-icon>
+
+      <div>
+        <span class="codebase-label">Default Branch</span>
+        <strong>{{ project().defaultBranch }}</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="project-card__stack" aria-label="Project technology stack">
+    @for (technology of project().stack; track technology) {
+      <span class="stack-chip">{{ technology }}</span>
+    }
+  </section>
+
+  <section class="project-card__metadata" aria-label="Project metadata">
+    <div>
+      <span class="metadata-label">Assigned Agents</span>
+      <strong>{{ project().agentIds.length }}</strong>
+    </div>
+
+    <div>
+      <span class="metadata-label">Updated</span>
+      <strong>{{ project().updatedAt }}</strong>
+    </div>
+  </section>
+
+  <a [routerLink]="['/projects', project().id]" class="project-card__details-link">
+    <span>View details</span>
+    <mat-icon>arrow_forward</mat-icon>
+  </a>
+</article>

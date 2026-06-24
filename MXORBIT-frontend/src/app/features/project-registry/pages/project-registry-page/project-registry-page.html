@@ -1,0 +1,143 @@
+<section class="feature-page">
+  <app-page-header
+    eyebrow="PROJECT REGISTRY"
+    title="Connected Codebases"
+    description="View registered engineering projects, repository metadata, tracked branches, technology stacks, and assigned agents."
+  />
+
+  <section class="stats-grid" aria-label="Project registry summary">
+    <article class="stat-card">
+      <span class="stat-card__label">Total Projects</span>
+      <strong>{{ totalProjects() }}</strong>
+      <span class="stat-card__hint">Registered codebases</span>
+    </article>
+
+    <article class="stat-card">
+      <span class="stat-card__label">Active</span>
+      <strong>{{ activeProjects() }}</strong>
+      <span class="stat-card__hint">Currently tracked</span>
+    </article>
+
+    <article class="stat-card">
+      <span class="stat-card__label">Paused</span>
+      <strong>{{ pausedProjects() }}</strong>
+      <span class="stat-card__hint">Temporarily inactive</span>
+    </article>
+
+    <article class="stat-card">
+      <span class="stat-card__label">Agent Links</span>
+      <strong>{{ totalAssignedAgents() }}</strong>
+      <span class="stat-card__hint">Across all projects</span>
+    </article>
+  </section>
+
+  <section class="registry-toolbar" aria-label="Project registry filters">
+    <div class="toolbar-main">
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-icon matPrefix>search</mat-icon>
+
+        <input
+          matInput
+          type="search"
+          placeholder="Search by name, repository, branch, or stack"
+          [value]="searchTerm()"
+          (input)="setSearchTerm($event)"
+        />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="sort-field">
+        <mat-label>Sort by</mat-label>
+
+        <mat-select
+          panelClass="registry-sort-panel"
+          [value]="selectedSort()"
+          (selectionChange)="setSortOption($event.value)"
+        >
+          <mat-option value="name-asc">Name A-Z</mat-option>
+          <mat-option value="status">Status</mat-option>
+          <mat-option value="updated-desc">Recently updated</mat-option>
+          <mat-option value="agents-desc">Assigned agents</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="toolbar-actions">
+      <div class="status-filters" aria-label="Status filters">
+        <button
+          type="button"
+          mat-stroked-button
+          [class.status-filter--active]="selectedStatus() === 'all'"
+          (click)="setStatusFilter('all')"
+        >
+          All
+        </button>
+
+        <button
+          type="button"
+          mat-stroked-button
+          [class.status-filter--active]="selectedStatus() === 'active'"
+          (click)="setStatusFilter('active')"
+        >
+          Active
+        </button>
+
+        <button
+          type="button"
+          mat-stroked-button
+          [class.status-filter--active]="selectedStatus() === 'paused'"
+          (click)="setStatusFilter('paused')"
+        >
+          Paused
+        </button>
+
+        <button
+          type="button"
+          mat-stroked-button
+          [class.status-filter--active]="selectedStatus() === 'completed'"
+          (click)="setStatusFilter('completed')"
+        >
+          Completed
+        </button>
+      </div>
+
+      <button
+        type="button"
+        mat-stroked-button
+        class="clear-button"
+        [disabled]="!hasActiveFilters()"
+        (click)="clearFilters()"
+      >
+        <mat-icon>restart_alt</mat-icon>
+        Clear
+      </button>
+    </div>
+  </section>
+
+  <div class="result-summary">
+    Showing {{ filteredProjects().length }} of {{ totalProjects() }} projects
+  </div>
+
+  @if (filteredProjects().length > 0) {
+    <div class="project-grid">
+      @for (project of filteredProjects(); track project.id) {
+        <app-project-card [project]="project" />
+      }
+    </div>
+  } @else {
+    <section class="empty-state">
+      <div class="empty-state__icon">
+        <mat-icon>manage_search</mat-icon>
+      </div>
+
+      <h2>No projects found</h2>
+
+      <p>
+        Try changing the search text, project status, or sorting option to find a matching project.
+      </p>
+
+      <button type="button" mat-stroked-button (click)="clearFilters()">
+        Clear filters
+      </button>
+    </section>
+  }
+</section>

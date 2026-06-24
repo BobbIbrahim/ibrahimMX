@@ -1,0 +1,55 @@
+<article class="agent-card">
+  <div class="agent-card__top">
+    <div class="agent-card__avatar" [style.background]="agent().accentColor">
+      {{ agent().avatar }}
+    </div>
+
+    <div class="agent-card__identity">
+      <div class="agent-card__title-row">
+        <h2>
+          <a [routerLink]="['/agents', agent().id]" class="agent-card__name-link">
+            {{ agent().name }}
+          </a>
+        </h2>
+        <span class="status-badge" [class]="'status-badge--' + agent().status">
+          {{ agent().status }}
+        </span>
+      </div>
+
+      <p>{{ agent().role }}</p>
+    </div>
+  </div>
+
+  <div class="agent-card__model">
+    <mat-icon>memory</mat-icon>
+    <span>{{ agent().model }}</span>
+  </div>
+
+  <p class="agent-card__description">
+    {{ agent().description }}
+  </p>
+
+  <div class="agent-card__capabilities">
+    @for (capability of agent().capabilities; track capability) {
+      <span class="capability-chip">{{ capability }}</span>
+    }
+  </div>
+
+  <div class="agent-card__metrics">
+    <div>
+      <span class="metric-value">{{ agent().runCount }}</span>
+      <span class="metric-label">Runs</span>
+    </div>
+
+    <div>
+      <span class="metric-value">{{ agent().successRate }}%</span>
+      <span class="metric-label">Success</span>
+    </div>
+  </div>
+
+  <a [routerLink]="['/agents', agent().id]" class="agent-card__details-link">
+  <span>View details</span>
+  <mat-icon>arrow_forward</mat-icon>
+  </a>
+
+</article>

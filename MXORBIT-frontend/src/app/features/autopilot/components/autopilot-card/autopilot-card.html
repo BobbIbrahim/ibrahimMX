@@ -1,0 +1,74 @@
+<article class="autopilot-card">
+  <div class="autopilot-card__top">
+    <div class="autopilot-card__icon">
+      <mat-icon>auto_awesome</mat-icon>
+    </div>
+
+    <div class="autopilot-card__identity">
+      <div class="autopilot-card__title-row">
+        <h2>{{ autopilot().name }}</h2>
+
+        <span
+          class="status-badge"
+          [class.status-badge--active]="autopilot().isActive"
+          [class.status-badge--inactive]="!autopilot().isActive"
+        >
+          {{ autopilot().isActive ? 'ACTIVE' : 'INACTIVE' }}
+        </span>
+      </div>
+
+      <div class="autopilot-card__badges">
+        <span class="assignee-badge">{{ assigneeTypeLabel }}</span>
+
+        @if (autopilot().projectKey) {
+          <span class="project-badge">{{ autopilot().projectKey }}</span>
+        }
+
+        <span class="trigger-badge">{{ triggerLabel }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="autopilot-card__assignee">
+    <mat-icon>person_search</mat-icon>
+    <span>{{ autopilot().assigneeName }}</span>
+  </div>
+
+  <p class="autopilot-card__runbook">
+    {{ autopilot().runbook }}
+  </p>
+
+  <div class="autopilot-card__schedule">
+    <div>
+      <span class="schedule-label">Frequency</span>
+      <span class="schedule-value">{{ frequencyLabel }}</span>
+    </div>
+
+    <div>
+      <span class="schedule-label">Time</span>
+      <span class="schedule-value">{{ autopilot().time }}</span>
+    </div>
+
+    <div>
+      <span class="schedule-label">Timezone</span>
+      <span class="schedule-value">{{ autopilot().timezone }}</span>
+    </div>
+  </div>
+
+  <div class="autopilot-card__footer">
+    <div class="autopilot-card__meta">
+      <span class="output-chip">{{ outputModeLabel }}</span>
+      <span>{{ autopilot().nextRunLabel }}</span>
+    </div>
+
+    <div class="autopilot-card__actions">
+      <button type="button" mat-icon-button aria-label="Edit autopilot">
+        <mat-icon>edit</mat-icon>
+      </button>
+
+      <button type="button" mat-icon-button aria-label="Delete autopilot">
+        <mat-icon>delete</mat-icon>
+      </button>
+    </div>
+  </div>
+</article>

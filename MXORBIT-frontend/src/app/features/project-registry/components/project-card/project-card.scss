@@ -1,0 +1,379 @@
+/* =========================================================
+   Project card host
+   Purpose:
+   Make project cards stretch consistently inside grid layouts.
+   ========================================================= */
+
+:host {
+  display: block;
+  height: 100%;
+}
+
+
+/* =========================================================
+   Project card container
+   Related HTML:
+   <article class="project-card">
+   ========================================================= */
+
+.project-card {
+  position: relative;
+  min-height: 25rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1.35rem;
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-surface) 92%, transparent),
+      var(--color-surface)
+    ),
+    var(--color-surface);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  box-shadow: 0 1.25rem 3rem rgba(0, 0, 0, 0.12);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.project-card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--color-accent) 36%, var(--color-border));
+  box-shadow:
+    0 1.5rem 3.5rem rgba(0, 0, 0, 0.16),
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+.project-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at top right,
+    color-mix(in srgb, var(--color-accent) 12%, transparent),
+    transparent 16rem
+  );
+  opacity: 0.85;
+  transition: opacity 180ms ease;
+}
+
+.project-card:hover::before {
+  opacity: 1;
+}
+
+
+/* =========================================================
+   Shared z-index layering
+   ========================================================= */
+
+.project-card__top,
+.project-card__codebase,
+.project-card__stack,
+.project-card__metadata,
+.project-card__details-link {
+  position: relative;
+  z-index: 1;
+}
+
+
+/* =========================================================
+   Top section
+   Related HTML:
+   <div class="project-card__top">
+   ========================================================= */
+
+.project-card__top {
+  display: flex;
+  gap: 0.95rem;
+  align-items: flex-start;
+}
+
+.project-card__icon {
+  width: 3.25rem;
+  height: 3.25rem;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 1.1rem;
+  color: white;
+  background: linear-gradient(135deg, var(--color-accent), #7c3aed);
+  box-shadow: 0 0.9rem 1.75rem rgba(0, 0, 0, 0.18);
+}
+
+.project-card__icon mat-icon {
+  font-size: 1.45rem;
+  width: 1.45rem;
+  height: 1.45rem;
+}
+
+.project-card__identity {
+  min-width: 0;
+  flex: 1;
+}
+
+.project-card__title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.project-card__title-row h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: var(--color-text-primary);
+  text-shadow: none;
+  filter: none;
+}
+
+.project-card__identity p {
+  margin: 0.45rem 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+
+/* =========================================================
+   Project name link
+   ========================================================= */
+
+.project-card__name-link {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    text-decoration-color 160ms ease;
+}
+
+.project-card__name-link:hover {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
+
+/* =========================================================
+   Status badge
+   ========================================================= */
+
+.status-badge {
+  flex: 0 0 auto;
+  padding: 0.28rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.status-badge--active {
+  color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
+}
+
+.status-badge--paused {
+  color: var(--color-warning);
+  background: color-mix(in srgb, var(--color-warning) 14%, transparent);
+}
+
+.status-badge--completed {
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+}
+
+
+/* =========================================================
+   Codebase metadata
+   Related HTML:
+   <section class="project-card__codebase">
+   ========================================================= */
+
+.project-card__codebase {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.15rem;
+  padding: 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--color-bg-elevated) 72%, transparent);
+}
+
+.codebase-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.codebase-row mat-icon {
+  margin-top: 0.1rem;
+  color: var(--color-accent);
+  font-size: 1.05rem;
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.codebase-label {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--color-text-secondary);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.repository-link,
+.codebase-row strong {
+  display: block;
+  color: var(--color-text-primary);
+  font-size: 0.86rem;
+  font-weight: 500;
+  line-height: 1.25;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repository-link:hover {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
+
+/* =========================================================
+   Stack chips
+   Related HTML:
+   <section class="project-card__stack">
+   ========================================================= */
+
+.project-card__stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 1rem;
+}
+
+.stack-chip {
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  color: var(--color-text-primary);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 18%, transparent);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-shadow: none;
+  filter: none;
+}
+
+
+/* =========================================================
+   Metadata section
+   Related HTML:
+   <section class="project-card__metadata">
+   ========================================================= */
+
+.project-card__metadata {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.project-card__metadata > div {
+  padding: 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--color-bg-elevated) 72%, transparent);
+}
+
+.metadata-label {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--color-text-secondary);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.project-card__metadata strong {
+  display: block;
+  color: var(--color-text-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  text-shadow: none;
+  filter: none;
+  overflow-wrap: anywhere;
+}
+
+
+/* =========================================================
+   View details link
+   ========================================================= */
+
+.project-card__details-link {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  gap: 0.35rem;
+  margin-top: auto;
+  padding-top: 1rem;
+  color: var(--color-accent);
+  font-size: 0.82rem;
+  font-weight: 550;
+  text-decoration: none;
+  transition:
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.project-card__details-link mat-icon {
+  font-size: 1rem;
+  width: 1rem;
+  height: 1rem;
+  transition: transform 160ms ease;
+}
+
+.project-card__details-link:hover {
+  color: var(--color-accent-strong);
+  transform: translateX(1px);
+}
+
+.project-card__details-link:hover mat-icon {
+  transform: translateX(3px);
+}
+
+
+/* =========================================================
+   Responsive layout
+   ========================================================= */
+
+@media (max-width: 760px) {
+  .project-card__title-row {
+    flex-direction: column;
+  }
+
+  .project-card__metadata {
+    grid-template-columns: 1fr;
+  }
+}

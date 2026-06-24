@@ -1,0 +1,30 @@
+<section class="feature-page">
+  <app-page-header
+    eyebrow="AUTOPILOT"
+    title="Scheduled AI Tasks"
+    description="Schedule agents or squads to automatically run recurring tasks using runbooks, triggers, and project context."
+    actionLabel="New Autopilot"
+    actionIcon="add"
+    (actionClick)="onCreateAutopilot()"
+  />
+
+  @if (autopilots().length > 0) {
+    <div class="autopilot-grid">
+      @for (autopilot of autopilots(); track autopilot.id) {
+        <app-autopilot-card [autopilot]="autopilot" />
+      }
+    </div>
+  } @else {
+    <div class="empty-state">
+      <div class="empty-state__icon">
+        <span>AP</span>
+      </div>
+
+      <h2>No autopilots configured yet</h2>
+
+      <p>
+        Create your first autopilot to schedule an agent or squad to run a recurring task automatically.
+      </p>
+    </div>
+  }
+</section>

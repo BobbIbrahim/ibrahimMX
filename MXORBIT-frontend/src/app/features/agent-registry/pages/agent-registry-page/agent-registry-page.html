@@ -1,0 +1,143 @@
+<section class="feature-page">
+  <app-page-header
+    eyebrow="AGENT REGISTRY"
+    title="Specialists on the Mesh"
+    description="View reusable AI specialists, capabilities, model assignments, and operational metadata."
+  />
+
+  <section class="stats-grid" aria-label="Agent registry summary">
+    <article class="stat-card">
+      <span class="stat-card__label">Total Agents</span>
+      <strong>{{ totalAgents() }}</strong>
+      <span class="stat-card__hint">Registered specialists</span>
+    </article>
+
+    <article class="stat-card">
+      <span class="stat-card__label">Online</span>
+      <strong>{{ onlineAgents() }}</strong>
+      <span class="stat-card__hint">Ready for assignment</span>
+    </article>
+
+    <article class="stat-card">
+      <span class="stat-card__label">Idle</span>
+      <strong>{{ idleAgents() }}</strong>
+      <span class="stat-card__hint">Available but inactive</span>
+    </article>
+
+    <article class="stat-card">
+      <span class="stat-card__label">Avg. Success</span>
+      <strong>{{ averageSuccessRate() }}%</strong>
+      <span class="stat-card__hint">Across all mock runs</span>
+    </article>
+  </section>
+
+  <section class="registry-toolbar" aria-label="Agent registry filters">
+    <div class="toolbar-main">
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-icon matPrefix>search</mat-icon>
+
+        <input
+          matInput
+          type="search"
+          placeholder="Search by name, role, model, or capability"
+          [value]="searchTerm()"
+          (input)="setSearchTerm($event)"
+        />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="sort-field">
+        <mat-label>Sort by</mat-label>
+
+          <mat-select
+            panelClass="registry-sort-panel"
+            [value]="selectedSort()"
+            (selectionChange)="setSortOption($event.value)"
+          >
+          <mat-option value="name-asc">Name A-Z</mat-option>
+          <mat-option value="status">Status</mat-option>
+          <mat-option value="success-desc">Success rate</mat-option>
+          <mat-option value="runs-desc">Run count</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="toolbar-actions">
+      <div class="status-filters" aria-label="Status filters">
+        <button
+          type="button"
+          mat-stroked-button
+          [class.status-filter--active]="selectedStatus() === 'all'"
+          (click)="setStatusFilter('all')"
+        >
+          All
+        </button>
+
+        <button
+          type="button"
+          mat-stroked-button
+          [class.status-filter--active]="selectedStatus() === 'online'"
+          (click)="setStatusFilter('online')"
+        >
+          Online
+        </button>
+
+        <button
+          type="button"
+          mat-stroked-button
+          [class.status-filter--active]="selectedStatus() === 'idle'"
+          (click)="setStatusFilter('idle')"
+        >
+          Idle
+        </button>
+
+        <button
+          type="button"
+          mat-stroked-button
+          [class.status-filter--active]="selectedStatus() === 'offline'"
+          (click)="setStatusFilter('offline')"
+        >
+          Offline
+        </button>
+      </div>
+
+      <button
+        type="button"
+        mat-stroked-button
+        class="clear-button"
+        [disabled]="!hasActiveFilters()"
+        (click)="clearFilters()"
+      >
+        <mat-icon>restart_alt</mat-icon>
+        Clear
+      </button>
+    </div>
+  </section>
+
+  <div class="result-summary">
+    Showing {{ filteredAgents().length }} of {{ totalAgents() }} agents
+  </div>
+
+  @if (filteredAgents().length > 0) {
+    <div class="agent-grid">
+      @for (agent of filteredAgents(); track agent.id) {
+        <app-agent-card [agent]="agent" />
+      }
+    </div>
+  } @else {
+    <section class="empty-state">
+      <div class="empty-state__icon">
+        <mat-icon>manage_search</mat-icon>
+      </div>
+
+      <h2>No agents found</h2>
+
+      <p>
+        Try changing the search text, status filter, or sorting option to find a matching agent.
+      </p>
+
+      <button type="button" mat-stroked-button (click)="clearFilters()">
+        Clear filters
+      </button>
+    </section>
+  }
+</section>

@@ -1,0 +1,16 @@
+<section class="feature-page">
+  <app-page-header
+    eyebrow="SQUADS"
+    title="Agent Squads"
+    description="Create and manage multi-agent units that can run as fixed flows, DAGs, or prompt-based squads."
+    actionLabel="New Squad"
+    actionIcon="add"
+    (actionClick)="onCreateSquad()"
+  />
+
+  <div class="squad-grid">
+    @for (squad of squads(); track squad.id) {
+      <app-squad-card [squad]="squad" />
+    }
+  </div>
+</section>

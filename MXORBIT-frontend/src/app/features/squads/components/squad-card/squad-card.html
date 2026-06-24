@@ -1,0 +1,74 @@
+<article class="squad-card">
+  <div class="squad-card__top">
+    <div class="squad-card__icon">
+      <mat-icon>groups</mat-icon>
+    </div>
+
+    <div class="squad-card__identity">
+      <div class="squad-card__title-row">
+        <h2>{{ squad().name }}</h2>
+
+        <span class="status-badge" [class]="'status-badge--' + squad().status">
+          {{ statusLabel }}
+        </span>
+      </div>
+
+      <div class="squad-card__badges">
+        <span class="type-badge">{{ typeLabel }}</span>
+        <span class="tenant-badge">{{ squad().tenant }}</span>
+      </div>
+    </div>
+  </div>
+
+  <p class="squad-card__description">
+    {{ squad().description }}
+  </p>
+
+  <div class="squad-card__tags">
+    @for (tag of squad().tags; track tag) {
+      <span class="tag-chip">{{ tag }}</span>
+    }
+  </div>
+
+  <div class="squad-card__metrics">
+    <div>
+      <span class="metric-value">{{ squad().stepsCount }}</span>
+      <span class="metric-label">Steps</span>
+    </div>
+
+    <div>
+      <span class="metric-value">{{ squad().objectsCount }}</span>
+      <span class="metric-label">Objects</span>
+    </div>
+
+    <div>
+      <span class="metric-value">{{ squad().edgesCount }}</span>
+      <span class="metric-label">Edges</span>
+    </div>
+
+    <div>
+      <span class="metric-value">{{ squad().membersCount }}</span>
+      <span class="metric-label">Members</span>
+    </div>
+  </div>
+
+  <div class="squad-card__actions">
+    <button type="button" mat-stroked-button>
+      <mat-icon>open_in_new</mat-icon>
+      <span>Open</span>
+    </button>
+
+    <button type="button" mat-flat-button class="spawn-button">
+      <mat-icon>bolt</mat-icon>
+      <span>Spawn Run</span>
+    </button>
+
+    <button type="button" mat-icon-button aria-label="Copy squad">
+      <mat-icon>content_copy</mat-icon>
+    </button>
+
+    <button type="button" mat-icon-button aria-label="Delete squad">
+      <mat-icon>delete</mat-icon>
+    </button>
+  </div>
+</article>

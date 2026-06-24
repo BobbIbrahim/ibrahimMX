@@ -1,0 +1,104 @@
+<section class="agent-details-page">
+  <a [routerLink]="returnUrl" mat-stroked-button class="back-link">
+    <mat-icon>arrow_back</mat-icon>
+    {{ backLabel }}
+  </a>
+
+  @if (agent(); as selectedAgent) {
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a routerLink="/agents">Agent Registry</a>
+      <mat-icon>chevron_right</mat-icon>
+      <span>{{ selectedAgent.name }}</span>
+    </nav>
+
+    <article class="details-card">
+      <section class="details-card__main">
+        <header class="details-card__header">
+          <div class="details-card__avatar" [style.background]="selectedAgent.accentColor">
+            {{ selectedAgent.avatar }}
+          </div>
+
+          <div class="details-card__identity">
+            <span class="details-card__eyebrow">AGENT DETAILS</span>
+
+            <h1>{{ selectedAgent.name }}</h1>
+
+            <p>{{ selectedAgent.role }}</p>
+          </div>
+        </header>
+
+        <section class="metadata-strip" aria-label="Agent metadata">
+          <div class="metadata-strip__item">
+            <span class="metadata-strip__label">Agent ID</span>
+            <strong class="metadata-strip__value">{{ selectedAgent.id }}</strong>
+          </div>
+        </section>
+
+        <section class="details-section">
+          <h2>Description</h2>
+
+          <p class="description">
+            {{ selectedAgent.description }}
+          </p>
+        </section>
+
+        <section class="details-section">
+          <h2>Capabilities</h2>
+
+          <div class="capability-list">
+            @for (capability of selectedAgent.capabilities; track capability) {
+              <span class="capability-chip">{{ capability }}</span>
+            }
+          </div>
+        </section>
+      </section>
+
+      <aside class="details-card__side-panel" aria-label="Agent operational summary">
+        <div class="status-panel">
+          <span class="side-panel-label">Status</span>
+
+          <span class="status-badge" [class]="'status-badge--' + selectedAgent.status">
+            {{ selectedAgent.status }}
+          </span>
+        </div>
+
+        <div class="side-panel-block">
+          <span class="side-panel-label">Runtime Model</span>
+
+          <div class="model-pill">
+            <mat-icon>memory</mat-icon>
+            <span>{{ selectedAgent.model }}</span>
+          </div>
+        </div>
+
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <span class="metric-value">{{ selectedAgent.runCount }}</span>
+            <span class="metric-label">Runs</span>
+          </div>
+
+          <div class="metric-card">
+            <span class="metric-value">{{ selectedAgent.successRate }}%</span>
+            <span class="metric-label">Success Rate</span>
+          </div>
+        </div>
+      </aside>
+    </article>
+  } @else {
+    <section class="not-found">
+      <div class="not-found__icon">
+        <mat-icon>search_off</mat-icon>
+      </div>
+
+      <h1>Agent not found</h1>
+
+      <p>
+        The selected agent does not exist or is no longer available in the registry.
+      </p>
+
+      <a routerLink="/agents" mat-flat-button>
+        Back to Agent Registry
+      </a>
+    </section>
+  }
+</section>

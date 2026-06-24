@@ -1,0 +1,431 @@
+/* =========================================================
+   1. Page wrapper
+   ========================================================= */
+
+.agent-details-page {
+  min-height: calc(100vh - 4rem);
+}
+
+
+/* =========================================================
+   2. Back navigation
+   ========================================================= */
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 1.75rem;
+  margin-bottom: 1rem;
+  color: var(--color-text-primary);
+  border-color: var(--color-border);
+}
+
+.back-link mat-icon {
+  margin-right: 1.35rem;
+}
+
+
+/* =========================================================
+   3. Breadcrumb
+   ========================================================= */
+
+.breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.35rem;
+  margin-bottom: 1rem;
+  color: var(--color-text-secondary);
+  font-size: 0.86rem;
+}
+
+.breadcrumb a {
+  color: var(--color-accent);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  color: var(--color-accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
+.breadcrumb mat-icon {
+  font-size: 1rem;
+  width: 1rem;
+  height: 1rem;
+  color: var(--color-text-muted);
+}
+
+.breadcrumb span {
+  color: var(--color-text-secondary);
+}
+
+
+/* =========================================================
+   4. Details card layout
+   ========================================================= */
+
+.details-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
+  gap: 1.25rem;
+  overflow: hidden;
+  padding: 1.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1.35rem;
+  background:
+    radial-gradient(
+      circle at top right,
+      color-mix(in srgb, var(--color-accent) 14%, transparent),
+      transparent 18rem
+    ),
+    var(--color-surface);
+  color: var(--color-text-primary);
+  box-shadow: 0 1.25rem 3rem rgba(0, 0, 0, 0.12);
+}
+
+.details-card__main {
+  min-width: 0;
+}
+
+
+/* =========================================================
+   5. Header identity
+   ========================================================= */
+
+.details-card__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.details-card__avatar {
+  width: 4rem;
+  height: 4rem;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 1.25rem;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.18);
+}
+
+.details-card__identity {
+  min-width: 0;
+  flex: 1;
+}
+
+.details-card__eyebrow {
+  display: inline-flex;
+  margin-bottom: 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.details-card__identity h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+  color: var(--color-text-primary);
+  text-shadow: none;
+  filter: none;
+}
+
+.details-card__identity p {
+  margin: 0.65rem 0 0;
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+
+/* =========================================================
+   6. Metadata strip
+   ========================================================= */
+
+.metadata-strip {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 1.5rem;
+}
+
+.metadata-strip__item {
+  display: grid;
+  gap: 0.4rem;
+  min-width: min(100%, 18rem);
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.95rem;
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-bg-elevated) 82%, transparent),
+      color-mix(in srgb, var(--color-surface) 92%, transparent)
+    );
+}
+
+.metadata-strip__label {
+  display: block;
+  color: var(--color-text-secondary);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.metadata-strip__value {
+  display: block;
+  color: var(--color-text-primary);
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  text-shadow: none;
+  filter: none;
+  overflow-wrap: anywhere;
+}
+
+
+/* =========================================================
+   7. Content sections
+   ========================================================= */
+
+.details-section {
+  margin-top: 1.75rem;
+}
+
+.details-section h2 {
+  margin: 0 0 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.description {
+  max-width: 55rem;
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+}
+
+.capability-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.capability-chip {
+  padding: 0.38rem 0.65rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-accent) 11%, transparent);
+  color: var(--color-text-primary);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 18%, transparent);
+  font-size: 0.76rem;
+  font-weight: 600;
+  text-shadow: none;
+  filter: none;
+}
+
+
+/* =========================================================
+   8. Right side summary panel
+   ========================================================= */
+
+.details-card__side-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-self: stretch;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1.15rem;
+  background: color-mix(in srgb, var(--color-bg-elevated) 72%, transparent);
+}
+
+.status-panel,
+.side-panel-block {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.side-panel-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+
+/* =========================================================
+   9. Status badge
+   ========================================================= */
+
+.status-badge {
+  width: fit-content;
+  padding: 0.32rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.status-badge--online {
+  color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
+}
+
+.status-badge--idle {
+  color: var(--color-warning);
+  background: color-mix(in srgb, var(--color-warning) 14%, transparent);
+}
+
+.status-badge--offline {
+  color: var(--color-text-muted);
+  background: color-mix(in srgb, var(--color-text-muted) 14%, transparent);
+}
+
+
+/* =========================================================
+   10. Runtime model
+   ========================================================= */
+
+.model-pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  gap: 0.45rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-text-secondary);
+  background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+}
+
+.model-pill mat-icon {
+  font-size: 1rem;
+  width: 1rem;
+  height: 1rem;
+  color: var(--color-accent);
+}
+
+
+/* =========================================================
+   11. Metrics
+   ========================================================= */
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  margin-top: auto;
+}
+
+.metric-card {
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--color-surface) 78%, transparent);
+}
+
+.metric-value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.025em;
+  color: var(--color-text-primary);
+  text-shadow: none;
+  filter: none;
+}
+
+.metric-label {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.72rem;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+
+/* =========================================================
+   12. Not found state
+   ========================================================= */
+
+.not-found {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  min-height: 24rem;
+  padding: 2rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 1.35rem;
+  background: color-mix(in srgb, var(--color-surface) 78%, transparent);
+}
+
+.not-found__icon {
+  width: 4rem;
+  height: 4rem;
+  display: grid;
+  place-items: center;
+  margin-bottom: 1rem;
+  border-radius: 1.25rem;
+  background: linear-gradient(135deg, var(--color-accent), #7c3aed);
+  color: white;
+}
+
+.not-found h1 {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.not-found p {
+  max-width: 34rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+
+/* =========================================================
+   13. Responsive layout
+   ========================================================= */
+
+@media (max-width: 980px) {
+  .details-card {
+    grid-template-columns: 1fr;
+  }
+
+  .metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .details-card {
+    padding: 1rem;
+  }
+
+  .details-card__header {
+    flex-direction: column;
+  }
+
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}

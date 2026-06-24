@@ -1,0 +1,275 @@
+/* =========================================================
+   1. Page wrapper
+   ========================================================= */
+
+.feature-page {
+  min-height: calc(100vh - 4rem);
+}
+
+
+/* =========================================================
+   2. Summary statistics
+   ========================================================= */
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.stat-card {
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1.15rem;
+  background:
+    radial-gradient(
+      circle at top right,
+      color-mix(in srgb, var(--color-accent) 10%, transparent),
+      transparent 12rem
+    ),
+    var(--color-surface);
+  color: var(--color-text-primary);
+  box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.1);
+}
+
+.stat-card__label,
+.stat-card__hint {
+  display: block;
+  color: var(--color-text-secondary);
+}
+
+.stat-card__label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.stat-card strong {
+  display: block;
+  margin-top: 0.55rem;
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  color: var(--color-text-primary);
+  text-shadow: none;
+  filter: none;
+}
+
+.stat-card__hint {
+  margin-top: 0.5rem;
+  font-size: 0.78rem;
+}
+
+
+/* =========================================================
+   3. Registry toolbar
+   ========================================================= */
+
+.registry-toolbar {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1.15rem;
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+}
+
+.toolbar-main {
+  display: grid;
+  grid-template-columns: minmax(16rem, 1fr) minmax(12rem, 16rem);
+  gap: 1rem;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+
+/* =========================================================
+   4. Search and sort fields
+   ========================================================= */
+
+.search-field,
+.sort-field {
+  width: 100%;
+
+  --mdc-outlined-text-field-container-color: transparent;
+  --mdc-outlined-text-field-input-text-color: var(--color-text-primary);
+  --mdc-outlined-text-field-label-text-color: var(--color-text-secondary);
+  --mdc-outlined-text-field-hover-label-text-color: var(--color-text-primary);
+  --mdc-outlined-text-field-focus-label-text-color: var(--color-accent);
+  --mdc-outlined-text-field-outline-color: var(--color-border);
+  --mdc-outlined-text-field-hover-outline-color: var(--color-accent);
+  --mdc-outlined-text-field-focus-outline-color: var(--color-accent);
+  --mdc-outlined-text-field-caret-color: var(--color-accent);
+}
+
+.search-field ::ng-deep .mat-mdc-form-field-subscript-wrapper,
+.sort-field ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+  display: none;
+}
+
+.search-field ::ng-deep input.mat-mdc-input-element,
+.sort-field ::ng-deep .mat-mdc-select-value,
+.sort-field ::ng-deep .mat-mdc-select-value-text {
+  color: var(--color-text-primary) !important;
+  caret-color: var(--color-accent) !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+.search-field ::ng-deep input.mat-mdc-input-element::placeholder {
+  color: var(--color-text-muted) !important;
+  opacity: 1;
+}
+
+.search-field ::ng-deep .mat-mdc-form-field-icon-prefix,
+.search-field ::ng-deep .mat-mdc-form-field-icon-prefix mat-icon,
+.sort-field ::ng-deep .mat-mdc-select-arrow {
+  color: var(--color-text-secondary) !important;
+}
+
+
+/* =========================================================
+   5. Status filters and clear button
+   ========================================================= */
+
+.status-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.status-filters button,
+.clear-button {
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.status-filters button:hover,
+.clear-button:hover {
+  color: var(--color-text-primary);
+  border-color: var(--color-accent);
+}
+
+.status-filters .status-filter--active {
+  color: white;
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+}
+
+.clear-button mat-icon {
+  margin-right: 0.35rem;
+}
+
+
+/* =========================================================
+   6. Result summary
+   ========================================================= */
+
+.result-summary {
+  margin: 0 0 1rem;
+  color: var(--color-text-secondary);
+  font-size: 0.86rem;
+}
+
+
+/* =========================================================
+   7. Project grid
+   ========================================================= */
+
+.project-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(22rem, 1fr));
+  gap: 1rem;
+}
+
+
+/* =========================================================
+   8. Empty state
+   ========================================================= */
+
+.empty-state {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  min-height: 20rem;
+  padding: 2rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 1.35rem;
+  background: color-mix(in srgb, var(--color-surface) 78%, transparent);
+  color: var(--color-text-primary);
+}
+
+.empty-state__icon {
+  width: 4rem;
+  height: 4rem;
+  display: grid;
+  place-items: center;
+  margin-bottom: 1rem;
+  border-radius: 1.25rem;
+  background: linear-gradient(135deg, var(--color-accent), #7c3aed);
+  color: white;
+  box-shadow: 0 1rem 2rem color-mix(in srgb, var(--color-accent) 24%, transparent);
+}
+
+.empty-state__icon mat-icon {
+  font-size: 1.75rem;
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.empty-state h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  letter-spacing: -0.03em;
+  color: var(--color-text-primary);
+}
+
+.empty-state p {
+  max-width: 32rem;
+  margin: 0.75rem 0 1rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+
+/* =========================================================
+   9. Responsive layout
+   ========================================================= */
+
+@media (max-width: 1200px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .project-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .toolbar-main {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 760px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}

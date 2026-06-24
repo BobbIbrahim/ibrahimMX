@@ -1,0 +1,115 @@
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, var(--gradient-cyan), transparent 32rem),
+    radial-gradient(circle at bottom right, var(--gradient-purple), transparent 30rem),
+    var(--color-bg);
+  color: var(--color-text-primary);
+}
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  padding: 1.25rem;
+  border-right: 1px solid var(--color-border);
+  background: var(--sidebar-bg);
+  backdrop-filter: blur(18px);
+  display: flex;
+  flex-direction: column;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.brand__mark {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 1rem;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--gradient-cyan), var(--gradient-purple));
+  border: 1px solid color-mix(in srgb, var(--color-accent) 42%, transparent);
+  color: var(--color-accent);
+}
+
+.brand__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.brand__eyebrow {
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.nav__link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 2.75rem;
+  padding: 0 0.875rem;
+  border-radius: 0.9rem;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.nav__link:hover {
+  color: var(--color-text-primary);
+  background: color-mix(in srgb, var(--color-text-secondary) 10%, transparent);
+}
+
+.nav__link--active {
+  color: var(--color-text-primary);
+  background: linear-gradient(135deg, var(--gradient-cyan), var(--gradient-purple));
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+
+.nav__link mat-icon {
+  font-size: 1.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.sidebar__footer {
+  margin-top: auto;
+  padding-top: 1rem;
+}
+
+.theme-button {
+  width: 100%;
+  justify-content: flex-start;
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.main {
+  min-width: 0;
+  padding: 2rem;
+}
