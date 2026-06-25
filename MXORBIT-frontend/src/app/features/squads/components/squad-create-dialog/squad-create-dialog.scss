@@ -1,7 +1,3 @@
-/* =========================================================
-   Squad create dialog container
-   ========================================================= */
-
 :host {
   display: block;
 }
@@ -16,11 +12,6 @@
   background: var(--color-surface);
   color: var(--color-text-primary);
 }
-
-
-/* =========================================================
-   Header
-   ========================================================= */
 
 .squad-dialog__header {
   display: flex;
@@ -46,7 +37,6 @@
   font-size: 1.7rem;
   line-height: 1.1;
   letter-spacing: -0.05em;
-  font-weight: 550;
 }
 
 .squad-dialog__header p {
@@ -55,20 +45,10 @@
   line-height: 1.55;
 }
 
-
-/* =========================================================
-   Form layout
-   ========================================================= */
-
 .squad-dialog__form {
   display: grid;
   gap: 1rem;
 }
-
-
-/* =========================================================
-   Squad type cards
-   ========================================================= */
 
 .type-grid {
   display: grid;
@@ -139,11 +119,6 @@
   line-height: 1.45;
 }
 
-
-/* =========================================================
-   Field groups
-   ========================================================= */
-
 .field-group {
   display: flex;
   flex-direction: column;
@@ -166,43 +141,6 @@
   color: var(--color-danger);
 }
 
-
-/* =========================================================
-   Object types
-   ========================================================= */
-
-.object-types {
-  padding: 1rem;
-  border: 1px solid var(--color-border);
-  border-radius: 1rem;
-  background: color-mix(in srgb, var(--color-bg-elevated) 70%, transparent);
-}
-
-.object-types__header h3 {
-  margin: 0;
-  color: var(--color-text-primary);
-  font-size: 1rem;
-  font-weight: 550;
-}
-
-.object-types__header p {
-  margin: 0.35rem 0 0;
-  color: var(--color-text-secondary);
-  font-size: 0.9rem;
-}
-
-.object-types__options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-top: 0.85rem;
-}
-
-
-/* =========================================================
-   Actions
-   ========================================================= */
-
 .squad-dialog__actions {
   display: flex;
   justify-content: flex-end;
@@ -214,11 +152,6 @@
   background: var(--color-accent);
   color: white;
 }
-
-
-/* =========================================================
-   Angular Material overrides
-   ========================================================= */
 
 .squad-dialog ::ng-deep .mat-mdc-form-field {
   width: 100%;
@@ -262,15 +195,6 @@
 .squad-dialog ::ng-deep .mat-mdc-form-field.mat-focused .mdc-notched-outline__trailing {
   border-color: var(--color-accent) !important;
 }
-
-.squad-dialog ::ng-deep .mat-mdc-checkbox label {
-  color: var(--color-text-primary) !important;
-}
-
-
-/* =========================================================
-   Responsive layout
-   ========================================================= */
 
 @media (max-width: 640px) {
   .squad-dialog {

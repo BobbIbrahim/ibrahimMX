@@ -1,5 +1,17 @@
-/* ==================================================
-                    "builder-header">
+/* =========================================================
+   1. Page wrapper
+   Related HTML:
+   <section class="squad-builder-page">
+   ========================================================= */
+
+.squad-builder-page {
+  min-height: calc(100vh - 4rem);
+}
+
+/* =========================================================
+   2. Header
+   Related HTML:
+   <header class="builder-header">
    ========================================================= */
 
 .builder-header {
@@ -55,6 +67,7 @@
 .builder-header__actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
   gap: 0.6rem;
 }
@@ -68,9 +81,50 @@
   color: white;
 }
 
+.connect-button--active {
+  color: white !important;
+  border-color: var(--color-accent) !important;
+  background: var(--color-accent) !important;
+}
 
 /* =========================================================
-   3. Stats
+   3. Object type selector
+   Related HTML:
+   <mat-form-field class="object-type-field">
+   ========================================================= */
+
+.object-type-field {
+  width: 7.5rem;
+
+  --mdc-outlined-text-field-container-color: transparent;
+  --mdc-outlined-text-field-input-text-color: var(--color-text-primary);
+  --mdc-outlined-text-field-outline-color: var(--color-border);
+  --mdc-outlined-text-field-hover-outline-color: var(--color-accent);
+  --mdc-outlined-text-field-focus-outline-color: var(--color-accent);
+}
+
+.object-type-field ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+  display: none;
+}
+
+.object-type-field ::ng-deep .mat-mdc-form-field-infix {
+  min-height: 2.5rem;
+  padding-top: 0.55rem !important;
+  padding-bottom: 0.55rem !important;
+}
+
+.object-type-field ::ng-deep .mat-mdc-select-value,
+.object-type-field ::ng-deep .mat-mdc-select-value-text {
+  color: var(--color-text-primary) !important;
+  font-weight: 700 !important;
+}
+
+.object-type-field ::ng-deep .mat-mdc-select-arrow {
+  color: var(--color-text-secondary) !important;
+}
+
+/* =========================================================
+   4. Stats
    Related HTML:
    <section class="builder-stats">
    ========================================================= */
@@ -110,9 +164,39 @@
   filter: none;
 }
 
+/* =========================================================
+   Connect mode banner
+   Related HTML:
+   <section class="connect-banner">
+   ========================================================= */
+
+.connect-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 32%, var(--color-border));
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  color: var(--color-text-primary);
+}
+
+.connect-banner mat-icon {
+  color: var(--color-accent);
+}
+
+.connect-banner span {
+  flex: 1;
+  color: var(--color-text-secondary);
+}
+
+.connect-banner strong {
+  color: var(--color-text-primary);
+}
 
 /* =========================================================
-   4. Main layout
+   5. Main layout
    Related HTML:
    <section class="builder-layout">
    ========================================================= */
@@ -123,9 +207,8 @@
   gap: 1rem;
 }
 
-
 /* =========================================================
-   5. Canvas
+   6. Canvas
    Related HTML:
    <main class="builder-canvas">
    ========================================================= */
@@ -175,10 +258,7 @@
   min-height: 32rem;
   overflow: auto;
   background-image:
-    linear-gradient(
-      color-mix(in srgb, var(--color-border) 52%, transparent) 1px,
-      transparent 1px
-    ),
+    linear-gradient(color-mix(in srgb, var(--color-border) 52%, transparent) 1px, transparent 1px),
     linear-gradient(
       90deg,
       color-mix(in srgb, var(--color-border) 52%, transparent) 1px,
@@ -186,6 +266,36 @@
     );
   background-size: 32px 32px;
   background-position: -1px -1px;
+}
+
+/* =========================================================
+   Canvas edge layer
+   Related HTML:
+   <svg class="edge-layer">
+   ========================================================= */
+
+.edge-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 1;
+}
+
+.edge-line {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.9;
+  filter: drop-shadow(0 0 0.35rem color-mix(in srgb, var(--color-accent) 38%, transparent));
+}
+
+.edge-arrow {
+  fill: var(--color-accent);
 }
 
 .canvas-empty {
@@ -227,9 +337,8 @@
   line-height: 1.6;
 }
 
-
 /* =========================================================
-   6. Step node
+   7. Step node
    Related HTML:
    <button class="step-node">
    ========================================================= */
@@ -246,6 +355,7 @@
   background: color-mix(in srgb, var(--color-bg-elevated) 90%, transparent);
   color: var(--color-text-primary);
   text-align: left;
+  z-index: 2;
   cursor: pointer;
   box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.16);
   transition:
@@ -264,6 +374,13 @@
   box-shadow:
     0 1rem 2.5rem rgba(0, 0, 0, 0.18),
     0 0 0 2px color-mix(in srgb, var(--color-accent) 24%, transparent);
+}
+
+.step-node--connection-source {
+  border-color: var(--color-warning);
+  box-shadow:
+    0 1rem 2.5rem rgba(0, 0, 0, 0.18),
+    0 0 0 2px color-mix(in srgb, var(--color-warning) 32%, transparent);
 }
 
 .step-node__icon {
@@ -304,9 +421,15 @@
   white-space: nowrap;
 }
 
+.step-node__trigger {
+  color: var(--color-accent) !important;
+  font-weight: 700;
+}
+
+
 
 /* =========================================================
-   7. Side panel
+   9. Side panel
    Related HTML:
    <aside class="builder-side-panel">
    ========================================================= */
@@ -318,6 +441,13 @@
   border-radius: 1.35rem;
   background: var(--color-surface);
   color: var(--color-text-primary);
+}
+
+.side-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .side-panel__eyebrow {
@@ -334,6 +464,85 @@
   margin: 0;
   color: var(--color-text-primary);
 }
+
+.delete-step-button {
+  color: var(--color-text-secondary);
+}
+
+.delete-step-button:hover {
+  color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+}
+
+/* =========================================================
+   10. Editable step configuration form
+   Related HTML:
+   <div class="step-form">
+   ========================================================= */
+
+.step-form {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.field-label {
+  color: var(--color-text-secondary);
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.builder-side-panel ::ng-deep .mat-mdc-form-field {
+  width: 100%;
+}
+
+.builder-side-panel ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+  display: none;
+}
+
+.builder-side-panel ::ng-deep input.mat-mdc-input-element,
+.builder-side-panel ::ng-deep textarea.mat-mdc-input-element,
+.builder-side-panel ::ng-deep .mat-mdc-select-value,
+.builder-side-panel ::ng-deep .mat-mdc-select-value-text {
+  color: var(--color-text-primary) !important;
+  caret-color: var(--color-accent) !important;
+}
+
+.builder-side-panel ::ng-deep input.mat-mdc-input-element::placeholder,
+.builder-side-panel ::ng-deep textarea.mat-mdc-input-element::placeholder {
+  color: var(--color-text-muted) !important;
+  opacity: 1;
+}
+
+.builder-side-panel ::ng-deep .mat-mdc-select-arrow {
+  color: var(--color-text-secondary) !important;
+}
+
+.builder-side-panel ::ng-deep .mdc-notched-outline__leading,
+.builder-side-panel ::ng-deep .mdc-notched-outline__notch,
+.builder-side-panel ::ng-deep .mdc-notched-outline__trailing {
+  border-color: var(--color-border) !important;
+}
+
+.builder-side-panel ::ng-deep .mat-mdc-form-field.mat-focused .mdc-notched-outline__leading,
+.builder-side-panel ::ng-deep .mat-mdc-form-field.mat-focused .mdc-notched-outline__notch,
+.builder-side-panel ::ng-deep .mat-mdc-form-field.mat-focused .mdc-notched-outline__trailing {
+  border-color: var(--color-accent) !important;
+}
+
+/* =========================================================
+   11. Step summary
+   Related HTML:
+   <section class="step-summary">
+   ========================================================= */
 
 .step-summary {
   display: grid;
@@ -362,12 +571,6 @@
   overflow-wrap: anywhere;
 }
 
-.side-panel__hint,
-.side-panel-empty p {
-  color: var(--color-text-secondary);
-  line-height: 1.6;
-}
-
 .side-panel-empty {
   height: 100%;
   display: grid;
@@ -387,9 +590,113 @@
   margin: 0.75rem 0 0;
 }
 
+.side-panel-empty p {
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
 
 /* =========================================================
-   8. JSON preview
+   Edge list
+   Related HTML:
+   <section class="edge-list">
+   ========================================================= */
+
+.edge-list {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.edge-list h3 {
+  margin: 0 0 0.75rem;
+  color: var(--color-text-primary);
+  font-size: 0.9rem;
+}
+
+.edge-list__item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.85rem;
+  background: color-mix(in srgb, var(--color-bg-elevated) 72%, transparent);
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+}
+
+.edge-list__item + .edge-list__item {
+  margin-top: 0.5rem;
+}
+
+.edge-list__item mat-icon {
+  color: var(--color-accent);
+  font-size: 1rem;
+  width: 1rem;
+  height: 1rem;
+}
+
+.edge-list__item span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edge-list__item strong {
+  color: var(--color-text-primary);
+  font-size: 0.75rem;
+}
+
+/* =========================================================
+   Validation panel
+   Related HTML:
+   <section class="validation-panel">
+   ========================================================= */
+
+.validation-panel {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--color-warning) 42%, var(--color-border));
+  border-radius: 1.35rem;
+  background: color-mix(in srgb, var(--color-warning) 10%, var(--color-surface));
+  color: var(--color-text-primary);
+}
+
+.validation-panel__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.validation-panel__header mat-icon {
+  color: var(--color-warning);
+}
+
+.validation-panel h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 1rem;
+}
+
+.validation-panel p {
+  margin: 0.35rem 0 0;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.validation-panel ul {
+  margin: 0.85rem 0 0;
+  padding-left: 1.25rem;
+  color: var(--color-text-secondary);
+}
+
+.validation-panel li + li {
+  margin-top: 0.35rem;
+}
+
+/* =========================================================
+   12. JSON preview
    Related HTML:
    <section class="json-preview">
    ========================================================= */
@@ -420,9 +727,8 @@
   line-height: 1.55;
 }
 
-
 /* =========================================================
-   9. No draft state
+   13. No draft state
    Related HTML:
    <section class="no-draft">
    ========================================================= */
@@ -467,9 +773,8 @@
   line-height: 1.6;
 }
 
-
 /* =========================================================
-   10. Responsive layout
+   14. Responsive layout
    ========================================================= */
 
 @media (max-width: 1100px) {
@@ -495,13 +800,18 @@
   .builder-stats {
     grid-template-columns: 1fr;
   }
-}
-/* =========================================================
-   1. Page wrapper
-   Related HTML:
-   <section class="squad-builder-page">
-   ========================================================= */
 
-.squad-builder-page {
-  min-height: calc(100vh - 4rem);
+  .object-type-field {
+    width: 100%;
+  }
+
+  .builder-header__actions {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .builder-header__actions button {
+    width: 100%;
+  }
 }

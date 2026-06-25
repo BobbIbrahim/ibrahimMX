@@ -3,9 +3,7 @@
     <div>
       <span class="squad-dialog__eyebrow">SQUADS</span>
       <h2>Create new squad</h2>
-      <p>
-        Choose the squad type and define the initial metadata before opening the builder.
-      </p>
+      <p>Choose the squad type and define the initial metadata before opening the builder.</p>
     </div>
 
     <button type="button" mat-icon-button aria-label="Close dialog" (click)="cancel()">
@@ -20,11 +18,7 @@
           class="type-card"
           [class.type-card--active]="form.controls.type.value === squadType.value"
         >
-          <input
-            type="radio"
-            formControlName="type"
-            [value]="squadType.value"
-          />
+          <input type="radio" formControlName="type" [value]="squadType.value" />
 
           <span class="type-card__icon">
             <mat-icon>
@@ -48,7 +42,7 @@
           id="squad-name"
           matInput
           formControlName="name"
-          placeholder="Name your Squad"
+          placeholder="Release Readiness Squad"
         />
 
         @if (form.controls.name.hasError('required') && form.controls.name.touched) {
@@ -87,39 +81,22 @@
       <label class="field-label" for="project-key">Project key <span>*</span></label>
 
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <input
-          id="project-key"
-          matInput
-          formControlName="projectKey"
-          placeholder="CORE"
-        />
+        <input id="project-key" matInput formControlName="projectKey" placeholder="CORE" />
 
         @if (form.controls.projectKey.hasError('required') && form.controls.projectKey.touched) {
           <mat-error>Project key is required</mat-error>
         }
+
+        @if (form.controls.projectKey.hasError('minlength') && form.controls.projectKey.touched) {
+          <mat-error>Project key must be at least 2 characters</mat-error>
+        }
       </mat-form-field>
     </div>
 
-    <section class="object-types" aria-label="Object types">
-      <div class="object-types__header">
-        <h3>Object types</h3>
-        <p>Select which business objects this squad can work with.</p>
-      </div>
-
-      <div class="object-types__options">
-        <mat-checkbox formControlName="jiraEnabled">JIRA</mat-checkbox>
-        <mat-checkbox formControlName="pegaEnabled">PEGA</mat-checkbox>
-      </div>
-    </section>
-
     <footer class="squad-dialog__actions">
-      <button type="button" mat-stroked-button (click)="cancel()">
-        Cancel
-      </button>
+      <button type="button" mat-stroked-button (click)="cancel()">Cancel</button>
 
-      <button type="submit" mat-flat-button class="squad-dialog__submit">
-        Create
-      </button>
+      <button type="submit" mat-flat-button class="squad-dialog__submit">Create</button>
     </footer>
   </form>
 </section>

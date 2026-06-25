@@ -9,13 +9,10 @@
 
         <div>
           <span class="builder-header__eyebrow">SQUAD BUILDER</span>
+
           <h1>{{ currentDraft.name }}</h1>
 
-          <p>
-            {{ currentDraft.projectKey }} ·
-            {{ currentDraft.type | titlecase }} ·
-            {{ currentDraft.objectTypes.join(', ') }}
-          </p>
+          <p>{{ currentDraft.projectKey }} · {{ currentDraft.type | titlecase }}</p>
         </div>
       </div>
 
@@ -25,12 +22,24 @@
           Step
         </button>
 
-        <button type="button" mat-stroked-button disabled>
-          <mat-icon>category</mat-icon>
-          Object
+        <button
+          type="button"
+          mat-stroked-button
+          [class.connect-button--active]="isConnectMode()"
+          [disabled]="steps().length < 2"
+          (click)="toggleConnectMode()"
+        >
+          <mat-icon>hub</mat-icon>
+          Connect
         </button>
 
-        <button type="button" mat-flat-button class="save-button" (click)="saveDraft()">
+        <button
+          type="button"
+          mat-flat-button
+          class="save-button"
+          [disabled]="!canSave()"
+          (click)="saveDraft()"
+        >
           <mat-icon>save</mat-icon>
           Save
         </button>
@@ -44,11 +53,6 @@
       </article>
 
       <article>
-        <span>Objects</span>
-        <strong>{{ objects().length }}</strong>
-      </article>
-
-      <article>
         <span>Edges</span>
         <strong>{{ edges().length }}</strong>
       </article>
@@ -59,11 +63,29 @@
       </article>
     </section>
 
+    @if (isConnectMode()) {
+      <section class="connect-banner">
+        <mat-icon>hub</mat-icon>
+
+        @if (connectionSourceStepName()) {
+          <span>
+            Source selected:
+            <strong>{{ connectionSourceStepName() }}</strong
+            >. Click another step to create the edge.
+          </span>
+        } @else {
+          <span> Connection mode enabled. Click the source step first. </span>
+        }
+
+        <button type="button" mat-stroked-button (click)="cancelConnectMode()">Cancel</button>
+      </section>
+    }
+
     <section class="builder-layout">
       <main class="builder-canvas" (click)="clearSelection()">
         <div class="builder-canvas__tabs">
           <button type="button" class="builder-tab builder-tab--active">Canvas</button>
-          <button type="button" class="builder-tab">Objects</button>
+
           <button type="button" class="builder-tab">Live Run</button>
         </div>
 
@@ -76,20 +98,39 @@
 
               <h2>No steps yet</h2>
 
-              <p>
-                Click <strong>Step</strong> to add your first workflow node to this squad.
-              </p>
+              <p>Click <strong>Step</strong> to add your first workflow node to this squad.</p>
             </div>
           }
+
+          <svg class="edge-layer" aria-hidden="true">
+            <defs>
+              <marker
+                id="edge-arrow"
+                markerWidth="10"
+                markerHeight="10"
+                refX="8"
+                refY="5"
+                orient="auto"
+                markerUnits="strokeWidth"
+              >
+                <path d="M 0 0 L 10 5 L 0 10 z" class="edge-arrow" />
+              </marker>
+            </defs>
+
+            @for (edge of edgeViewModels(); track edge.id) {
+              <path class="edge-line" [attr.d]="edge.path" marker-end="url(#edge-arrow)" />
+            }
+          </svg>
 
           @for (step of steps(); track step.id) {
             <button
               type="button"
               class="step-node"
               [class.step-node--selected]="selectedStepId() === step.id"
+              [class.step-node--connection-source]="connectionSourceStepId() === step.id"
               [style.left.px]="step.position.x"
               [style.top.px]="step.position.y"
-              (click)="$event.stopPropagation(); selectStep(step.id)"
+              (click)="$event.stopPropagation(); handleStepClick(step.id)"
             >
               <span class="step-node__icon">
                 <mat-icon>bolt</mat-icon>
@@ -97,9 +138,8 @@
 
               <span class="step-node__content">
                 <strong>{{ step.name }}</strong>
-                <small>
-                  {{ step.assignedAgentId ?? 'Unassigned' }}
-                </small>
+
+                <small> Agent: {{ getAgentName(step.assignedAgentId) }} </small>
               </span>
             </button>
           }
@@ -108,11 +148,75 @@
 
       <aside class="builder-side-panel">
         @if (selectedStep(); as step) {
-          <span class="side-panel__eyebrow">SELECTED STEP</span>
+          <div class="side-panel-header">
+            <div>
+              <span class="side-panel__eyebrow">SELECTED STEP</span>
+              <h2>{{ step.name }}</h2>
+            </div>
 
-          <h2>{{ step.name }}</h2>
+            <button
+              type="button"
+              mat-icon-button
+              class="delete-step-button"
+              aria-label="Delete selected step"
+              (click)="deleteSelectedStep()"
+            >
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
 
-          <dl class="step-summary">
+          <div class="step-form">
+            <div class="field-group">
+              <label class="field-label" for="step-name">Step name</label>
+
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <input
+                  id="step-name"
+                  matInput
+                  [ngModel]="step.name"
+                  (ngModelChange)="updateSelectedStepName($event)"
+                  placeholder="Review pull request"
+                />
+              </mat-form-field>
+            </div>
+
+            <div class="field-group">
+              <label class="field-label" for="step-description">Description</label>
+
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <textarea
+                  id="step-description"
+                  matInput
+                  rows="4"
+                  [ngModel]="step.description"
+                  (ngModelChange)="updateSelectedStepDescription($event)"
+                  placeholder="Describe what this step should perform."
+                ></textarea>
+              </mat-form-field>
+            </div>
+
+            <div class="field-group">
+              <label class="field-label" for="assigned-agent">Assigned agent</label>
+
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-select
+                  id="assigned-agent"
+                  [ngModel]="step.assignedAgentId"
+                  (ngModelChange)="updateSelectedStepAssignedAgent($event)"
+                >
+                  <mat-option [value]="null">Unassigned</mat-option>
+
+                  @for (agent of agents(); track agent.id) {
+                    <mat-option [value]="agent.id">
+                      {{ agent.name }} — {{ agent.role }}
+                    </mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            </div>
+          </div>
+
+          <section class="step-summary">
             <div>
               <dt>ID</dt>
               <dd>{{ step.id }}</dd>
@@ -120,33 +224,56 @@
 
             <div>
               <dt>Assigned Agent</dt>
-              <dd>{{ step.assignedAgentId ?? 'Unassigned' }}</dd>
+              <dd>{{ getAgentName(step.assignedAgentId) }}</dd>
             </div>
-
-            <div>
-              <dt>Trigger Object</dt>
-              <dd>{{ step.triggerObjectType }}</dd>
-            </div>
-          </dl>
-
-          <p class="side-panel__hint">
-            In the next step, this panel will become editable with fields for name,
-            description, assigned agent, trigger object type, and parameters.
-          </p>
+          </section>
         } @else {
           <div class="side-panel-empty">
             <mat-icon>touch_app</mat-icon>
 
             <h2>Select a step</h2>
 
-            <p>
-              Click a step node on the canvas to configure it from this panel.
-            </p>
+            <p>Click a step node on the canvas to configure it from this panel.</p>
           </div>
+        }
+
+        @if (edges().length > 0) {
+          <section class="edge-list">
+            <h3>Edges</h3>
+
+            @for (edge of edges(); track edge.id) {
+              <div class="edge-list__item">
+                <mat-icon>arrow_forward</mat-icon>
+
+                <span>{{ getStepName(edge.sourceStepId) }}</span>
+
+                <strong>to</strong>
+
+                <span>{{ getStepName(edge.targetStepId) }}</span>
+              </div>
+            }
+          </section>
         }
       </aside>
     </section>
+    @if (validationErrors().length > 0) {
+      <section class="validation-panel">
+        <div class="validation-panel__header">
+          <mat-icon>error_outline</mat-icon>
 
+          <div>
+            <h2>Save requirements</h2>
+            <p>Complete the following items before saving this squad.</p>
+          </div>
+        </div>
+
+        <ul>
+          @for (error of validationErrors(); track error) {
+            <li>{{ error }}</li>
+          }
+        </ul>
+      </section>
+    }
     <section class="json-preview">
       <h2>Draft JSON Preview</h2>
 
@@ -160,13 +287,9 @@
 
       <h1>No squad draft found</h1>
 
-      <p>
-        Create a new squad from the Squads page before opening the builder.
-      </p>
+      <p>Create a new squad from the Squads page before opening the builder.</p>
 
-      <a routerLink="/squads" mat-flat-button>
-        Back to Squads
-      </a>
+      <a routerLink="/squads" mat-flat-button> Back to Squads </a>
     </section>
   }
 </section>

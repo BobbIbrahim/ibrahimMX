@@ -3,8 +3,6 @@ import { Injectable, computed, signal } from '@angular/core';
 import {
   SquadBuilderDraft,
   SquadBuilderEdge,
-  SquadBuilderObject,
-  SquadBuilderObjectType,
   SquadBuilderStep,
   SquadBuilderType,
 } from '../models/squad-builder.model';
@@ -14,13 +12,12 @@ export type CreateSquadDraftPayload = {
   description: string;
   type: SquadBuilderType;
   projectKey: string;
-  objectTypes: SquadBuilderObjectType[];
 };
 
 export type UpdateSquadStepPayload = Partial<
   Pick<
     SquadBuilderStep,
-    'name' | 'description' | 'assignedAgentId' | 'triggerObjectType' | 'parameters'
+    'name' | 'description' | 'assignedAgentId' | 'parameters'
   >
 >;
 
@@ -36,7 +33,6 @@ export class SquadBuilderStateService {
 
   readonly steps = computed(() => this.draft()?.steps ?? []);
   readonly edges = computed(() => this.draft()?.edges ?? []);
-  readonly objects = computed(() => this.draft()?.objects ?? []);
 
   readonly selectedStep = computed(() => {
     const selectedStepId = this.selectedStepId();
@@ -54,11 +50,9 @@ export class SquadBuilderStateService {
       name: payload.name.trim(),
       description: payload.description.trim(),
       type: payload.type,
-      projectKey: payload.projectKey,
-      objectTypes: payload.objectTypes,
+      projectKey: payload.projectKey.trim(),
       steps: [],
       edges: [],
-      objects: [],
     };
 
     this.draftSignal.set(draft);
@@ -77,7 +71,6 @@ export class SquadBuilderStateService {
       name: `New Step ${stepIndex}`,
       description: '',
       assignedAgentId: null,
-      triggerObjectType: 'ANY',
       parameters: {},
       position: {
         x: 160 + currentDraft.steps.length * 40,
@@ -175,37 +168,15 @@ export class SquadBuilderStateService {
     }
   }
 
-  addObject(objectType: SquadBuilderObjectType): SquadBuilderObject {
-    const currentDraft = this.requireDraft();
-
-    const objectIndex = currentDraft.objects.length + 1;
-
-    const newObject: SquadBuilderObject = {
-      id: this.generateId('object'),
-      type: objectType,
-      name: `${objectType} Object ${objectIndex}`,
-      position: {
-        x: 220 + currentDraft.objects.length * 40,
-        y: 220 + currentDraft.objects.length * 40,
-      },
-    };
-
-    this.draftSignal.update((draft) => {
-      if (!draft) {
-        return draft;
-      }
-
-      return {
-        ...draft,
-        objects: [...draft.objects, newObject],
-      };
-    });
-
-    return newObject;
-  }
-
   addEdge(sourceStepId: string, targetStepId: string): SquadBuilderEdge | null {
     if (sourceStepId === targetStepId) {
+      return null;
+    }
+
+    const sourceExists = this.steps().some((step) => step.id === sourceStepId);
+    const targetExists = this.steps().some((step) => step.id === targetStepId);
+
+    if (!sourceExists || !targetExists) {
       return null;
     }
 

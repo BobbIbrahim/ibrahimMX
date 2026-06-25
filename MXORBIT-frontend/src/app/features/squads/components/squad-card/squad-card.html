@@ -10,9 +10,21 @@
       <div class="squad-card__title-row">
         <h2>{{ squad().name }}</h2>
 
-        <span class="status-badge" [class]="'status-badge--' + squad().status">
-          {{ squad().status }}
-        </span>
+        <div class="squad-card__actions">
+          <span class="status-badge" [class]="'status-badge--' + squad().status">
+            {{ squad().status }}
+          </span>
+
+          <button
+            type="button"
+            mat-icon-button
+            class="delete-squad-button"
+            aria-label="Delete squad"
+            (click)="deleteSquad($event)"
+          >
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
       </div>
 
       <p>{{ squad().description }}</p>

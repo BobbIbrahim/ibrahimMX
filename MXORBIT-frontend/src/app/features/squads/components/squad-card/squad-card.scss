@@ -3,13 +3,11 @@
   height: 100%;
 }
 
-
 /* =========================================================
    Squad card container
    Related HTML:
    <article class="squad-card">
    ========================================================= */
-
 
 .squad-card {
   position: relative;
@@ -63,7 +61,6 @@
   opacity: 1;
 }
 
-
 /* =========================================================
    Shared card content layering
    Purpose:
@@ -77,7 +74,6 @@
   position: relative;
   z-index: 1;
 }
-
 
 /* =========================================================
    Header section
@@ -139,7 +135,6 @@
   line-height: 1.55;
 }
 
-
 /* =========================================================
    Status badge
    Related HTML:
@@ -170,7 +165,6 @@
   color: var(--color-warning);
   background: color-mix(in srgb, var(--color-warning) 14%, transparent);
 }
-
 
 /* =========================================================
    Meta section
@@ -215,7 +209,6 @@
   overflow-wrap: anywhere;
 }
 
-
 /* =========================================================
    Tags
    Related HTML:
@@ -241,6 +234,51 @@
   filter: none;
 }
 
+.squad-card__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.delete-squad-button {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  color: var(--color-text-muted);
+  background: transparent;
+  border-radius: 999px;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.delete-squad-button mat-icon {
+  margin: 0;
+  font-size: 1.05rem;
+  width: 1.05rem;
+  height: 1.05rem;
+  line-height: 1.05rem;
+}
+
+.delete-squad-button:hover {
+  color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  transform: translateY(-1px);
+}
+
+.delete-squad-button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-danger) 45%, transparent);
+  outline-offset: 2px;
+}
+
+/* Remove Angular Material icon-button default visual noise */
+.delete-squad-button ::ng-deep .mat-mdc-button-persistent-ripple,
+.delete-squad-button ::ng-deep .mat-mdc-button-ripple,
+.delete-squad-button ::ng-deep .mat-mdc-focus-indicator {
+  border-radius: 999px;
+}
 
 /* =========================================================
    Metrics
@@ -284,7 +322,6 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
-
 
 /* =========================================================
    Responsive layout

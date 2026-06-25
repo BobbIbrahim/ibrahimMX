@@ -72,4 +72,8 @@ export class SquadsPage {
       console.log('Prompt Squad flow will be implemented later:', result);
     });
   }
+
+  deleteSquad(squadId: string): void {
+    this.squadService.deleteSquad(squadId);
+  }
 }
