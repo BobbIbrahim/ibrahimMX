@@ -62,7 +62,6 @@ export class SquadBuilderPage {
   readonly edges = this.squadBuilderState.edges;
   readonly selectedStep = this.squadBuilderState.selectedStep;
   readonly selectedStepId = this.squadBuilderState.selectedStepId;
-
   readonly agents = this.agentService.getAgents();
 
   readonly assignedAgentCount = computed(() => {
@@ -72,6 +71,13 @@ export class SquadBuilderPage {
 
     return new Set(assignedAgentIds).size;
   });
+
+  readonly agentNamesById = computed<Record<string, string>>(() => {
+  return this.agents().reduce<Record<string, string>>((agentMap, agent) => {
+    agentMap[agent.id] = agent.name;
+    return agentMap;
+  }, {});
+});
 
   readonly validationErrors = computed(() => {
     const draft = this.draft();

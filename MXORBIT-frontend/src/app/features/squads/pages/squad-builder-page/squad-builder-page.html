@@ -90,6 +90,7 @@
       <app-rete-squad-flow-editor
         [steps]="steps()"
         [edges]="edges()"
+        [agentNamesById]="agentNamesById()"
         (stepSelected)="selectStep($event)"
         (connectionCreated)="handleReteConnectionCreated($event)"
         (connectionRemoved)="handleReteConnectionRemoved($event)"
@@ -190,23 +191,41 @@
           </div>
         }
 
-        @if (edges().length > 0) {
-          <section class="edge-list">
-            <h3>Flow Connections</h3>
+<section class="edge-list">
+  <div class="edge-list__header">
+    <div>
+      <h3>Flow Connections</h3>
+      <p>Direct links between workflow steps. Branching and loops are supported.</p>
+    </div>
 
-            @for (edge of edges(); track edge.id) {
-              <div class="edge-list__item">
-                <mat-icon>arrow_forward</mat-icon>
+    <span class="edge-list__count">{{ edges().length }}</span>
+  </div>
 
-                <span>{{ getStepName(edge.sourceStepId) }}</span>
+  @if (edges().length > 0) {
+    <div class="edge-list__items">
+      @for (edge of edges(); track edge.id) {
+        <div class="edge-list__item">
+          <div class="edge-list__node">
+            <span>From</span>
+            <strong>{{ getStepName(edge.sourceStepId) }}</strong>
+          </div>
 
-                <strong>to</strong>
+          <mat-icon>arrow_forward</mat-icon>
 
-                <span>{{ getStepName(edge.targetStepId) }}</span>
-              </div>
-            }
-          </section>
-        }
+          <div class="edge-list__node">
+            <span>To</span>
+            <strong>{{ getStepName(edge.targetStepId) }}</strong>
+          </div>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="edge-list__empty">
+      <mat-icon>link_off</mat-icon>
+      <p>No connections yet. Connect nodes directly inside the canvas.</p>
+    </div>
+  }
+</section>
       </aside>
     </section>
 

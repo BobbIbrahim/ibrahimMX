@@ -69,8 +69,8 @@ export class SquadBuilderStateService {
       assignedAgentId: null,
       parameters: {},
       position: {
-        x: 160 + currentDraft.steps.length * 40,
-        y: 140 + currentDraft.steps.length * 40,
+        x: 160 + currentDraft.steps.length * 220,
+        y: 140 + (currentDraft.steps.length % 2) * 140,
       },
     };
 
