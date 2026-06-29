@@ -1,6 +1,8 @@
-import { Component, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
 import { JsonPipe, TitleCasePipe } from '@angular/common';
+import { Component, computed, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
+
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -10,10 +12,27 @@ import { MatSelectModule } from '@angular/material/select';
 import { Squad } from '../../../../core/models/squad.model';
 import { SquadBuilderDraft } from '../../../../core/models/squad-builder.model';
 import { AgentService } from '../../../../core/services/agent.service';
-import { SquadService } from '../../../../core/services/squad.service';
 import { SquadBuilderStateService } from '../../../../core/services/squad-builder-state.service';
-import { FormsModule } from '@angular/forms';
+import { SquadService } from '../../../../core/services/squad.service';
+import { ReteSquadFlowEditor } from '../../components/rete-squad-flow-editor/rete-squad-flow-editor';
 
+interface ReteConnectionCreatedEvent {
+  sourceStepId: string;
+  targetStepId: string;
+}
+
+interface ReteNodePositionChangedEvent {
+  stepId: string;
+  position: {
+    x: number;
+    y: number;
+  };
+}
+
+interface ReteConnectionRemovedEvent {
+  sourceStepId: string;
+  targetStepId: string;
+}
 
 @Component({
   selector: 'app-squad-builder-page',
@@ -27,6 +46,7 @@ import { FormsModule } from '@angular/forms';
     MatIconModule,
     MatInputModule,
     MatSelectModule,
+    ReteSquadFlowEditor,
   ],
   templateUrl: './squad-builder-page.html',
   styleUrl: './squad-builder-page.scss',
@@ -45,54 +65,12 @@ export class SquadBuilderPage {
 
   readonly agents = this.agentService.getAgents();
 
-  readonly isConnectMode = signal(false);
-  readonly connectionSourceStepId = signal<string | null>(null);
+  readonly assignedAgentCount = computed(() => {
+    const assignedAgentIds = this.steps()
+      .map((step) => step.assignedAgentId)
+      .filter((agentId): agentId is string => Boolean(agentId));
 
-  private readonly nodeWidth = 208;
-  private readonly nodeHeight = 64;
-
-  readonly connectionSourceStepName = computed(() => {
-    const sourceStepId = this.connectionSourceStepId();
-
-    if (!sourceStepId) {
-      return null;
-    }
-
-    return this.steps().find((step) => step.id === sourceStepId)?.name ?? null;
-  });
-
-  readonly edgeViewModels = computed(() => {
-    return this.edges()
-      .map((edge) => {
-        const sourceStep = this.steps().find((step) => step.id === edge.sourceStepId);
-        const targetStep = this.steps().find((step) => step.id === edge.targetStepId);
-
-        if (!sourceStep || !targetStep) {
-          return null;
-        }
-
-        const x1 = sourceStep.position.x + this.nodeWidth;
-        const y1 = sourceStep.position.y + this.nodeHeight / 2;
-        const x2 = targetStep.position.x;
-        const y2 = targetStep.position.y + this.nodeHeight / 2;
-
-        const controlOffset = Math.max(80, Math.abs(x2 - x1) / 2);
-
-        const path = [
-          `M ${x1} ${y1}`,
-          `C ${x1 + controlOffset} ${y1}, ${x2 - controlOffset} ${y2}, ${x2} ${y2}`,
-        ].join(' ');
-
-        return {
-          id: edge.id,
-          sourceStepId: edge.sourceStepId,
-          targetStepId: edge.targetStepId,
-          sourceName: sourceStep.name,
-          targetName: targetStep.name,
-          path,
-        };
-      })
-      .filter((edge): edge is NonNullable<typeof edge> => Boolean(edge));
+    return new Set(assignedAgentIds).size;
   });
 
   readonly validationErrors = computed(() => {
@@ -113,11 +91,11 @@ export class SquadBuilderPage {
     }
 
     if (draft.steps.length < 2) {
-      errors.push('At least two steps is required.');
+      errors.push('At least two steps are required.');
     }
-    
+
     if (draft.edges.length < 1) {
-      errors.push('At least one edge is required');
+      errors.push('At least one edge is required.');
     }
 
     draft.steps.forEach((step, index) => {
@@ -155,36 +133,24 @@ export class SquadBuilderPage {
     this.squadBuilderState.addStep();
   }
 
-  toggleConnectMode(): void {
-    this.isConnectMode.update((isEnabled) => !isEnabled);
-    this.connectionSourceStepId.set(null);
-  }
-
-  cancelConnectMode(): void {
-    this.isConnectMode.set(false);
-    this.connectionSourceStepId.set(null);
-  }
-
-  handleStepClick(stepId: string): void {
-    if (!this.isConnectMode()) {
-      this.selectStep(stepId);
-      return;
-    }
-
-    this.handleStepConnectionClick(stepId);
-  }
-
   selectStep(stepId: string): void {
     this.squadBuilderState.selectStep(stepId);
   }
 
-  clearSelection(): void {
-    if (this.isConnectMode()) {
-      return;
-    }
-
-    this.squadBuilderState.clearSelection();
+  handleReteConnectionCreated(event: ReteConnectionCreatedEvent): void {
+    this.squadBuilderState.addEdge(event.sourceStepId, event.targetStepId);
   }
+
+  handleReteConnectionRemoved(event: ReteConnectionRemovedEvent): void {
+  this.squadBuilderState.removeEdge(event.sourceStepId, event.targetStepId);
+}
+
+
+  handleReteNodePositionChanged(event: ReteNodePositionChangedEvent): void {
+  this.squadBuilderState.updateStepPosition(event.stepId, event.position);
+}
+
+
 
   updateSelectedStepName(name: string): void {
     this.squadBuilderState.updateSelectedStep({ name });
@@ -237,26 +203,6 @@ export class SquadBuilderPage {
     console.log('Saved local squad:', savedSquad);
 
     this.router.navigate(['/squads']);
-  }
-
-  private handleStepConnectionClick(stepId: string): void {
-    const sourceStepId = this.connectionSourceStepId();
-
-    if (!sourceStepId) {
-      this.connectionSourceStepId.set(stepId);
-      this.squadBuilderState.selectStep(stepId);
-      return;
-    }
-
-    const createdEdge = this.squadBuilderState.addEdge(sourceStepId, stepId);
-
-    if (createdEdge) {
-      this.cancelConnectMode();
-      this.squadBuilderState.selectStep(stepId);
-      return;
-    }
-
-    this.connectionSourceStepId.set(null);
   }
 
   private buildCleanSavePayload(): SquadBuilderDraft | null {
@@ -315,4 +261,3 @@ export class SquadBuilderPage {
     };
   }
 }
-``

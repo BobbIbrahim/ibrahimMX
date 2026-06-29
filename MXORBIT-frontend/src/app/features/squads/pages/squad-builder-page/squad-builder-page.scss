@@ -1,31 +1,34 @@
-/* =========================================================
-   1. Page wrapper
-   Related HTML:
-   <section class="squad-builder-page">
-   ========================================================= */
-
 .squad-builder-page {
   min-height: calc(100vh - 4rem);
 }
 
 /* =========================================================
-   2. Header
-   Related HTML:
-   <header class="builder-header">
+   Hero header
    ========================================================= */
 
-.builder-header {
+.builder-hero {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 1.25rem;
   margin-bottom: 1rem;
+  padding: 1.1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1.35rem;
+  background:
+    radial-gradient(
+      circle at top left,
+      color-mix(in srgb, var(--color-accent) 16%, transparent),
+      transparent 34rem
+    ),
+    var(--color-surface);
 }
 
-.builder-header__left {
+.builder-hero__content {
   display: flex;
   align-items: flex-start;
   gap: 1rem;
+  min-width: 0;
 }
 
 .back-link {
@@ -38,7 +41,14 @@
   margin-right: 0.35rem;
 }
 
-.builder-header__eyebrow {
+.builder-title-block {
+  min-width: 0;
+}
+
+.builder-title-block__eyebrow,
+.canvas-toolbar__eyebrow,
+.side-panel__eyebrow,
+.json-preview__header span {
   display: inline-flex;
   margin-bottom: 0.35rem;
   color: var(--color-accent);
@@ -48,7 +58,14 @@
   text-transform: uppercase;
 }
 
-.builder-header h1 {
+.builder-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.builder-title-row h1 {
   margin: 0;
   color: var(--color-text-primary);
   font-size: clamp(1.8rem, 3vw, 2.65rem);
@@ -58,13 +75,54 @@
   filter: none;
 }
 
-.builder-header p {
-  margin: 0.45rem 0 0;
+.builder-status-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.85rem;
+  padding: 0.25rem 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 36%, var(--color-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  color: var(--color-accent);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.builder-title-block p {
+  max-width: 48rem;
+  margin: 0.55rem 0 0;
   color: var(--color-text-secondary);
   line-height: 1.55;
 }
 
-.builder-header__actions {
+.builder-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.8rem;
+}
+
+.builder-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-bg-elevated) 72%, transparent);
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.builder-meta mat-icon {
+  color: var(--color-accent);
+  font-size: 1rem;
+  width: 1rem;
+  height: 1rem;
+}
+
+.builder-hero__actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -72,7 +130,7 @@
   gap: 0.6rem;
 }
 
-.builder-header__actions button mat-icon {
+.builder-hero__actions button mat-icon {
   margin-right: 0.35rem;
 }
 
@@ -88,56 +146,18 @@
 }
 
 /* =========================================================
-   3. Object type selector
-   Related HTML:
-   <mat-form-field class="object-type-field">
-   ========================================================= */
-
-.object-type-field {
-  width: 7.5rem;
-
-  --mdc-outlined-text-field-container-color: transparent;
-  --mdc-outlined-text-field-input-text-color: var(--color-text-primary);
-  --mdc-outlined-text-field-outline-color: var(--color-border);
-  --mdc-outlined-text-field-hover-outline-color: var(--color-accent);
-  --mdc-outlined-text-field-focus-outline-color: var(--color-accent);
-}
-
-.object-type-field ::ng-deep .mat-mdc-form-field-subscript-wrapper {
-  display: none;
-}
-
-.object-type-field ::ng-deep .mat-mdc-form-field-infix {
-  min-height: 2.5rem;
-  padding-top: 0.55rem !important;
-  padding-bottom: 0.55rem !important;
-}
-
-.object-type-field ::ng-deep .mat-mdc-select-value,
-.object-type-field ::ng-deep .mat-mdc-select-value-text {
-  color: var(--color-text-primary) !important;
-  font-weight: 700 !important;
-}
-
-.object-type-field ::ng-deep .mat-mdc-select-arrow {
-  color: var(--color-text-secondary) !important;
-}
-
-/* =========================================================
-   4. Stats
-   Related HTML:
-   <section class="builder-stats">
+   Stats
    ========================================================= */
 
 .builder-stats {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.85rem;
   margin-bottom: 1rem;
 }
 
 .builder-stats article {
-  padding: 0.9rem;
+  padding: 0.95rem;
   border: 1px solid var(--color-border);
   border-radius: 1rem;
   background: var(--color-surface);
@@ -166,39 +186,51 @@
 
 /* =========================================================
    Connect mode banner
-   Related HTML:
-   <section class="connect-banner">
    ========================================================= */
 
 .connect-banner {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.85rem;
   margin-bottom: 1rem;
-  padding: 0.85rem 1rem;
+  padding: 0.9rem 1rem;
   border: 1px solid color-mix(in srgb, var(--color-accent) 32%, var(--color-border));
   border-radius: 1rem;
-  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 10%, var(--color-surface));
   color: var(--color-text-primary);
 }
 
-.connect-banner mat-icon {
+.connect-banner__icon {
+  width: 2.4rem;
+  height: 2.4rem;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 0.8rem;
+  background: color-mix(in srgb, var(--color-accent) 16%, transparent);
+}
+
+.connect-banner__icon mat-icon {
   color: var(--color-accent);
 }
 
-.connect-banner span {
+.connect-banner__content {
   flex: 1;
-  color: var(--color-text-secondary);
+  display: grid;
+  gap: 0.15rem;
 }
 
-.connect-banner strong {
+.connect-banner__content strong {
   color: var(--color-text-primary);
 }
 
+.connect-banner__content span {
+  color: var(--color-text-secondary);
+  font-size: 0.88rem;
+}
+
 /* =========================================================
-   5. Main layout
-   Related HTML:
-   <section class="builder-layout">
+   Main layout
    ========================================================= */
 
 .builder-layout {
@@ -208,12 +240,10 @@
 }
 
 /* =========================================================
-   6. Canvas
-   Related HTML:
-   <main class="builder-canvas">
+   Canvas card
    ========================================================= */
 
-.builder-canvas {
+.builder-canvas-card {
   min-height: 36rem;
   overflow: hidden;
   border: 1px solid var(--color-border);
@@ -222,12 +252,25 @@
   color: var(--color-text-primary);
 }
 
-.builder-canvas__tabs {
+.canvas-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.canvas-toolbar h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 1.1rem;
+}
+
+.canvas-toolbar__tabs {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-  padding: 0.75rem;
-  border-bottom: 1px solid var(--color-border);
 }
 
 .builder-tab {
@@ -242,9 +285,14 @@
   cursor: pointer;
 }
 
-.builder-tab:hover {
+.builder-tab:hover:not(:disabled) {
   color: var(--color-text-primary);
   border-color: var(--color-border);
+}
+
+.builder-tab:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
 }
 
 .builder-tab--active {
@@ -253,9 +301,31 @@
   background: var(--color-accent);
 }
 
+.rete-ready-note {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0.85rem 1rem 0;
+  padding: 0.7rem 0.8rem;
+  border: 1px dashed color-mix(in srgb, var(--color-accent) 34%, var(--color-border));
+  border-radius: 0.95rem;
+  background: color-mix(in srgb, var(--color-accent) 7%, transparent);
+  color: var(--color-text-secondary);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.rete-ready-note mat-icon {
+  color: var(--color-accent);
+  font-size: 1.1rem;
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
 .canvas-grid {
   position: relative;
   min-height: 32rem;
+  margin-top: 0.85rem;
   overflow: auto;
   background-image:
     linear-gradient(color-mix(in srgb, var(--color-border) 52%, transparent) 1px, transparent 1px),
@@ -269,9 +339,7 @@
 }
 
 /* =========================================================
-   Canvas edge layer
-   Related HTML:
-   <svg class="edge-layer">
+   Edge layer
    ========================================================= */
 
 .edge-layer {
@@ -297,6 +365,10 @@
 .edge-arrow {
   fill: var(--color-accent);
 }
+
+/* =========================================================
+   Empty canvas
+   ========================================================= */
 
 .canvas-empty {
   position: absolute;
@@ -338,9 +410,7 @@
 }
 
 /* =========================================================
-   7. Step node
-   Related HTML:
-   <button class="step-node">
+   Step node preview
    ========================================================= */
 
 .step-node {
@@ -352,7 +422,7 @@
   padding: 0.75rem;
   border: 1px solid var(--color-border);
   border-radius: 1rem;
-  background: color-mix(in srgb, var(--color-bg-elevated) 90%, transparent);
+  background: color-mix(in srgb, var(--color-bg-elevated) 92%, transparent);
   color: var(--color-text-primary);
   text-align: left;
   z-index: 2;
@@ -361,12 +431,14 @@
   transition:
     transform 160ms ease,
     border-color 160ms ease,
-    box-shadow 160ms ease;
+    box-shadow 160ms ease,
+    background 160ms ease;
 }
 
 .step-node:hover {
   transform: translateY(-2px);
   border-color: color-mix(in srgb, var(--color-accent) 38%, var(--color-border));
+  background: color-mix(in srgb, var(--color-bg-elevated) 98%, transparent);
 }
 
 .step-node--selected {
@@ -421,17 +493,8 @@
   white-space: nowrap;
 }
 
-.step-node__trigger {
-  color: var(--color-accent) !important;
-  font-weight: 700;
-}
-
-
-
 /* =========================================================
-   9. Side panel
-   Related HTML:
-   <aside class="builder-side-panel">
+   Side panel
    ========================================================= */
 
 .builder-side-panel {
@@ -450,19 +513,10 @@
   gap: 0.75rem;
 }
 
-.side-panel__eyebrow {
-  display: inline-flex;
-  margin-bottom: 0.45rem;
-  color: var(--color-accent);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
 .builder-side-panel h2 {
   margin: 0;
   color: var(--color-text-primary);
+  font-size: 1.05rem;
 }
 
 .delete-step-button {
@@ -475,9 +529,7 @@
 }
 
 /* =========================================================
-   10. Editable step configuration form
-   Related HTML:
-   <div class="step-form">
+   Step form
    ========================================================= */
 
 .step-form {
@@ -539,9 +591,7 @@
 }
 
 /* =========================================================
-   11. Step summary
-   Related HTML:
-   <section class="step-summary">
+   Step summary
    ========================================================= */
 
 .step-summary {
@@ -573,6 +623,7 @@
 
 .side-panel-empty {
   height: 100%;
+  min-height: 20rem;
   display: grid;
   place-items: center;
   align-content: center;
@@ -591,14 +642,13 @@
 }
 
 .side-panel-empty p {
+  max-width: 18rem;
   color: var(--color-text-secondary);
   line-height: 1.6;
 }
 
 /* =========================================================
    Edge list
-   Related HTML:
-   <section class="edge-list">
    ========================================================= */
 
 .edge-list {
@@ -650,8 +700,6 @@
 
 /* =========================================================
    Validation panel
-   Related HTML:
-   <section class="validation-panel">
    ========================================================= */
 
 .validation-panel {
@@ -696,9 +744,7 @@
 }
 
 /* =========================================================
-   12. JSON preview
-   Related HTML:
-   <section class="json-preview">
+   JSON preview
    ========================================================= */
 
 .json-preview {
@@ -709,8 +755,16 @@
   background: var(--color-surface);
 }
 
+.json-preview__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
 .json-preview h2 {
-  margin: 0 0 0.75rem;
+  margin: 0;
   color: var(--color-text-primary);
   font-size: 1rem;
 }
@@ -728,9 +782,7 @@
 }
 
 /* =========================================================
-   13. No draft state
-   Related HTML:
-   <section class="no-draft">
+   No draft state
    ========================================================= */
 
 .no-draft {
@@ -774,16 +826,16 @@
 }
 
 /* =========================================================
-   14. Responsive layout
+   Responsive
    ========================================================= */
 
 @media (max-width: 1100px) {
-  .builder-header,
-  .builder-header__left {
+  .builder-hero,
+  .builder-hero__content {
     flex-direction: column;
   }
 
-  .builder-header__actions {
+  .builder-hero__actions {
     justify-content: flex-start;
   }
 
@@ -801,17 +853,29 @@
     grid-template-columns: 1fr;
   }
 
-  .object-type-field {
-    width: 100%;
-  }
-
-  .builder-header__actions {
+  .builder-hero__actions {
     width: 100%;
     align-items: stretch;
     flex-direction: column;
   }
 
-  .builder-header__actions button {
+  .builder-hero__actions button {
     width: 100%;
   }
+
+  .canvas-toolbar {
+    flex-direction: column;
+  }
+
+  .connect-banner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+.rete-editor-shell {
+  margin: 0.85rem 1rem 1rem;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
 }

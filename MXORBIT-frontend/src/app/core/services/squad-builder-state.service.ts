@@ -2,7 +2,6 @@ import { Injectable, computed, signal } from '@angular/core';
 
 import {
   SquadBuilderDraft,
-  SquadBuilderEdge,
   SquadBuilderStep,
   SquadBuilderType,
 } from '../models/squad-builder.model';
@@ -15,10 +14,7 @@ export type CreateSquadDraftPayload = {
 };
 
 export type UpdateSquadStepPayload = Partial<
-  Pick<
-    SquadBuilderStep,
-    'name' | 'description' | 'assignedAgentId' | 'parameters'
-  >
+  Pick<SquadBuilderStep, 'name' | 'description' | 'assignedAgentId' | 'parameters'>
 >;
 
 @Injectable({
@@ -138,6 +134,35 @@ export class SquadBuilderStateService {
     });
   }
 
+  updateStepPosition(
+    stepId: string,
+    position: {
+      x: number;
+      y: number;
+    },
+  ): void {
+    this.draftSignal.update((draft) => {
+      if (!draft) {
+        return draft;
+      }
+
+      return {
+        ...draft,
+        steps: draft.steps.map((step) =>
+          step.id === stepId
+            ? {
+                ...step,
+                position: {
+                  x: position.x,
+                  y: position.y,
+                },
+              }
+            : step,
+        ),
+      };
+    });
+  }
+
   deleteSelectedStep(): void {
     const selectedStepId = this.selectedStepId();
 
@@ -168,33 +193,50 @@ export class SquadBuilderStateService {
     }
   }
 
-  addEdge(sourceStepId: string, targetStepId: string): SquadBuilderEdge | null {
-    if (sourceStepId === targetStepId) {
-      return null;
+addEdge(sourceStepId: string, targetStepId: string): boolean {
+  let edgeCreated = false;
+
+  this.draftSignal.update((draft) => {
+    if (!draft) {
+      return draft;
     }
 
-    const sourceExists = this.steps().some((step) => step.id === sourceStepId);
-    const targetExists = this.steps().some((step) => step.id === targetStepId);
+    const sourceStepExists = draft.steps.some((step) => step.id === sourceStepId);
+    const targetStepExists = draft.steps.some((step) => step.id === targetStepId);
 
-    if (!sourceExists || !targetExists) {
-      return null;
+    if (!sourceStepExists || !targetStepExists) {
+      return draft;
     }
 
-    const edgeAlreadyExists = this.edges().some(
+    const edgeAlreadyExists = draft.edges.some(
       (edge) =>
-        edge.sourceStepId === sourceStepId && edge.targetStepId === targetStepId,
+        edge.sourceStepId === sourceStepId &&
+        edge.targetStepId === targetStepId,
     );
 
     if (edgeAlreadyExists) {
-      return null;
+      return draft;
     }
 
-    const newEdge: SquadBuilderEdge = {
-      id: this.generateId('edge'),
-      sourceStepId,
-      targetStepId,
-    };
+    edgeCreated = true;
 
+    return {
+      ...draft,
+      edges: [
+        ...draft.edges,
+        {
+          id: this.generateId('edge'),
+          sourceStepId,
+          targetStepId,
+        },
+      ],
+    };
+  });
+
+  return edgeCreated;
+}
+
+  removeEdge(sourceStepId: string, targetStepId: string): void {
     this.draftSignal.update((draft) => {
       if (!draft) {
         return draft;
@@ -202,11 +244,13 @@ export class SquadBuilderStateService {
 
       return {
         ...draft,
-        edges: [...draft.edges, newEdge],
+        edges: draft.edges.filter(
+          (edge) =>
+            edge.sourceStepId !== sourceStepId ||
+            edge.targetStepId !== targetStepId,
+        ),
       };
     });
-
-    return newEdge;
   }
 
   buildSavePayload(): SquadBuilderDraft | null {
