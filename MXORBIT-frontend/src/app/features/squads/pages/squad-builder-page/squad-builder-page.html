@@ -248,16 +248,26 @@
       </section>
     }
 
-    <section class="json-preview">
-      <div class="json-preview__header">
-        <div>
-          <span>DEBUG PREVIEW</span>
-          <h2>Draft JSON Payload</h2>
-        </div>
-      </div>
+<section class="json-preview">
+  <div class="json-preview__header">
+    <div>
+      <span>BACKEND CONTRACT</span>
+      <h2>Backend-Ready JSON Payload</h2>
+    </div>
 
-      <pre>{{ currentDraft | json }}</pre>
-    </section>
+    <button
+      type="button"
+      mat-stroked-button
+      [disabled]="!backendReadyPayload()"
+      (click)="downloadBackendPayloadJson()"
+    >
+      <mat-icon>download</mat-icon>
+      Download JSON
+    </button>
+  </div>
+
+  <pre>{{ backendReadyPayload() | json }}</pre>
+</section>
   } @else {
     <section class="no-draft">
       <div class="no-draft__icon">

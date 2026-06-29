@@ -9,8 +9,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 
-import { Squad } from '../../../../core/models/squad.model';
 import { SquadBuilderDraft } from '../../../../core/models/squad-builder.model';
+import { Squad } from '../../../../core/models/squad.model';
 import { AgentService } from '../../../../core/services/agent.service';
 import { SquadBuilderStateService } from '../../../../core/services/squad-builder-state.service';
 import { SquadService } from '../../../../core/services/squad.service';
@@ -21,17 +21,17 @@ interface ReteConnectionCreatedEvent {
   targetStepId: string;
 }
 
+interface ReteConnectionRemovedEvent {
+  sourceStepId: string;
+  targetStepId: string;
+}
+
 interface ReteNodePositionChangedEvent {
   stepId: string;
   position: {
     x: number;
     y: number;
   };
-}
-
-interface ReteConnectionRemovedEvent {
-  sourceStepId: string;
-  targetStepId: string;
 }
 
 @Component({
@@ -62,7 +62,15 @@ export class SquadBuilderPage {
   readonly edges = this.squadBuilderState.edges;
   readonly selectedStep = this.squadBuilderState.selectedStep;
   readonly selectedStepId = this.squadBuilderState.selectedStepId;
+
   readonly agents = this.agentService.getAgents();
+
+  readonly agentNamesById = computed<Record<string, string>>(() => {
+    return this.agents().reduce<Record<string, string>>((agentMap, agent) => {
+      agentMap[agent.id] = agent.name;
+      return agentMap;
+    }, {});
+  });
 
   readonly assignedAgentCount = computed(() => {
     const assignedAgentIds = this.steps()
@@ -71,13 +79,6 @@ export class SquadBuilderPage {
 
     return new Set(assignedAgentIds).size;
   });
-
-  readonly agentNamesById = computed<Record<string, string>>(() => {
-  return this.agents().reduce<Record<string, string>>((agentMap, agent) => {
-    agentMap[agent.id] = agent.name;
-    return agentMap;
-  }, {});
-});
 
   readonly validationErrors = computed(() => {
     const draft = this.draft();
@@ -135,6 +136,38 @@ export class SquadBuilderPage {
 
   readonly canSave = computed(() => this.validationErrors().length === 0);
 
+  readonly backendReadyPayload = computed<SquadBuilderDraft | null>(() => {
+    const draft = this.draft();
+
+    if (!draft) {
+      return null;
+    }
+
+    return {
+      id: draft.id,
+      name: draft.name.trim(),
+      description: draft.description.trim(),
+      type: draft.type,
+      projectKey: draft.projectKey.trim(),
+      steps: draft.steps.map((step) => ({
+        id: step.id,
+        name: step.name.trim(),
+        description: step.description.trim(),
+        assignedAgentId: step.assignedAgentId,
+        parameters: { ...step.parameters },
+        position: {
+          x: step.position.x,
+          y: step.position.y,
+        },
+      })),
+      edges: draft.edges.map((edge) => ({
+        id: edge.id,
+        sourceStepId: edge.sourceStepId,
+        targetStepId: edge.targetStepId,
+      })),
+    };
+  });
+
   addStep(): void {
     this.squadBuilderState.addStep();
   }
@@ -148,15 +181,12 @@ export class SquadBuilderPage {
   }
 
   handleReteConnectionRemoved(event: ReteConnectionRemovedEvent): void {
-  this.squadBuilderState.removeEdge(event.sourceStepId, event.targetStepId);
-}
-
+    this.squadBuilderState.removeEdge(event.sourceStepId, event.targetStepId);
+  }
 
   handleReteNodePositionChanged(event: ReteNodePositionChangedEvent): void {
-  this.squadBuilderState.updateStepPosition(event.stepId, event.position);
-}
-
-
+    this.squadBuilderState.updateStepPosition(event.stepId, event.position);
+  }
 
   updateSelectedStepName(name: string): void {
     this.squadBuilderState.updateSelectedStep({ name });
@@ -186,6 +216,28 @@ export class SquadBuilderPage {
     return this.steps().find((step) => step.id === stepId)?.name ?? 'Unknown step';
   }
 
+  downloadBackendPayloadJson(): void {
+    const payload = this.backendReadyPayload();
+
+    if (!payload) {
+      return;
+    }
+
+    const fileContent = JSON.stringify(payload, null, 2);
+    const blob = new Blob([fileContent], {
+      type: 'application/json',
+    });
+
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+
+    anchor.href = url;
+    anchor.download = `${payload.name || 'squad'}-backend-payload.json`;
+    anchor.click();
+
+    URL.revokeObjectURL(url);
+  }
+
   saveDraft(): void {
     const validationErrors = this.validationErrors();
 
@@ -194,7 +246,7 @@ export class SquadBuilderPage {
       return;
     }
 
-    const payload = this.buildCleanSavePayload();
+    const payload = this.backendReadyPayload();
 
     if (!payload) {
       return;
@@ -209,38 +261,6 @@ export class SquadBuilderPage {
     console.log('Saved local squad:', savedSquad);
 
     this.router.navigate(['/squads']);
-  }
-
-  private buildCleanSavePayload(): SquadBuilderDraft | null {
-    const draft = this.squadBuilderState.buildSavePayload();
-
-    if (!draft) {
-      return null;
-    }
-
-    return {
-      id: draft.id,
-      name: draft.name.trim(),
-      description: draft.description.trim(),
-      type: draft.type,
-      projectKey: draft.projectKey.trim(),
-      steps: draft.steps.map((step) => ({
-        id: step.id,
-        name: step.name.trim(),
-        description: step.description.trim(),
-        assignedAgentId: step.assignedAgentId,
-        parameters: { ...step.parameters },
-        position: {
-          x: step.position.x,
-          y: step.position.y,
-        },
-      })),
-      edges: draft.edges.map((edge) => ({
-        id: edge.id,
-        sourceStepId: edge.sourceStepId,
-        targetStepId: edge.targetStepId,
-      })),
-    };
   }
 
   private convertDraftToSquad(draft: SquadBuilderDraft): Squad {
