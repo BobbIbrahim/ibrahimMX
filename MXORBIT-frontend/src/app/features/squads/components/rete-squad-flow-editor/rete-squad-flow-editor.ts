@@ -16,7 +16,11 @@ import {
 import { ClassicPreset, GetSchemes, NodeEditor } from 'rete';
 import { AreaExtensions, AreaPlugin } from 'rete-area-plugin';
 import { ConnectionPlugin, Presets as ConnectionPresets } from 'rete-connection-plugin';
-import { AngularArea2D, AngularPlugin, Presets as AngularPresets } from 'rete-angular-plugin/21';
+import {
+  AngularArea2D,
+  AngularPlugin,
+  Presets as AngularPresets,
+} from 'rete-angular-plugin/21';
 
 interface ReteFlowStep {
   id: string;
@@ -53,10 +57,6 @@ interface ReteNodePositionChangedEvent {
 }
 
 type ReteNode = ClassicPreset.Node;
-type SizedReteNode = ReteNode & {
-  width?: number;
-  height?: number;
-};
 
 type ReteConnection = ClassicPreset.Connection<ReteNode, ReteNode>;
 
@@ -208,6 +208,7 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
 
       return context;
     });
+
     area.addPipe((context) => {
       const areaContext = context as {
         type: string;
@@ -361,7 +362,12 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
         continue;
       }
 
-      const connection = new ClassicPreset.Connection(sourceNode, 'next', targetNode, 'previous');
+      const connection = new ClassicPreset.Connection(
+        sourceNode,
+        'next',
+        targetNode,
+        'previous',
+      );
 
       await this.editor.addConnection(connection);
 
@@ -409,22 +415,13 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
   }
 
   private applyNodeLayout(node: ReteNode): void {
-    const sizedNode = node as SizedReteNode;
+    const sizedNode = node as ReteNode & {
+      width?: number;
+      height?: number;
+    };
 
-    sizedNode.width = 190;
-    sizedNode.height = 105;
-  }
-
-  private buildNodeLabel(step: ReteFlowStep): string {
-    const stepName = step.name.trim() || 'Untitled Step';
-
-    if (!step.assignedAgentId) {
-      return `${stepName}\nUnassigned`;
-    }
-
-    const agentName = this.agentNamesById[step.assignedAgentId] ?? 'Unknown agent';
-
-    return `${stepName}\n${agentName}`;
+    sizedNode.width = 210;
+    sizedNode.height = 92;
   }
 
   private updateGridPosition(x: number, y: number): void {
@@ -436,10 +433,22 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
 
   private updateGridScale(zoom: number): void {
     const container = this.reteContainer.nativeElement;
-    const baseGridSize = 32;
+    const baseGridSize = 28;
     const scaledGridSize = Math.max(16, Math.min(64, baseGridSize * zoom));
 
     container.style.setProperty('--rete-grid-size', `${scaledGridSize}px`);
+  }
+
+  private buildNodeLabel(step: ReteFlowStep): string {
+    const stepName = step.name.trim() || 'Untitled Step';
+
+    if (!step.assignedAgentId) {
+      return `${stepName} · Unassigned`;
+    }
+
+    const agentName = this.agentNamesById[step.assignedAgentId] ?? 'Unknown agent';
+
+    return `${stepName} · ${agentName}`;
   }
 
   private buildEdgeKey(sourceStepId: string, targetStepId: string): string {
