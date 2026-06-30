@@ -91,6 +91,9 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
   private editorReady = false;
   private isSyncingFromAngularState = false;
 
+  private connectionArrowObserver: MutationObserver | null = null;
+  private readonly connectionArrowMarkerId = 'mxorbit-rete-edge-arrow';
+
   private readonly socket = new ClassicPreset.Socket('Agent Flow');
 
   private readonly nodeByStepId = new Map<string, ReteNode>();
@@ -117,6 +120,9 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
   }
 
   ngOnDestroy(): void {
+    this.connectionArrowObserver?.disconnect();
+    this.connectionArrowObserver = null;
+
     this.area?.destroy();
 
     this.editor = null;
@@ -177,6 +183,10 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
         this.connectionCreated.emit({
           sourceStepId,
           targetStepId,
+        });
+
+        requestAnimationFrame(() => {
+          this.applyConnectionArrows();
         });
       }
 
@@ -288,6 +298,8 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
 
     this.editor = editor;
     this.area = area;
+
+    this.startConnectionArrowObserver(container);
   }
 
   private async syncGraphFromInputs(): Promise<void> {
@@ -328,8 +340,8 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
 
       this.applyNodeLayout(node);
 
-      node.addInput('previous', new ClassicPreset.Input(this.socket, 'In'));
-      node.addOutput('next', new ClassicPreset.Output(this.socket, 'Out'));
+      node.addInput('previous', new ClassicPreset.Input(this.socket, 'In', true));
+      node.addOutput('next', new ClassicPreset.Output(this.socket, 'Out', true));
 
       await this.editor.addNode(node);
 
@@ -370,6 +382,10 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
       );
 
       await this.editor.addConnection(connection);
+
+      requestAnimationFrame(() => {
+        this.applyConnectionArrows();
+      });
 
       this.connectionIdByEdgeKey.set(edgeKey, connection.id);
     }
@@ -437,6 +453,100 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
     const scaledGridSize = Math.max(16, Math.min(64, baseGridSize * zoom));
 
     container.style.setProperty('--rete-grid-size', `${scaledGridSize}px`);
+  }
+
+  private startConnectionArrowObserver(container: HTMLElement): void {
+    this.connectionArrowObserver?.disconnect();
+
+    this.connectionArrowObserver = new MutationObserver(() => {
+      this.applyConnectionArrows();
+    });
+
+    this.connectionArrowObserver.observe(container, {
+      childList: true,
+      subtree: true,
+    });
+
+    requestAnimationFrame(() => {
+      this.applyConnectionArrows();
+    });
+  }
+
+  private applyConnectionArrows(): void {
+    const container = this.reteContainer.nativeElement;
+    const roots = this.collectRenderableRoots(container);
+
+    roots.forEach((root) => {
+      const svgs = root.querySelectorAll<SVGSVGElement>('svg');
+
+      svgs.forEach((svg) => {
+        this.ensureArrowMarker(svg);
+        this.applyMarkerToConnectionPaths(svg);
+      });
+    });
+  }
+
+  private collectRenderableRoots(root: HTMLElement | ShadowRoot): Array<HTMLElement | ShadowRoot> {
+    const roots: Array<HTMLElement | ShadowRoot> = [root];
+    const elements = root.querySelectorAll<HTMLElement>('*');
+
+    elements.forEach((element) => {
+      if (element.shadowRoot) {
+        roots.push(element.shadowRoot);
+        roots.push(...this.collectRenderableRoots(element.shadowRoot));
+      }
+    });
+
+    return roots;
+  }
+
+  private ensureArrowMarker(svg: SVGSVGElement): void {
+    const existingMarker = svg.querySelector(`#${this.connectionArrowMarkerId}`);
+
+    if (existingMarker) {
+      return;
+    }
+
+    const svgNamespace = 'http://www.w3.org/2000/svg';
+
+    let defs = svg.querySelector('defs');
+
+    if (!defs) {
+      defs = document.createElementNS(svgNamespace, 'defs');
+      svg.prepend(defs);
+    }
+
+    const marker = document.createElementNS(svgNamespace, 'marker');
+
+    marker.setAttribute('id', this.connectionArrowMarkerId);
+    marker.setAttribute('markerWidth', '10');
+    marker.setAttribute('markerHeight', '10');
+    marker.setAttribute('refX', '9');
+    marker.setAttribute('refY', '5');
+    marker.setAttribute('orient', 'auto');
+    marker.setAttribute('markerUnits', 'strokeWidth');
+
+    const arrowPath = document.createElementNS(svgNamespace, 'path');
+
+    arrowPath.setAttribute('d', 'M 0 0 L 10 5 L 0 10 z');
+    arrowPath.setAttribute('fill', '#ffffff');
+
+    marker.appendChild(arrowPath);
+    defs.appendChild(marker);
+  }
+
+  private applyMarkerToConnectionPaths(svg: SVGSVGElement): void {
+    const paths = svg.querySelectorAll<SVGPathElement>('path');
+
+    paths.forEach((path) => {
+      if (path.closest('marker')) {
+        return;
+      }
+
+      path.setAttribute('marker-end', `url(#${this.connectionArrowMarkerId})`);
+      path.setAttribute('stroke-linecap', 'round');
+      path.setAttribute('stroke-linejoin', 'round');
+    });
   }
 
   private buildNodeLabel(step: ReteFlowStep): string {

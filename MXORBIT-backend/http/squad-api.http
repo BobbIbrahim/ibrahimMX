@@ -1,0 +1,41 @@
+POST http://localhost:8080/api/squads
+Content-Type: application/json
+
+{
+  "id": "draft-test-001",
+  "name": "Test Squad",
+  "description": "Testing backend squad creation",
+  "type": "hardcoded-flow",
+  "projectKey": "MXORBIT",
+  "steps": [
+    {
+      "id": "step-1",
+      "name": "New Step 1",
+      "description": "",
+      "assignedAgentId": "agent-001",
+      "parameters": {},
+      "position": {
+        "x": 160,
+        "y": 140
+      }
+    },
+    {
+      "id": "step-2",
+      "name": "New Step 2",
+      "description": "",
+      "assignedAgentId": "agent-003",
+      "parameters": {},
+      "position": {
+        "x": 554,
+        "y": 229
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1",
+      "sourceStepId": "step-1",
+      "targetStepId": "step-2"
+    }
+  ]
+}
