@@ -77,6 +77,10 @@ public class SquadWebMapper {
     }
 
     private List<SquadStepResponse> toStepResponses(List<SquadStep> steps) {
+        if (steps == null) {
+            return List.of();
+        }
+
         return steps.stream()
                 .map(step -> new SquadStepResponse(
                         step.id(),
@@ -94,6 +98,10 @@ public class SquadWebMapper {
     }
 
     private List<SquadEdgeResponse> toEdgeResponses(List<SquadEdge> edges) {
+        if (edges == null) {
+            return List.of();
+        }
+
         return edges.stream()
                 .map(edge -> new SquadEdgeResponse(
                         edge.id(),

@@ -3,18 +3,21 @@ package com.mxorbit.backend.squad.adapter.out.persistence;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mxorbit.backend.squad.application.port.out.LoadSquadsPort;
 import com.mxorbit.backend.squad.application.port.out.SaveSquadPort;
 import com.mxorbit.backend.squad.domain.model.Squad;
 import com.mxorbit.backend.squad.domain.model.SquadEdge;
 import com.mxorbit.backend.squad.domain.model.SquadPosition;
 import com.mxorbit.backend.squad.domain.model.SquadStep;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 @Component
-public class SquadPersistenceAdapter implements SaveSquadPort {
+public class SquadPersistenceAdapter implements SaveSquadPort, LoadSquadsPort {
 
     private final SquadRepository squadRepository;
     private final ObjectMapper objectMapper;
@@ -28,11 +31,21 @@ public class SquadPersistenceAdapter implements SaveSquadPort {
     }
 
     @Override
+    @Transactional
     public Squad saveSquad(Squad squad) {
         SquadEntity entity = toEntity(squad);
         SquadEntity savedEntity = squadRepository.save(entity);
 
         return toDomain(savedEntity);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Squad> loadSquads() {
+        return squadRepository.findAll()
+                .stream()
+                .map(this::toDomain)
+                .toList();
     }
 
     private SquadEntity toEntity(Squad squad) {
@@ -92,6 +105,10 @@ public class SquadPersistenceAdapter implements SaveSquadPort {
     }
 
     private List<SquadStep> toDomainSteps(List<SquadStepEntity> entities) {
+        if (entities == null) {
+            return List.of();
+        }
+
         return entities.stream()
                 .map(entity -> new SquadStep(
                         entity.getId(),
@@ -109,6 +126,10 @@ public class SquadPersistenceAdapter implements SaveSquadPort {
     }
 
     private List<SquadEdge> toDomainEdges(List<SquadEdgeEntity> entities) {
+        if (entities == null) {
+            return List.of();
+        }
+
         return entities.stream()
                 .map(entity -> new SquadEdge(
                         entity.getId(),
@@ -120,23 +141,35 @@ public class SquadPersistenceAdapter implements SaveSquadPort {
     }
 
     private String toJson(Map<String, Object> parameters) {
+        Map<String, Object> safeParameters =
+                parameters == null ? Collections.emptyMap() : parameters;
+
         try {
-            return objectMapper.writeValueAsString(parameters == null ? Map.of() : parameters);
+            return objectMapper.writeValueAsString(safeParameters);
         } catch (JsonProcessingException exception) {
-            throw new IllegalArgumentException("Failed to serialize squad step parameters", exception);
+            throw new IllegalArgumentException(
+                    "Failed to serialize squad step parameters",
+                    exception
+            );
         }
     }
 
     private Map<String, Object> fromJson(String json) {
         if (json == null || json.isBlank()) {
-            return Map.of();
+            return Collections.emptyMap();
         }
 
         try {
-            return objectMapper.readValue(json, new TypeReference<>() {
-            });
+            return objectMapper.readValue(
+                    json,
+                    new TypeReference<Map<String, Object>>() {
+                    }
+            );
         } catch (JsonProcessingException exception) {
-            throw new IllegalArgumentException("Failed to deserialize squad step parameters", exception);
+            throw new IllegalArgumentException(
+                    "Failed to deserialize squad step parameters",
+                    exception
+            );
         }
     }
 }
