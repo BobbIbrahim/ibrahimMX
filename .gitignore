@@ -6,10 +6,6 @@ node_modules/
 .angular/
 **/.angular/
 
-# Build output
-dist/
-**/dist/
-
 # Environment files
 .env
 .env.*
@@ -28,3 +24,44 @@ Thumbs.db
 # Editor settings
 .vscode/
 **/.vscode/
+
+HELP.md
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+*.tar.gz
+*.tgz
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+**/.idea
+*.iws
+*.iml
+*.ipr
+**/out/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+.gradle
+
+# compiled output
+**/dist
+**/tmp
+**/out-tsc
+**/bin

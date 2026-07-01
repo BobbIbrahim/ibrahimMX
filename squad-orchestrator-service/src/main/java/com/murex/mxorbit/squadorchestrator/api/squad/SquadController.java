@@ -1,0 +1,27 @@
+package com.murex.mxorbit.squadorchestrator.api.squad;
+
+import com.murex.mxorbit.squadorchestrator.api.squad.mapper.SquadApiMapper;
+import com.murex.mxorbit.squadorchestrator.api.squad.request.CreateSquadApiRequest;
+import com.murex.mxorbit.squadorchestrator.api.squad.response.SquadApiResponse;
+import com.murex.mxorbit.squadorchestrator.core.squad.facade.SquadFacade;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RestController;
+
+@Slf4j
+@RestController
+@RequiredArgsConstructor
+public class SquadController implements SquadApi {
+
+	private final SquadFacade squadFacade;
+	private final SquadApiMapper squadApiMapper;
+
+	@Override
+	public ResponseEntity<SquadApiResponse> createSquad(CreateSquadApiRequest request) {
+		log.debug("Received request to create squad: {}", request);
+		return ResponseEntity.status(HttpStatus.CREATED).body(squadApiMapper
+				.toSquadApiResponse(squadFacade.createSquad(squadApiMapper.toSquadCreateRequest(request))));
+	}
+}

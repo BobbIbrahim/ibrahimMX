@@ -1,0 +1,37 @@
+version: "3.8"
+
+services:
+  squad-orchestrator-postgres:
+    image: ${POSTGRES_IMAGE:-postgres:16}
+    hostname: squad-orchestrator-postgres
+    environment:
+      POSTGRES_DB: squad_orchestrator
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - squad_orchestrator_data:/var/lib/postgresql/data
+      - ./docker_compose/postgres/init/init_app_user.sql:/docker-entrypoint-initdb.d/init_app_user.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d squad_orchestrator"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  squad-orchestrator-db-init:
+    image: ${POSTGRES_IMAGE:-postgres:16}
+    depends_on:
+      squad-orchestrator-postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: postgres
+    volumes:
+      - ./docker_compose/postgres/init/init_app_user.sql:/init_app_user.sql
+    command: >
+      psql -h squad-orchestrator-postgres -U postgres -d squad_orchestrator -f /init_app_user.sql
+    restart: "no"
+
+
+volumes:
+  squad_orchestrator_data:
