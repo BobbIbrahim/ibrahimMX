@@ -1,2 +1,41 @@
-GET http://localhost:8080/api/squads
-Accept: application/json
+POST http://localhost:8080/api/squads
+Content-Type: application/json
+
+{
+  "id": "draft-gradle-test-001",
+  "name": "Gradle Test Squad",
+  "description": "Testing backend after Gradle migration",
+  "type": "hardcoded-flow",
+  "projectKey": "MXORBIT",
+  "steps": [
+    {
+      "id": "step-1",
+      "name": "New Step 1",
+      "description": "",
+      "assignedAgentId": "agent-001",
+      "parameters": {},
+      "position": {
+        "x": 160,
+        "y": 140
+      }
+    },
+    {
+      "id": "step-2",
+      "name": "New Step 2",
+      "description": "",
+      "assignedAgentId": "agent-003",
+      "parameters": {},
+      "position": {
+        "x": 554,
+        "y": 229
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1",
+      "sourceStepId": "step-1",
+      "targetStepId": "step-2"
+    }
+  ]
+}
