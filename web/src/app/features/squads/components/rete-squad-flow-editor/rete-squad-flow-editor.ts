@@ -16,6 +16,7 @@ import {
 import { ClassicPreset, GetSchemes, NodeEditor } from 'rete';
 import { AreaExtensions, AreaPlugin } from 'rete-area-plugin';
 import { ConnectionPlugin, Presets as ConnectionPresets } from 'rete-connection-plugin';
+import { getDOMSocketPosition } from 'rete-render-utils';
 import {
   AngularArea2D,
   AngularPlugin,
@@ -144,7 +145,18 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
       injector: this.injector,
     });
 
-    render.addPreset(AngularPresets.classic.setup());
+    render.addPreset(
+      AngularPresets.classic.setup({
+        socketPositionWatcher: getDOMSocketPosition({
+          offset(position, _nodeId, side) {
+            return {
+              x: position.x + (side === 'input' ? -8 : 8),
+              y: position.y,
+            };
+          },
+        }),
+      }),
+    );
     connection.addPreset(ConnectionPresets.classic.setup());
 
     editor.use(area);
@@ -519,17 +531,17 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
     const marker = document.createElementNS(svgNamespace, 'marker');
 
     marker.setAttribute('id', this.connectionArrowMarkerId);
-    marker.setAttribute('markerWidth', '10');
-    marker.setAttribute('markerHeight', '10');
+    marker.setAttribute('markerWidth', '12');
+    marker.setAttribute('markerHeight', '12');
     marker.setAttribute('refX', '9');
-    marker.setAttribute('refY', '5');
+    marker.setAttribute('refY', '6');
     marker.setAttribute('orient', 'auto');
-    marker.setAttribute('markerUnits', 'strokeWidth');
+    marker.setAttribute('markerUnits', 'userSpaceOnUse');
 
     const arrowPath = document.createElementNS(svgNamespace, 'path');
 
-    arrowPath.setAttribute('d', 'M 0 0 L 10 5 L 0 10 z');
-    arrowPath.setAttribute('fill', '#ffffff');
+    arrowPath.setAttribute('d', 'M 2 2 L 10 6 L 2 10 z');
+    arrowPath.setAttribute('fill', 'currentColor');
 
     marker.appendChild(arrowPath);
     defs.appendChild(marker);
@@ -553,12 +565,12 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
     const stepName = step.name.trim() || 'Untitled Step';
 
     if (!step.assignedAgentId) {
-      return `${stepName} · Unassigned`;
+      return `${stepName}\nUnassigned`;
     }
 
     const agentName = this.agentNamesById[step.assignedAgentId] ?? 'Unknown agent';
 
-    return `${stepName} · ${agentName}`;
+    return `${stepName}\n${agentName}`;
   }
 
   private buildEdgeKey(sourceStepId: string, targetStepId: string): string {

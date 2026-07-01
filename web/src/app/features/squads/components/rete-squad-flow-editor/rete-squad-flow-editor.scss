@@ -34,4 +34,164 @@
     var(--rete-grid-x) var(--rete-grid-y),
     var(--rete-grid-x) var(--rete-grid-y),
     center;
+
+  /* =========================================================
+     Rete-rendered elements
+
+     The rete-angular-plugin injects its nodes, sockets and
+     connections as custom elements inside this container.
+     They are styled here via ::ng-deep so the editor matches
+     the application theme tokens (light + dark).
+     ========================================================= */
+  ::ng-deep {
+    /* ---- Node card ------------------------------------------------ */
+    [data-testid='node'] {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      box-sizing: border-box;
+      padding: 0.6rem 1.15rem;
+      border-radius: 0.9rem;
+      border: 1px solid color-mix(in srgb, var(--color-border) 65%, transparent);
+      background: linear-gradient(
+        160deg,
+        color-mix(in srgb, var(--color-surface-soft) 90%, var(--color-accent) 10%),
+        var(--color-surface)
+      );
+      color: var(--color-text-primary);
+      font-family: inherit;
+      cursor: grab;
+      box-shadow:
+        inset 0 1px 0 color-mix(in srgb, #ffffff 6%, transparent),
+        0 12px 28px rgba(2, 6, 18, 0.42);
+      transition:
+        border-color 140ms ease,
+        box-shadow 180ms ease,
+        background 180ms ease;
+    }
+
+    [data-testid='node']:hover {
+      border-color: color-mix(in srgb, var(--color-accent) 50%, var(--color-border));
+      box-shadow:
+        inset 0 1px 0 color-mix(in srgb, #ffffff 8%, transparent),
+        0 16px 34px rgba(2, 6, 18, 0.52);
+    }
+
+    [data-testid='node']:active {
+      cursor: grabbing;
+    }
+
+    [data-testid='node'].selected {
+      border-color: var(--color-accent);
+      background: linear-gradient(
+        160deg,
+        color-mix(in srgb, var(--color-accent) 18%, var(--color-surface-soft)),
+        var(--color-surface)
+      );
+      box-shadow:
+        0 0 0 1px var(--color-accent),
+        0 0 0 4px color-mix(in srgb, var(--color-accent) 22%, transparent),
+        0 16px 38px rgba(2, 6, 18, 0.58);
+    }
+
+    /* ---- Node label ---------------------------------------------- */
+    [data-testid='node'] .title {
+      display: -webkit-box;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      color: var(--color-text-primary);
+      font-family: inherit;
+      font-size: 0.92rem;
+      font-weight: 600;
+      line-height: 1.3;
+      letter-spacing: -0.01em;
+      text-align: center;
+      white-space: pre-line;
+      overflow: hidden;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    /* ---- Input / output rows -------------------------------------
+       The default rows are taken out of the flow; each socket is pinned
+       to the node edge individually below. */
+    [data-testid='node'] .output,
+    [data-testid='node'] .input {
+      position: static;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Hide the textual "In" / "Out" labels for a cleaner card */
+    [data-testid='node'] .input-title,
+    [data-testid='node'] .output-title {
+      display: none;
+    }
+
+    /* Pin sockets to the node edges, vertically centred.
+       IMPORTANT: no CSS transform is used for centring. The rete socket
+       position watcher measures sockets with offsetTop/offsetLeft, which
+       ignore transforms, so a translate() would make connections attach
+       to the wrong point. Full-height wrappers + flex centring keep the
+       measured position in sync with what is rendered. */
+    [data-testid='node'] .input-socket,
+    [data-testid='node'] .output-socket {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      margin: 0;
+    }
+
+    [data-testid='node'] .input-socket {
+      left: -7px;
+    }
+
+    [data-testid='node'] .output-socket {
+      right: -7px;
+    }
+
+    /* ---- Sockets ------------------------------------------------- */
+    [data-testid='output-socket'] > *,
+    [data-testid='input-socket'] > * {
+      display: block;
+      box-sizing: border-box;
+      width: 14px;
+      height: 14px;
+      margin: 0;
+      border-radius: 50%;
+      border: 2px solid color-mix(in srgb, var(--color-accent) 70%, var(--color-border));
+      background: var(--color-surface);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 14%, transparent);
+      transition:
+        transform 140ms ease,
+        border-color 140ms ease,
+        box-shadow 140ms ease,
+        background 140ms ease;
+    }
+
+    [data-testid='output-socket'] > *:hover,
+    [data-testid='input-socket'] > *:hover {
+      border-color: var(--color-accent);
+      background: color-mix(in srgb, var(--color-accent) 30%, var(--color-surface));
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-accent) 24%, transparent);
+      transform: scale(1.18);
+    }
+
+    /* ---- Connections --------------------------------------------- */
+    [data-testid='connection'] > path {
+      stroke: color-mix(in srgb, var(--color-accent) 80%, var(--color-text-secondary));
+      stroke-width: 2.5px;
+      fill: none;
+    }
+
+    /* Arrow head marker (created in the component) */
+    [data-testid='connection'] marker path {
+      fill: var(--color-accent);
+    }
+  }
 }
