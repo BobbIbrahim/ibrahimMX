@@ -15,7 +15,6 @@ export interface Squad {
   description: string;
   type: SquadType;
   status: SquadStatus;
-  projectKey: string;
   tags: string[];
   metrics: SquadMetrics;
 }

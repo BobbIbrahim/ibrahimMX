@@ -25,7 +25,26 @@ export interface SquadBuilderDraft {
   name: string;
   description: string;
   type: SquadBuilderType;
-  projectKey: string;
   steps: SquadBuilderStep[];
   edges: SquadBuilderEdge[];
+}
+
+export interface SquadSaveStepPayload {
+  id: string;
+  name: string;
+  type: string;
+  agentKey: string;
+}
+
+export interface SquadSaveEdgePayload {
+  sourceStepId: string;
+  targetStepId: string;
+}
+
+export interface SquadSavePayload {
+  name: string;
+  description: string;
+  type: SquadBuilderType;
+  steps: SquadSaveStepPayload[];
+  edges: SquadSaveEdgePayload[];
 }

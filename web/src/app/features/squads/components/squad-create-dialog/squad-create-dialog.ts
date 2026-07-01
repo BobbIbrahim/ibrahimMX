@@ -14,7 +14,6 @@ export type SquadCreateDialogResult = {
   name: string;
   description: string;
   type: SquadBuilderType;
-  projectKey: string;
 };
 
 @Component({
@@ -57,7 +56,6 @@ export class SquadCreateDialog {
     type: ['hardcoded-flow' as SquadBuilderType, [Validators.required]],
     name: ['', [Validators.required, Validators.minLength(3)]],
     description: ['', [Validators.required, Validators.minLength(10)]],
-    projectKey: ['', [Validators.required, Validators.minLength(2)]],
   });
 
   cancel(): void {
@@ -76,7 +74,6 @@ export class SquadCreateDialog {
       type: formValue.type,
       name: formValue.name.trim(),
       description: formValue.description.trim(),
-      projectKey: formValue.projectKey.trim().toUpperCase(),
     };
 
     this.dialogRef.close(result);

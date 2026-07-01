@@ -4,13 +4,13 @@ import {
   SquadBuilderDraft,
   SquadBuilderStep,
   SquadBuilderType,
+  SquadSavePayload,
 } from '../models/squad-builder.model';
 
 export type CreateSquadDraftPayload = {
   name: string;
   description: string;
   type: SquadBuilderType;
-  projectKey: string;
 };
 
 export type UpdateSquadStepPayload = Partial<
@@ -46,7 +46,6 @@ export class SquadBuilderStateService {
       name: payload.name.trim(),
       description: payload.description.trim(),
       type: payload.type,
-      projectKey: payload.projectKey.trim(),
       steps: [],
       edges: [],
     };
@@ -193,48 +192,46 @@ export class SquadBuilderStateService {
     }
   }
 
-addEdge(sourceStepId: string, targetStepId: string): boolean {
-  let edgeCreated = false;
+  addEdge(sourceStepId: string, targetStepId: string): boolean {
+    let edgeCreated = false;
 
-  this.draftSignal.update((draft) => {
-    if (!draft) {
-      return draft;
-    }
+    this.draftSignal.update((draft) => {
+      if (!draft) {
+        return draft;
+      }
 
-    const sourceStepExists = draft.steps.some((step) => step.id === sourceStepId);
-    const targetStepExists = draft.steps.some((step) => step.id === targetStepId);
+      const sourceStepExists = draft.steps.some((step) => step.id === sourceStepId);
+      const targetStepExists = draft.steps.some((step) => step.id === targetStepId);
 
-    if (!sourceStepExists || !targetStepExists) {
-      return draft;
-    }
+      if (!sourceStepExists || !targetStepExists) {
+        return draft;
+      }
 
-    const edgeAlreadyExists = draft.edges.some(
-      (edge) =>
-        edge.sourceStepId === sourceStepId &&
-        edge.targetStepId === targetStepId,
-    );
+      const edgeAlreadyExists = draft.edges.some(
+        (edge) => edge.sourceStepId === sourceStepId && edge.targetStepId === targetStepId,
+      );
 
-    if (edgeAlreadyExists) {
-      return draft;
-    }
+      if (edgeAlreadyExists) {
+        return draft;
+      }
 
-    edgeCreated = true;
+      edgeCreated = true;
 
-    return {
-      ...draft,
-      edges: [
-        ...draft.edges,
-        {
-          id: this.generateId('edge'),
-          sourceStepId,
-          targetStepId,
-        },
-      ],
-    };
-  });
+      return {
+        ...draft,
+        edges: [
+          ...draft.edges,
+          {
+            id: this.generateId('edge'),
+            sourceStepId,
+            targetStepId,
+          },
+        ],
+      };
+    });
 
-  return edgeCreated;
-}
+    return edgeCreated;
+  }
 
   removeEdge(sourceStepId: string, targetStepId: string): void {
     this.draftSignal.update((draft) => {
@@ -245,16 +242,34 @@ addEdge(sourceStepId: string, targetStepId: string): boolean {
       return {
         ...draft,
         edges: draft.edges.filter(
-          (edge) =>
-            edge.sourceStepId !== sourceStepId ||
-            edge.targetStepId !== targetStepId,
+          (edge) => edge.sourceStepId !== sourceStepId || edge.targetStepId !== targetStepId,
         ),
       };
     });
   }
 
-  buildSavePayload(): SquadBuilderDraft | null {
-    return this.draft();
+  buildSavePayload(): SquadSavePayload | null {
+    const draft = this.draft();
+
+    if (!draft) {
+      return null;
+    }
+
+    return {
+      name: draft.name,
+      description: draft.description,
+      type: draft.type,
+      steps: draft.steps.map((step) => ({
+        id: step.id,
+        name: step.name,
+        type: 'AI_AGENT',
+        agentKey: step.assignedAgentId ?? '',
+      })),
+      edges: draft.edges.map((edge) => ({
+        sourceStepId: edge.sourceStepId,
+        targetStepId: edge.targetStepId,
+      })),
+    };
   }
 
   resetDraft(): void {

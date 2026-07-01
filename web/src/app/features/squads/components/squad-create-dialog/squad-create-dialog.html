@@ -77,22 +77,6 @@
       </mat-form-field>
     </div>
 
-    <div class="field-group">
-      <label class="field-label" for="project-key">Project key <span>*</span></label>
-
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <input id="project-key" matInput formControlName="projectKey" placeholder="CORE" />
-
-        @if (form.controls.projectKey.hasError('required') && form.controls.projectKey.touched) {
-          <mat-error>Project key is required</mat-error>
-        }
-
-        @if (form.controls.projectKey.hasError('minlength') && form.controls.projectKey.touched) {
-          <mat-error>Project key must be at least 2 characters</mat-error>
-        }
-      </mat-form-field>
-    </div>
-
     <footer class="squad-dialog__actions">
       <button type="button" mat-stroked-button (click)="cancel()">Cancel</button>
 

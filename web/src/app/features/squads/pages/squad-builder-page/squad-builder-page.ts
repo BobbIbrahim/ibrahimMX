@@ -93,10 +93,6 @@ export class SquadBuilderPage {
       errors.push('Squad name is required.');
     }
 
-    if (draft.projectKey.trim().length === 0) {
-      errors.push('Project key is required.');
-    }
-
     if (draft.steps.length < 2) {
       errors.push('At least two steps are required.');
     }
@@ -148,7 +144,6 @@ export class SquadBuilderPage {
       name: draft.name.trim(),
       description: draft.description.trim(),
       type: draft.type,
-      projectKey: draft.projectKey.trim(),
       steps: draft.steps.map((step) => ({
         id: step.id,
         name: step.name.trim(),
@@ -276,7 +271,6 @@ export class SquadBuilderPage {
       description: draft.description,
       type: draft.type,
       status: 'draft',
-      projectKey: draft.projectKey,
       tags: ['Draft', draft.type === 'hardcoded-flow' ? 'Hardcoded Flow' : 'Prompt Squad'],
       metrics: {
         steps: draft.steps.length,
