@@ -69,7 +69,6 @@
 
 .squad-card__header,
 .squad-card__meta,
-.squad-card__tags,
 .squad-card__metrics {
   position: relative;
   z-index: 1;
@@ -210,29 +209,10 @@
 }
 
 /* =========================================================
-   Tags
+
    Related HTML:
-   <section class="squad-card__tags">
+   <section class="squad-card">
    ========================================================= */
-
-.squad-card__tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  margin-top: 1rem;
-}
-
-.tag-chip {
-  padding: 0.35rem 0.6rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
-  color: var(--color-text-primary);
-  border: 1px solid color-mix(in srgb, var(--color-accent) 18%, transparent);
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-shadow: none;
-  filter: none;
-}
 
 .squad-card__actions {
   display: inline-flex;

@@ -42,7 +42,6 @@ export class SquadService {
         'Coordinates release validation by combining code review, test generation, and security checks.',
       type: 'hardcoded-flow',
       status: 'active',
-      tags: ['Release', 'Validation', 'Quality'],
       metrics: {
         steps: 4,
         objects: 0,
@@ -57,7 +56,6 @@ export class SquadService {
         'Uses prompt-driven collaboration to analyze incidents and recommend next actions.',
       type: 'prompt-squad',
       status: 'active',
-      tags: ['Incident', 'Triage', 'Operations'],
       metrics: {
         steps: 0,
         objects: 0,
@@ -71,7 +69,6 @@ export class SquadService {
       description: 'Runs a fixed validation flow to detect regression risks before deployment.',
       type: 'hardcoded-flow',
       status: 'paused',
-      tags: ['Testing', 'Regression', 'Automation'],
       metrics: {
         steps: 3,
         objects: 0,
@@ -153,7 +150,6 @@ export class SquadService {
       description: createdSquad.description,
       type: createdSquad.type as Squad['type'],
       status: 'active',
-      tags: ['Custom', 'Builder'],
       metrics: {
         steps: createdSquad.steps.length,
         objects: 0,

@@ -38,12 +38,6 @@
     </div>
   </section>
 
-  <section class="squad-card__tags" aria-label="Squad tags">
-    @for (tag of squad().tags; track tag) {
-      <span class="tag-chip">{{ tag }}</span>
-    }
-  </section>
-
   <section class="squad-card__metrics" aria-label="Squad metrics">
     <div>
       <span class="metric-value">{{ squad().metrics.steps }}</span>
