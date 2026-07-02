@@ -47,8 +47,7 @@
 
 .builder-title-block__eyebrow,
 .canvas-toolbar__eyebrow,
-.side-panel__eyebrow,
-.json-preview__header span {
+.side-panel__eyebrow {
   display: inline-flex;
   margin-bottom: 0.35rem;
   color: var(--color-accent);
@@ -237,6 +236,9 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
   gap: 1rem;
+  height: clamp(38rem, calc(100vh - 22rem), 50rem);
+  min-height: 0;
+  align-items: stretch;
 }
 
 /* =========================================================
@@ -244,7 +246,8 @@
    ========================================================= */
 
 .builder-canvas-card {
-  min-height: 46rem;
+  min-height: 0;
+  height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -256,7 +259,7 @@
 
 .rete-editor-shell {
   flex: 1;
-  min-height: 40rem;
+  min-height: 0;
   margin: 0;
   overflow: hidden;
   border-top: 1px solid var(--color-border);
@@ -509,8 +512,11 @@
    ========================================================= */
 
 .builder-side-panel {
-  min-height: 36rem;
+  min-height: 0;
+  height: 100%;
   padding: 1rem;
+  overflow-y: auto;
+  overflow-x: hidden;
   border: 1px solid var(--color-border);
   border-radius: 1.35rem;
   background: var(--color-surface);
@@ -599,6 +605,129 @@
 .builder-side-panel ::ng-deep .mat-mdc-form-field.mat-focused .mdc-notched-outline__notch,
 .builder-side-panel ::ng-deep .mat-mdc-form-field.mat-focused .mdc-notched-outline__trailing {
   border-color: var(--color-accent) !important;
+}
+
+/* =========================================================
+   Agent selector
+   ========================================================= */
+
+.agent-select-trigger,
+.agent-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.agent-select-trigger {
+  width: 100%;
+}
+
+.agent-select-trigger__content,
+.agent-option__content {
+  min-width: 0;
+  display: grid;
+  gap: 0.12rem;
+}
+
+.agent-select-trigger__content strong,
+.agent-option__content strong {
+  color: var(--color-text-primary);
+  font-size: 0.9rem;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-select-trigger__content small,
+.agent-option__content small {
+  color: var(--color-text-secondary);
+  font-size: 0.72rem;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-avatar {
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 0.65rem;
+  background: linear-gradient(135deg, var(--color-accent), #a855f7);
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.agent-avatar--empty {
+  background: color-mix(in srgb, var(--color-bg-elevated) 80%, transparent);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.agent-avatar mat-icon {
+  font-size: 1rem;
+  width: 1rem;
+  height: 1rem;
+}
+
+:host ::ng-deep .agent-select-panel {
+  max-height: 22rem !important;
+  overflow-y: auto !important;
+  padding: 0.45rem !important;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem !important;
+  background: var(--color-surface) !important;
+}
+
+:host ::ng-deep .agent-select-panel {
+  padding: 0.45rem !important;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem !important;
+  background: var(--color-surface) !important;
+}
+
+:host ::ng-deep .agent-select-panel .mat-mdc-option {
+  min-height: 3.35rem;
+  margin-bottom: 0.25rem;
+  border-radius: 0.75rem;
+  color: var(--color-text-primary) !important;
+}
+
+:host ::ng-deep .agent-select-panel .mat-mdc-option:hover {
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent) !important;
+}
+
+:host ::ng-deep .agent-select-panel .mat-mdc-option.mdc-list-item--selected {
+  background: color-mix(in srgb, var(--color-accent) 78%, #2563eb) !important;
+}
+
+:host ::ng-deep .agent-select-panel .mat-mdc-option.mdc-list-item--selected .agent-option__content strong,
+:host ::ng-deep .agent-select-panel .mat-mdc-option.mdc-list-item--selected .agent-option__content small {
+  color: white !important;
+}
+
+:host ::ng-deep .agent-select-panel .mat-mdc-option.mdc-list-item--selected .agent-avatar {
+  background: rgba(255, 255, 255, 0.18);
+  color: white;
+}
+
+:host ::ng-deep .agent-select-panel .mat-pseudo-checkbox {
+  color: white !important;
+}
+
+.agent-option__content strong,
+.agent-select-trigger__content strong,
+.agent-option__content small,
+.agent-select-trigger__content small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* =========================================================
@@ -708,7 +837,11 @@
 .edge-list__items {
   display: grid;
   gap: 0.6rem;
+  max-height: 18rem;
+  overflow-y: auto;
+  padding-right: 0.25rem;
 }
+
 
 .edge-list__item {
   display: grid;
@@ -822,44 +955,6 @@
 }
 
 /* =========================================================
-   JSON preview
-   ========================================================= */
-
-.json-preview {
-  margin-top: 1rem;
-  padding: 1rem;
-  border: 1px solid var(--color-border);
-  border-radius: 1.35rem;
-  background: var(--color-surface);
-}
-
-.json-preview__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 0.75rem;
-}
-
-.json-preview h2 {
-  margin: 0;
-  color: var(--color-text-primary);
-  font-size: 1rem;
-}
-
-.json-preview pre {
-  max-height: 22rem;
-  overflow: auto;
-  margin: 0;
-  padding: 1rem;
-  border-radius: 1rem;
-  background: color-mix(in srgb, var(--color-bg) 86%, black);
-  color: var(--color-text-primary);
-  font-size: 0.78rem;
-  line-height: 1.55;
-}
-
-/* =========================================================
    No draft state
    ========================================================= */
 
@@ -952,13 +1047,9 @@
 }
 
 @media (min-width: 1280px) {
-  .builder-canvas-card,
-  .builder-side-panel {
-    min-height: 50rem;
-  }
-
-  .rete-editor-shell,
-  .rete-squad-flow-editor {
-    min-height: 44rem;
+  .builder-layout {
+    height: clamp(42rem, calc(100vh - 22rem), 54rem);
   }
 }
+
+

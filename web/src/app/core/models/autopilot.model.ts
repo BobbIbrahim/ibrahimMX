@@ -16,7 +16,6 @@ export interface Autopilot {
   assigneeName: string;
 
   projectId?: string;
-  projectKey?: string;
 
   outputMode: AutopilotOutputMode;
   triggerType: AutopilotTriggerType;

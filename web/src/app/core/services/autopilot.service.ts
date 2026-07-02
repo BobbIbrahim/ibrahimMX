@@ -25,7 +25,6 @@ This autopilot runs for the CORE project repository.
       assigneeId: 'agent-001',
       assigneeName: 'Code Sentinel',
       projectId: 'project-001',
-      projectKey: 'CORE', //tenant
       outputMode: 'create-issue',
       triggerType: 'schedule',
       frequency: 'weekdays',
@@ -53,7 +52,6 @@ This autopilot runs silently for the OPS operations workflow.
       assigneeId: 'squad-002',
       assigneeName: 'Incident Triage Squad',
       projectId: 'project-002',
-      projectKey: 'OPS',
       outputMode: 'run-only',
       triggerType: 'schedule',
       frequency: 'daily',

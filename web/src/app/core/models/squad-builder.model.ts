@@ -8,7 +8,6 @@ export interface SquadBuilderPosition {
 export interface SquadBuilderStep {
   id: string;
   name: string;
-  description: string;
   assignedAgentId: string | null;
   parameters: Record<string, string>;
   position: SquadBuilderPosition;

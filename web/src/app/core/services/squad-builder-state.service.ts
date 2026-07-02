@@ -14,7 +14,7 @@ export type CreateSquadDraftPayload = {
 };
 
 export type UpdateSquadStepPayload = Partial<
-  Pick<SquadBuilderStep, 'name' | 'description' | 'assignedAgentId' | 'parameters'>
+  Pick<SquadBuilderStep, 'name' | 'assignedAgentId' | 'parameters'>
 >;
 
 @Injectable({
@@ -64,7 +64,6 @@ export class SquadBuilderStateService {
     const newStep: SquadBuilderStep = {
       id: this.generateId('step'),
       name: `New Step ${stepIndex}`,
-      description: '',
       assignedAgentId: null,
       parameters: {},
       position: {
