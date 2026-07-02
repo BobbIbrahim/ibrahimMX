@@ -22,6 +22,8 @@ public class Squad {
 
 	private String description;
 
+	private String type;
+
 	@NonNull
 	private List<SquadStep> steps;
 

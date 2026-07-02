@@ -18,6 +18,8 @@ public class SquadApiResponse {
 
 	private String description;
 
+	private String type;
+
 	@NonNull
 	private List<SquadStepApiResponse> steps;
 

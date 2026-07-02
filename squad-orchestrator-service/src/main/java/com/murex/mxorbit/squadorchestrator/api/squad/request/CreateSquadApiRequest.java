@@ -19,6 +19,8 @@ public class CreateSquadApiRequest {
 
 	private String description;
 
+	private String type;
+
 	@Valid
 	@NotEmpty
 	private List<SquadStepApiRequest> steps;

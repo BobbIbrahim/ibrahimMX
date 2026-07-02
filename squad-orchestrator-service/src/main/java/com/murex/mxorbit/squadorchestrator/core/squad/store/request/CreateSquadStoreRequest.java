@@ -20,6 +20,8 @@ public class CreateSquadStoreRequest {
 
 	private String description;
 
+	private String type;
+
 	private List<SquadStep> steps;
 
 	private List<SquadEdge> edges;

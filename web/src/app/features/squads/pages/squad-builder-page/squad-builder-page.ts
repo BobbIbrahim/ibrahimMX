@@ -1,7 +1,7 @@
 import { TitleCasePipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import {Router ,RouterLink } from '@angular/router';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -10,6 +10,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 
 import { SquadBuilderStateService } from '../../../../core/services/squad-builder-state.service';
+import { SquadService } from '../../../../core/services/squad.service';
 import { ReteSquadFlowEditor } from '../../components/rete-squad-flow-editor/rete-squad-flow-editor';
 
 type BuilderAgent = {
@@ -49,11 +50,17 @@ type ReteNodePositionChangedEvent = {
 })
 export class SquadBuilderPage {
   private readonly squadBuilderState = inject(SquadBuilderStateService);
+  private readonly squadService = inject(SquadService);
+  private readonly router = inject(Router);
 
   readonly draft = this.squadBuilderState.draft;
   readonly steps = this.squadBuilderState.steps;
   readonly edges = this.squadBuilderState.edges;
   readonly selectedStep = this.squadBuilderState.selectedStep;
+
+  readonly isSaving = signal(false);
+  readonly saveError = signal<string | null>(null);
+  readonly saveSuccess = signal<string | null>(null);
 
   readonly agents = signal<BuilderAgent[]>([
     {
@@ -106,7 +113,7 @@ export class SquadBuilderPage {
   });
 
   readonly canSave = computed(() => {
-    return Boolean(this.draft()) && this.validationErrors().length === 0;
+    return Boolean(this.draft()) && this.validationErrors().length === 0 && !this.isSaving();
   });
 
   addStep(): void {
@@ -177,11 +184,31 @@ export class SquadBuilderPage {
   saveDraft(): void {
     const payload = this.backendReadyPayload();
 
-    if (!payload || !this.canSave()) {
+    if (!payload || !this.canSave() || this.isSaving()) {
       return;
     }
 
-    console.log('Backend-ready squad payload:', payload);
+    this.isSaving.set(true);
+    this.saveError.set(null);
+    this.saveSuccess.set(null);
+
+    this.squadService.createSquad(payload).subscribe({
+      next: (createdSquad) => {
+        this.squadService.addCreatedSquadFromApi(createdSquad);
+        this.squadBuilderState.resetDraft();
+
+        this.isSaving.set(false);
+        this.saveSuccess.set(`Squad "${createdSquad.name}" was created successfully.`);
+
+        void this.router.navigate(['/squads']);
+      },
+      error: (error) => {
+        this.isSaving.set(false);
+        this.saveError.set('Failed to save squad. Please check the backend logs and try again.');
+
+        console.error('Failed to create squad:', error);
+      },
+    });
   }
 
   downloadBackendPayloadJson(): void {

@@ -19,6 +19,9 @@ public class CreateSquadRequest {
 	private String description;
 
 	@NonNull
+	private String type;
+
+	@NonNull
 	private List<SquadStepRequest> steps;
 
 	@NonNull

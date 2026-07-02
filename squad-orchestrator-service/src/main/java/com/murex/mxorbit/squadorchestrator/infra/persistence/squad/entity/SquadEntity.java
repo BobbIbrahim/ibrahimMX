@@ -38,10 +38,10 @@ public class SquadEntity {
 
 	private String description;
 
-	@Column(nullable = false)
+	private String type;
+
 	private Instant createdAt;
 
-	@Column(nullable = false)
 	private Instant updatedAt;
 
 	@Builder.Default

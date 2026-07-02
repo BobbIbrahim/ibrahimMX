@@ -1,11 +1,37 @@
-import { Injectable, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject, signal } from '@angular/core';
 
+import { SquadSavePayload } from '../models/squad-builder.model';
 import { Squad } from '../models/squad.model';
+
+export interface SquadApiStepResponse {
+  id: string;
+  name: string;
+  type: string;
+  agentKey: string;
+}
+
+export interface SquadApiEdgeResponse {
+  sourceStepId: string;
+  targetStepId: string;
+}
+
+export interface SquadApiResponse {
+  id: string;
+  name: string;
+  description: string;
+  type: string;
+  steps: SquadApiStepResponse[];
+  edges: SquadApiEdgeResponse[];
+}
 
 @Injectable({
   providedIn: 'root',
 })
 export class SquadService {
+  private readonly http = inject(HttpClient);
+
+  private readonly baseUrl = 'http://localhost:8080';
   private readonly localStorageKey = 'mxorbit.saved-squads';
 
   private readonly initialSquads: Squad[] = [
@@ -66,6 +92,10 @@ export class SquadService {
     return this.squads;
   }
 
+  createSquad(payload: SquadSavePayload) {
+    return this.http.post<SquadApiResponse>(`${this.baseUrl}/squads`, payload);
+  }
+
   addSquad(squad: Squad): void {
     const savedSquads = this.loadSavedSquads();
 
@@ -74,6 +104,16 @@ export class SquadService {
     this.persistSavedSquads(updatedSavedSquads);
 
     this.squadsSignal.set([...updatedSavedSquads, ...this.initialSquads]);
+  }
+
+  deleteSquad(squadId: string): void {
+    this.squadsSignal.update((squads) => squads.filter((squad) => squad.id !== squadId));
+
+    const savedSquads = this.loadSavedSquads();
+
+    const updatedSavedSquads = savedSquads.filter((squad) => squad.id !== squadId);
+
+    this.persistSavedSquads(updatedSavedSquads);
   }
 
   private loadSavedSquads(): Squad[] {
@@ -100,13 +140,29 @@ export class SquadService {
     localStorage.setItem(this.localStorageKey, JSON.stringify(squads));
   }
 
-  deleteSquad(squadId: string): void {
-    this.squadsSignal.update((squads) => squads.filter((squad) => squad.id !== squadId));
+  addCreatedSquadFromApi(createdSquad: SquadApiResponse): void {
+    const uniqueAgentKeys = new Set(
+        createdSquad.steps
+            .map((step) => step.agentKey)
+            .filter(Boolean),
+    );
 
-    const savedSquads = this.loadSavedSquads();
+    const squad: Squad = {
+      id: createdSquad.id,
+      name: createdSquad.name,
+      description: createdSquad.description,
+      type: createdSquad.type as Squad['type'],
+      status: 'active',
+      tags: ['Custom', 'Builder'],
+      metrics: {
+        steps: createdSquad.steps.length,
+        objects: 0,
+        edges: createdSquad.edges.length,
+        members: uniqueAgentKeys.size,
+      },
+    };
 
-    const updatedSavedSquads = savedSquads.filter((squad) => squad.id !== squadId);
-
-    this.persistSavedSquads(updatedSavedSquads);
+    this.addSquad(squad);
   }
+
 }
