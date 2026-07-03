@@ -8,9 +8,131 @@
     (actionClick)="onCreateSquad()"
   />
 
-  <div class="squad-grid">
-    @for (squad of squads(); track squad.id) {
-      <app-squad-card [squad]="squad" (deleteClicked)="deleteSquad(squad.id)" />
-    }
-  </div>
+  <section class="squad-stats" aria-label="Squad statistics">
+    <article>
+      <span>Total Squads</span>
+      <strong>{{ squads().length }}</strong>
+      <small>Stored in backend</small>
+    </article>
+
+    <article>
+      <span>Hardcoded Flows</span>
+      <strong>{{ hardcodedFlows() }}</strong>
+      <small>Visual workflow squads</small>
+    </article>
+
+    <article>
+      <span>Prompt Squads</span>
+      <strong>{{ promptSquads() }}</strong>
+      <small>Prompt-driven squads</small>
+    </article>
+
+    <article>
+      <span>Agent Links</span>
+      <strong>{{ totalMembers() }}</strong>
+      <small>Across all squads</small>
+    </article>
+  </section>
+
+  <section class="squad-toolbar" aria-label="Squad filters and sorting">
+    <div class="squad-toolbar__top">
+      <mat-form-field appearance="outline" class="squad-search" subscriptSizing="dynamic">
+        <mat-icon matPrefix>search</mat-icon>
+
+        <input
+          matInput
+          type="search"
+          placeholder="Search by squad name, description, or type"
+          [ngModel]="searchTerm()"
+          (ngModelChange)="searchTerm.set($event)"
+        />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="squad-sort" subscriptSizing="dynamic">
+        <mat-label>Sort by</mat-label>
+
+        <mat-select [ngModel]="sortOption()" (ngModelChange)="sortOption.set($event)">
+          <mat-option value="name-asc">Name A-Z</mat-option>
+          <mat-option value="name-desc">Name Z-A</mat-option>
+          <mat-option value="steps-desc">Most steps</mat-option>
+          <mat-option value="edges-desc">Most edges</mat-option>
+          <mat-option value="members-desc">Most members</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="squad-toolbar__bottom">
+      <div class="filter-pills" aria-label="Squad type filters">
+        <button
+          type="button"
+          class="filter-pill"
+          [class.filter-pill--active]="typeFilter() === 'all'"
+          (click)="typeFilter.set('all')"
+        >
+          All
+        </button>
+
+        <button
+          type="button"
+          class="filter-pill"
+          [class.filter-pill--active]="typeFilter() === 'hardcoded-flow'"
+          (click)="typeFilter.set('hardcoded-flow')"
+        >
+          Hardcoded Flow
+        </button>
+
+        <button
+          type="button"
+          class="filter-pill"
+          [class.filter-pill--active]="typeFilter() === 'prompt-squad'"
+          (click)="typeFilter.set('prompt-squad')"
+        >
+          Prompt Squad
+        </button>
+      </div>
+
+      <button type="button" mat-stroked-button class="clear-button" (click)="clearFilters()">
+        <mat-icon>restart_alt</mat-icon>
+        Clear
+      </button>
+    </div>
+  </section>
+
+  @if (loadSquadsError()) {
+    <section class="squad-feedback squad-feedback--error">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ loadSquadsError() }}</span>
+    </section>
+  }
+
+  <p class="squad-result-count">
+    Showing {{ filteredSquads().length }} of {{ squads().length }} squads
+  </p>
+
+  @if (filteredSquads().length > 0) {
+    <div class="squad-grid">
+      @for (squad of filteredSquads(); track squad.id) {
+        <app-squad-card
+          [squad]="squad"
+          (openClicked)="openSquad($event)"
+          (deleteClicked)="deleteSquad(squad.id)"
+        ></app-squad-card>
+      }
+    </div>
+  } @else {
+    <section class="squad-empty-state">
+      <mat-icon>hub</mat-icon>
+
+      <h2>No squads found</h2>
+
+      <p>
+        Adjust the filters or create a new squad to start building an orchestration flow.
+      </p>
+
+      <button type="button" mat-flat-button (click)="onCreateSquad()">
+        <mat-icon>add</mat-icon>
+        New Squad
+      </button>
+    </section>
+  }
 </section>

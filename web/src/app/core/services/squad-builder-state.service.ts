@@ -1,5 +1,5 @@
 import { Injectable, computed, signal } from '@angular/core';
-
+import { SquadApiResponse } from './squad.service';
 import {
   SquadBuilderDraft,
   SquadBuilderStep,
@@ -48,6 +48,35 @@ export class SquadBuilderStateService {
       type: payload.type,
       steps: [],
       edges: [],
+    };
+
+    this.draftSignal.set(draft);
+    this.selectedStepIdSignal.set(null);
+
+    return draft;
+  }
+
+  loadDraftFromApi(squad: SquadApiResponse): SquadBuilderDraft {
+    const draft: SquadBuilderDraft = {
+      id: squad.id,
+      name: squad.name.trim(),
+      description: squad.description?.trim() ?? '',
+      type: squad.type as SquadBuilderType,
+      steps: squad.steps.map((step, index) => ({
+        id: step.id,
+        name: step.name,
+        assignedAgentId: step.agentKey,
+        parameters: {},
+        position: {
+          x: 160 + index * 220,
+          y: 140 + (index % 2) * 140,
+        },
+      })),
+      edges: squad.edges.map((edge, index) => ({
+        id: this.generateId(`edge-${index + 1}`),
+        sourceStepId: edge.sourceStepId,
+        targetStepId: edge.targetStepId,
+      })),
     };
 
     this.draftSignal.set(draft);

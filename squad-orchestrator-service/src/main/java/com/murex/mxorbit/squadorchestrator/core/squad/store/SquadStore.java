@@ -13,4 +13,6 @@ public interface SquadStore {
 	List<Squad> findAll();
 
 	Optional<Squad> findById(String squadId);
+
+	Optional<Squad> update(String squadId, CreateSquadStoreRequest request);
 }

@@ -11,14 +11,11 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-
-import java.util.List;
-
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 
 @RequestMapping("squads")
 public interface SquadApi {
@@ -43,4 +40,12 @@ public interface SquadApi {
 			@ApiResponse(responseCode = "500", description = "Internal error")})
 	ResponseEntity<SquadApiResponse> getSquadById(@PathVariable String squadId);
 
+	@PutMapping("/{squadId}")
+	@Operation(summary = "Update a squad")
+	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Squad updated"),
+			@ApiResponse(responseCode = "400", description = "Invalid request"),
+			@ApiResponse(responseCode = "404", description = "Squad not found"),
+			@ApiResponse(responseCode = "500", description = "Internal error")})
+	ResponseEntity<SquadApiResponse> updateSquad(@PathVariable String squadId,
+			@RequestBody @Valid CreateSquadApiRequest request);
 }

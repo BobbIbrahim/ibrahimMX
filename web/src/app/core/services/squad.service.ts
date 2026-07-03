@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
+import { Observable, map, tap } from 'rxjs';
 
 import { SquadSavePayload } from '../models/squad-builder.model';
 import { Squad } from '../models/squad.model';
@@ -32,56 +33,8 @@ export class SquadService {
   private readonly http = inject(HttpClient);
 
   private readonly baseUrl = 'http://localhost:8080';
-  private readonly localStorageKey = 'mxorbit.saved-squads';
 
-  private readonly initialSquads: Squad[] = [
-    {
-      id: 'squad-001',
-      name: 'Release Readiness Squad',
-      description:
-        'Coordinates release validation by combining code review, test generation, and security checks.',
-      type: 'hardcoded-flow',
-      status: 'active',
-      metrics: {
-        steps: 4,
-        objects: 0,
-        edges: 3,
-        members: 3,
-      },
-    },
-    {
-      id: 'squad-002',
-      name: 'Incident Triage Squad',
-      description:
-        'Uses prompt-driven collaboration to analyze incidents and recommend next actions.',
-      type: 'prompt-squad',
-      status: 'active',
-      metrics: {
-        steps: 0,
-        objects: 0,
-        edges: 0,
-        members: 2,
-      },
-    },
-    {
-      id: 'squad-003',
-      name: 'Regression Shield Squad',
-      description: 'Runs a fixed validation flow to detect regression risks before deployment.',
-      type: 'hardcoded-flow',
-      status: 'paused',
-      metrics: {
-        steps: 3,
-        objects: 0,
-        edges: 2,
-        members: 2,
-      },
-    },
-  ];
-
-  private readonly squadsSignal = signal<Squad[]>([
-    ...this.loadSavedSquads(),
-    ...this.initialSquads,
-  ]);
+  private readonly squadsSignal = signal<Squad[]>([]);
 
   readonly squads = this.squadsSignal.asReadonly();
 
@@ -89,76 +42,71 @@ export class SquadService {
     return this.squads;
   }
 
-  createSquad(payload: SquadSavePayload) {
+  loadSquadsFromApi(): Observable<Squad[]> {
+    return this.http.get<SquadApiResponse[]>(`${this.baseUrl}/squads`).pipe(
+      map((apiSquads) => apiSquads.map((apiSquad) => this.mapApiResponseToSquad(apiSquad))),
+      tap((squads) => {
+        this.squadsSignal.set(squads);
+      }),
+    );
+  }
+
+  getSquadByIdFromApi(squadId: string): Observable<SquadApiResponse> {
+    return this.http.get<SquadApiResponse>(`${this.baseUrl}/squads/${squadId}`);
+  }
+
+  createSquad(payload: SquadSavePayload): Observable<SquadApiResponse> {
     return this.http.post<SquadApiResponse>(`${this.baseUrl}/squads`, payload);
   }
 
-  addSquad(squad: Squad): void {
-    const savedSquads = this.loadSavedSquads();
+  updateSquad(squadId: string, payload: SquadSavePayload): Observable<SquadApiResponse> {
+    return this.http.put<SquadApiResponse>(`${this.baseUrl}/squads/${squadId}`, payload);
+  }
 
-    const updatedSavedSquads = [squad, ...savedSquads];
+  addCreatedSquadFromApi(createdSquad: SquadApiResponse): void {
+    const squad = this.mapApiResponseToSquad(createdSquad);
 
-    this.persistSavedSquads(updatedSavedSquads);
+    this.squadsSignal.update((squads) => [squad, ...squads]);
+  }
 
-    this.squadsSignal.set([...updatedSavedSquads, ...this.initialSquads]);
+  upsertSquadFromApi(apiSquad: SquadApiResponse): void {
+    const squad = this.mapApiResponseToSquad(apiSquad);
+
+    this.squadsSignal.update((squads) => {
+      const exists = squads.some((existingSquad) => existingSquad.id === squad.id);
+
+      if (!exists) {
+        return [squad, ...squads];
+      }
+
+      return squads.map((existingSquad) =>
+        existingSquad.id === squad.id ? squad : existingSquad,
+      );
+    });
   }
 
   deleteSquad(squadId: string): void {
     this.squadsSignal.update((squads) => squads.filter((squad) => squad.id !== squadId));
-
-    const savedSquads = this.loadSavedSquads();
-
-    const updatedSavedSquads = savedSquads.filter((squad) => squad.id !== squadId);
-
-    this.persistSavedSquads(updatedSavedSquads);
   }
 
-  private loadSavedSquads(): Squad[] {
-    try {
-      const rawSavedSquads = localStorage.getItem(this.localStorageKey);
-
-      if (!rawSavedSquads) {
-        return [];
-      }
-
-      const parsedSavedSquads = JSON.parse(rawSavedSquads) as Squad[];
-
-      if (!Array.isArray(parsedSavedSquads)) {
-        return [];
-      }
-
-      return parsedSavedSquads;
-    } catch {
-      return [];
-    }
-  }
-
-  private persistSavedSquads(squads: Squad[]): void {
-    localStorage.setItem(this.localStorageKey, JSON.stringify(squads));
-  }
-
-  addCreatedSquadFromApi(createdSquad: SquadApiResponse): void {
+  private mapApiResponseToSquad(apiSquad: SquadApiResponse): Squad {
     const uniqueAgentKeys = new Set(
-        createdSquad.steps
-            .map((step) => step.agentKey)
-            .filter(Boolean),
+      apiSquad.steps
+        .map((step) => step.agentKey)
+        .filter(Boolean),
     );
 
-    const squad: Squad = {
-      id: createdSquad.id,
-      name: createdSquad.name,
-      description: createdSquad.description,
-      type: createdSquad.type as Squad['type'],
+    return {
+      id: apiSquad.id,
+      name: apiSquad.name,
+      description: apiSquad.description,
+      type: apiSquad.type as Squad['type'],
       status: 'active',
       metrics: {
-        steps: createdSquad.steps.length,
-        objects: 0,
-        edges: createdSquad.edges.length,
+        steps: apiSquad.steps.length,
+        edges: apiSquad.edges.length,
         members: uniqueAgentKeys.size,
       },
     };
-
-    this.addSquad(squad);
   }
-
 }

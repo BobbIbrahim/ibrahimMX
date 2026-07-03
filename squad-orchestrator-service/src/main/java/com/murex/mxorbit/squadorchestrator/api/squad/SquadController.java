@@ -40,6 +40,18 @@ public class SquadController implements SquadApi {
 		log.debug("Received request to get squad by id: {}", squadId);
 		Optional<SquadApiResponse> squadApiResponse = squadFacade.getSquadById(squadId)
 				.map(squadApiMapper::toSquadApiResponse);
+
+		return ResponseEntity.of(squadApiResponse);
+	}
+
+	@Override
+	public ResponseEntity<SquadApiResponse> updateSquad(String squadId, CreateSquadApiRequest request) {
+		log.debug("Received request to update squad with id: {} and request: {}", squadId, request);
+
+		Optional<SquadApiResponse> squadApiResponse = squadFacade
+				.updateSquad(squadId, squadApiMapper.toSquadCreateRequest(request))
+				.map(squadApiMapper::toSquadApiResponse);
+
 		return ResponseEntity.of(squadApiResponse);
 	}
 }

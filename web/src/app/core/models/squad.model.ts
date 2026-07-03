@@ -4,7 +4,6 @@ export type SquadStatus = 'active' | 'draft' | 'paused';
 
 export interface SquadMetrics {
   steps: number;
-  objects: number;
   edges: number;
   members: number;
 }

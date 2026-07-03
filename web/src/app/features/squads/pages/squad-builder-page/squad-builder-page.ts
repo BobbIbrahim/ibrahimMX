@@ -1,7 +1,7 @@
 import { TitleCasePipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import {Router ,RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -48,9 +48,10 @@ type ReteNodePositionChangedEvent = {
   templateUrl: './squad-builder-page.html',
   styleUrl: './squad-builder-page.scss',
 })
-export class SquadBuilderPage {
+export class SquadBuilderPage implements OnInit {
   private readonly squadBuilderState = inject(SquadBuilderStateService);
   private readonly squadService = inject(SquadService);
+  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
   readonly draft = this.squadBuilderState.draft;
@@ -61,6 +62,7 @@ export class SquadBuilderPage {
   readonly isSaving = signal(false);
   readonly saveError = signal<string | null>(null);
   readonly saveSuccess = signal<string | null>(null);
+  readonly isLoadingExistingSquad = signal(false);
 
   readonly agents = signal<BuilderAgent[]>([
     {
@@ -113,8 +115,17 @@ export class SquadBuilderPage {
   });
 
   readonly canSave = computed(() => {
-    return Boolean(this.draft()) && this.validationErrors().length === 0 && !this.isSaving();
+    return (
+      Boolean(this.draft()) &&
+      this.validationErrors().length === 0 &&
+      !this.isSaving() &&
+      !this.isLoadingExistingSquad()
+    );
   });
+
+  ngOnInit(): void {
+    this.loadExistingSquadFromRouteIfNeeded();
+  }
 
   addStep(): void {
     this.squadBuilderState.addStep();
@@ -184,13 +195,39 @@ export class SquadBuilderPage {
   saveDraft(): void {
     const payload = this.backendReadyPayload();
 
-    if (!payload || !this.canSave() || this.isSaving()) {
+    if (!payload || !this.canSave()) {
       return;
     }
+
+    const existingSquadId = this.getRouteSquadId();
 
     this.isSaving.set(true);
     this.saveError.set(null);
     this.saveSuccess.set(null);
+
+    if (existingSquadId) {
+      this.squadService.updateSquad(existingSquadId, payload).subscribe({
+        next: (updatedSquad) => {
+          this.squadService.upsertSquadFromApi(updatedSquad);
+          this.squadBuilderState.resetDraft();
+
+          this.isSaving.set(false);
+          this.saveSuccess.set(`Squad "${updatedSquad.name}" was updated successfully.`);
+
+          void this.router.navigate(['/squads']);
+        },
+        error: (error) => {
+          this.isSaving.set(false);
+          this.saveError.set(
+            'Failed to update squad. Please check the backend logs and try again.',
+          );
+
+          console.error('Failed to update squad:', error);
+        },
+      });
+
+      return;
+    }
 
     this.squadService.createSquad(payload).subscribe({
       next: (createdSquad) => {
@@ -230,5 +267,39 @@ export class SquadBuilderPage {
     anchor.click();
 
     URL.revokeObjectURL(objectUrl);
+  }
+
+  private loadExistingSquadFromRouteIfNeeded(): void {
+    const squadId = this.getRouteSquadId();
+
+    if (!squadId || this.draft()) {
+      return;
+    }
+
+    this.isLoadingExistingSquad.set(true);
+
+    this.squadService.getSquadByIdFromApi(squadId).subscribe({
+      next: (squad) => {
+        this.squadBuilderState.loadDraftFromApi(squad);
+        this.isLoadingExistingSquad.set(false);
+      },
+      error: (error) => {
+        this.isLoadingExistingSquad.set(false);
+
+        console.error('Failed to load squad for editing:', error);
+
+        void this.router.navigate(['/squads']);
+      },
+    });
+  }
+
+  private getRouteSquadId(): string | null {
+    const squadId = this.route.snapshot.paramMap.get('squadId');
+
+    if (!squadId || squadId === 'new') {
+      return null;
+    }
+
+    return squadId;
   }
 }

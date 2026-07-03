@@ -4,6 +4,7 @@ import com.murex.mxorbit.squadorchestrator.core.squad.creator.SquadCreator;
 import com.murex.mxorbit.squadorchestrator.core.squad.creator.request.CreateSquadRequest;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.Squad;
 import com.murex.mxorbit.squadorchestrator.core.squad.provider.SquadProvider;
+import com.murex.mxorbit.squadorchestrator.core.squad.updater.SquadUpdater;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,6 +18,7 @@ public class SquadFacadeService implements SquadFacade {
 
 	private final SquadCreator squadCreator;
 	private final SquadProvider squadProvider;
+	private final SquadUpdater squadUpdater;
 
 	@Override
 	public Squad createSquad(CreateSquadRequest request) {
@@ -31,5 +33,10 @@ public class SquadFacadeService implements SquadFacade {
 	@Override
 	public Optional<Squad> getSquadById(String squadId) {
 		return squadProvider.getSquadById(squadId);
+	}
+
+	@Override
+	public Optional<Squad> updateSquad(String squadId, CreateSquadRequest request) {
+		return squadUpdater.updateSquad(squadId, request);
 	}
 }

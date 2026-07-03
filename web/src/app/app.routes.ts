@@ -37,7 +37,7 @@ export const routes: Routes = [
       {
         path: 'projects/:projectId',
         component: ProjectDetailsPage,
-        title: 'Project Details', 
+        title: 'Project Details',
       },
       {
         path: 'squads',
@@ -46,6 +46,11 @@ export const routes: Routes = [
       },
       {
         path: 'squads/builder/new',
+        component: SquadBuilderPage,
+        title: 'Squad Builder',
+      },
+      {
+        path: 'squads/builder/:squadId',
         component: SquadBuilderPage,
         title: 'Squad Builder',
       },

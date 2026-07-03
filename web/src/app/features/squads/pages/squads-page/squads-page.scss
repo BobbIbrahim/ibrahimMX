@@ -2,14 +2,271 @@
   min-height: calc(100vh - 4rem);
 }
 
+/* =========================================================
+   Statistics
+   ========================================================= */
+
+.squad-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.squad-stats article {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  background: radial-gradient(
+    circle at top right,
+    color-mix(in srgb, var(--color-accent) 9%, transparent),
+    transparent 16rem
+  ),
+  var(--color-surface);
+  color: var(--color-text-primary);
+}
+
+.squad-stats span {
+  display: block;
+  color: var(--color-text-secondary);
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.squad-stats strong {
+  display: block;
+  margin-top: 0.45rem;
+  color: var(--color-text-primary);
+  font-size: 1.8rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.squad-stats small {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+}
+
+/* =========================================================
+   Toolbar
+   ========================================================= */
+
+.squad-toolbar {
+  margin-bottom: 0.85rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1.2rem;
+  background: var(--color-surface);
+}
+
+.squad-toolbar__top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(14rem, 18rem);
+  gap: 1rem;
+  align-items: center;
+}
+
+.squad-toolbar__bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.squad-search,
+.squad-sort {
+  width: 100%;
+}
+
+.filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.filter-pill {
+  min-height: 2.4rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: color 160ms ease,
+  border-color 160ms ease,
+  background-color 160ms ease,
+  transform 160ms ease;
+}
+
+.filter-pill:hover {
+  transform: translateY(-1px);
+  color: var(--color-text-primary);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, var(--color-border));
+}
+
+.filter-pill--active {
+  color: white;
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+}
+
+.clear-button mat-icon {
+  margin-right: 0.35rem;
+}
+
+/* =========================================================
+   Result count and grid
+   ========================================================= */
+
+.squad-result-count {
+  margin: 0 0 1rem;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
 .squad-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
 }
 
+/* =========================================================
+   Feedback and empty state
+   ========================================================= */
+
+.squad-feedback {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.squad-feedback mat-icon {
+  font-size: 1.2rem;
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.squad-feedback--error {
+  border: 1px solid color-mix(in srgb, var(--color-danger) 42%, var(--color-border));
+  background: color-mix(in srgb, var(--color-danger) 12%, var(--color-surface));
+  color: var(--color-danger);
+}
+
+.squad-empty-state {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  min-height: 20rem;
+  padding: 2rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 1.25rem;
+  background: var(--color-surface);
+}
+
+.squad-empty-state mat-icon {
+  color: var(--color-accent);
+  font-size: 2.5rem;
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.squad-empty-state h2 {
+  margin: 0.85rem 0 0;
+  color: var(--color-text-primary);
+}
+
+.squad-empty-state p {
+  max-width: 32rem;
+  margin: 0.65rem 0 1rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+/* =========================================================
+   Material overrides
+   ========================================================= */
+
+.feature-page ::ng-deep .mat-mdc-form-field {
+  width: 100%;
+}
+
+.feature-page ::ng-deep .mat-mdc-text-field-wrapper {
+  background: transparent !important;
+}
+
+.feature-page ::ng-deep input.mat-mdc-input-element,
+.feature-page ::ng-deep .mat-mdc-select-value,
+.feature-page ::ng-deep .mat-mdc-select-value-text {
+  color: var(--color-text-primary) !important;
+}
+
+.feature-page ::ng-deep input.mat-mdc-input-element::placeholder {
+  color: var(--color-text-muted) !important;
+  opacity: 1;
+}
+
+.feature-page ::ng-deep .mat-mdc-form-field-icon-prefix,
+.feature-page ::ng-deep .mat-mdc-select-arrow {
+  color: var(--color-text-secondary) !important;
+}
+
+.feature-page ::ng-deep .mdc-notched-outline__leading,
+.feature-page ::ng-deep .mdc-notched-outline__notch,
+.feature-page ::ng-deep .mdc-notched-outline__trailing {
+  border-color: var(--color-border) !important;
+}
+
+.feature-page ::ng-deep .mat-mdc-form-field.mat-focused .mdc-notched-outline__leading,
+.feature-page ::ng-deep .mat-mdc-form-field.mat-focused .mdc-notched-outline__notch,
+.feature-page ::ng-deep .mat-mdc-form-field.mat-focused .mdc-notched-outline__trailing {
+  border-color: var(--color-accent) !important;
+}
+
+/* =========================================================
+   Responsive
+   ========================================================= */
+
+@media (max-width: 1180px) {
+  .squad-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .squad-toolbar__top {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 980px) {
   .squad-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .squad-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .squad-toolbar__bottom {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .clear-button {
+    width: 100%;
   }
 }

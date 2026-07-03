@@ -6,6 +6,7 @@ import com.murex.mxorbit.squadorchestrator.core.squad.store.request.CreateSquadS
 import com.murex.mxorbit.squadorchestrator.infra.persistence.squad.entity.SquadEntity;
 import com.murex.mxorbit.squadorchestrator.infra.persistence.squad.mapper.SquadPersistenceMapper;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,5 +44,31 @@ public class SquadJpaStore implements SquadStore {
 	public Optional<Squad> findById(String squadId) {
 		log.trace("Finding squad by id: {}", squadId);
 		return squadRepository.findById(squadId).map(squadPersistenceMapper::toSquad);
+	}
+
+	@Override
+	public Optional<Squad> update(String squadId, CreateSquadStoreRequest request) {
+		log.trace("Updating squad with id: {} and request: {}", squadId, request);
+
+		return squadRepository.findById(squadId).map(entity -> {
+			entity.setName(request.getName());
+			entity.setDescription(request.getDescription());
+			entity.setType(request.getType());
+			entity.setUpdatedAt(Instant.now());
+
+			entity.getEdges().clear();
+			entity.getSteps().clear();
+
+			squadRepository.flush();
+
+			request.getSteps().stream().map(step -> squadPersistenceMapper.buildStepEntity(step, entity.getId()))
+					.forEach(entity::addStep);
+
+			request.getEdges().stream().map(squadPersistenceMapper::toEdgeEntity).forEach(entity::addEdge);
+
+			SquadEntity saved = squadRepository.save(entity);
+
+			return squadPersistenceMapper.toSquad(saved);
+		});
 	}
 }

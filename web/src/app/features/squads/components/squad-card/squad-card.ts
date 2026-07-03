@@ -13,7 +13,12 @@ import { Squad } from '../../../../core/models/squad.model';
 export class SquadCard {
   readonly squad = input.required<Squad>();
 
+  readonly openClicked = output<string>();
   readonly deleteClicked = output<void>();
+
+  openSquad(): void {
+    this.openClicked.emit(this.squad().id);
+  }
 
   deleteSquad(event: MouseEvent): void {
     event.stopPropagation();
