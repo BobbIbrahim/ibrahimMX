@@ -6,6 +6,7 @@ import com.murex.mxorbit.squadorchestrator.core.squad.model.Squad;
 import com.murex.mxorbit.squadorchestrator.core.squad.provider.SquadProvider;
 
 import java.util.List;
+import java.util.Optional;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,5 +26,10 @@ public class SquadFacadeService implements SquadFacade {
 	@Override
 	public List<Squad> getSquads() {
 		return squadProvider.getSquads();
+	}
+
+	@Override
+	public Optional<Squad> getSquadById(String squadId) {
+		return squadProvider.getSquadById(squadId);
 	}
 }

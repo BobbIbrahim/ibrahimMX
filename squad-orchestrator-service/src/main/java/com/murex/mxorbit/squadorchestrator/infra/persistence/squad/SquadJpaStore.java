@@ -5,12 +5,14 @@ import com.murex.mxorbit.squadorchestrator.core.squad.store.SquadStore;
 import com.murex.mxorbit.squadorchestrator.core.squad.store.request.CreateSquadStoreRequest;
 import com.murex.mxorbit.squadorchestrator.infra.persistence.squad.entity.SquadEntity;
 import com.murex.mxorbit.squadorchestrator.infra.persistence.squad.mapper.SquadPersistenceMapper;
+
+import java.util.List;
+import java.util.Optional;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Slf4j
 @Repository
@@ -34,5 +36,12 @@ public class SquadJpaStore implements SquadStore {
 	public List<Squad> findAll() {
 		log.trace("Finding all squads");
 		return squadRepository.findAll().stream().map(squadPersistenceMapper::toSquad).toList();
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Optional<Squad> findById(String squadId) {
+		log.trace("Finding squad by id: {}", squadId);
+		return squadRepository.findById(squadId).map(squadPersistenceMapper::toSquad);
 	}
 }

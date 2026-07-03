@@ -15,6 +15,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import java.util.List;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+
 @RequestMapping("squads")
 public interface SquadApi {
 
@@ -30,4 +35,12 @@ public interface SquadApi {
 	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Squads retrieved"),
 			@ApiResponse(responseCode = "500", description = "Internal error")})
 	ResponseEntity<List<SquadApiResponse>> getSquads();
+
+	@GetMapping("/{squadId}")
+	@Operation(summary = "Get a squad by ID")
+	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Squad retrieved"),
+			@ApiResponse(responseCode = "404", description = "Squad not found"),
+			@ApiResponse(responseCode = "500", description = "Internal error")})
+	ResponseEntity<SquadApiResponse> getSquadById(@PathVariable String squadId);
+
 }

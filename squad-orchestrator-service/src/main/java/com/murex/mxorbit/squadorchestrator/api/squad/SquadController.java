@@ -6,6 +6,7 @@ import com.murex.mxorbit.squadorchestrator.api.squad.response.SquadApiResponse;
 import com.murex.mxorbit.squadorchestrator.core.squad.facade.SquadFacade;
 
 import java.util.List;
+import java.util.Optional;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,5 +33,13 @@ public class SquadController implements SquadApi {
 	public ResponseEntity<List<SquadApiResponse>> getSquads() {
 		log.debug("Received request to get all squads");
 		return ResponseEntity.ok(squadApiMapper.toSquadApiResponses(squadFacade.getSquads()));
+	}
+
+	@Override
+	public ResponseEntity<SquadApiResponse> getSquadById(String squadId) {
+		log.debug("Received request to get squad by id: {}", squadId);
+		Optional<SquadApiResponse> squadApiResponse = squadFacade.getSquadById(squadId)
+				.map(squadApiMapper::toSquadApiResponse);
+		return ResponseEntity.of(squadApiResponse);
 	}
 }

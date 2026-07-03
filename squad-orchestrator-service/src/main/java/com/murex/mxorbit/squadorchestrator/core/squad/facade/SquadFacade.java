@@ -4,10 +4,13 @@ import com.murex.mxorbit.squadorchestrator.core.squad.creator.request.CreateSqua
 import com.murex.mxorbit.squadorchestrator.core.squad.model.Squad;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface SquadFacade {
 
 	Squad createSquad(CreateSquadRequest request);
 
 	List<Squad> getSquads();
+
+	Optional<Squad> getSquadById(String squadId);
 }

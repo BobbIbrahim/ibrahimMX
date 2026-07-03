@@ -4,10 +4,13 @@ import com.murex.mxorbit.squadorchestrator.core.squad.model.Squad;
 import com.murex.mxorbit.squadorchestrator.core.squad.store.request.CreateSquadStoreRequest;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface SquadStore {
 
 	Squad save(CreateSquadStoreRequest request);
 
 	List<Squad> findAll();
+
+	Optional<Squad> findById(String squadId);
 }
