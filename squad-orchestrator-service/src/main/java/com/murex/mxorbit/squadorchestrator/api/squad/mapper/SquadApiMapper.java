@@ -18,6 +18,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 
+import java.util.List;
+
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface SquadApiMapper {
 
@@ -39,6 +41,8 @@ public interface SquadApiMapper {
 	@Mapping(target = "edges", source = "edges")
 	SquadApiResponse toSquadApiResponse(Squad squad);
 
+	List<SquadApiResponse> toSquadApiResponses(List<Squad> squads);
+
 	default SquadStepApiResponse toSquadStepApiResponse(SquadStep step) {
 		if (step instanceof AiAgentStep aiAgentStep) {
 			return toAiAgentStepApiResponse(aiAgentStep);
@@ -49,4 +53,5 @@ public interface SquadApiMapper {
 	AiAgentStepApiResponse toAiAgentStepApiResponse(AiAgentStep step);
 
 	SquadEdgeApiResponse toSquadEdgeApiResponse(SquadEdge edge);
+
 }

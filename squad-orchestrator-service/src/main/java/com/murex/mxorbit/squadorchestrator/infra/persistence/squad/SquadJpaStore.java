@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Slf4j
 @Repository
 @Transactional
@@ -25,5 +27,12 @@ public class SquadJpaStore implements SquadStore {
 		SquadEntity entity = squadPersistenceMapper.toSquadEntity(request);
 		SquadEntity saved = squadRepository.save(entity);
 		return squadPersistenceMapper.toSquad(saved);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<Squad> findAll() {
+		log.trace("Finding all squads");
+		return squadRepository.findAll().stream().map(squadPersistenceMapper::toSquad).toList();
 	}
 }
