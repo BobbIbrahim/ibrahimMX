@@ -65,3 +65,5 @@ build/
 **/tmp
 **/out-tsc
 **/bin
+temporal-dev.db
+temporal-dev.db-*
