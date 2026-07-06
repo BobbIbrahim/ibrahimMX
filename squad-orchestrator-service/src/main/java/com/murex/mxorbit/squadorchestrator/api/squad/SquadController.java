@@ -3,6 +3,7 @@ package com.murex.mxorbit.squadorchestrator.api.squad;
 import com.murex.mxorbit.squadorchestrator.api.squad.mapper.SquadApiMapper;
 import com.murex.mxorbit.squadorchestrator.api.squad.request.CreateSquadApiRequest;
 import com.murex.mxorbit.squadorchestrator.api.squad.response.SquadApiResponse;
+import com.murex.mxorbit.squadorchestrator.api.squad.response.SquadRunApiResponse;
 import com.murex.mxorbit.squadorchestrator.core.squad.facade.SquadFacade;
 
 import java.util.List;
@@ -53,5 +54,16 @@ public class SquadController implements SquadApi {
 				.map(squadApiMapper::toSquadApiResponse);
 
 		return ResponseEntity.of(squadApiResponse);
+	}
+
+	@Override
+	public ResponseEntity<SquadRunApiResponse> startSquadRun(String squadId) {
+		log.debug("Received request to start squad run for squad id: {}", squadId);
+
+		return squadFacade.startSquadRun(squadId)
+				.map(run -> SquadRunApiResponse.builder().squadId(run.getSquadId()).workflowId(run.getWorkflowId())
+						.runId(run.getRunId()).status(run.getStatus()).build())
+				.map(response -> ResponseEntity.status(HttpStatus.ACCEPTED).body(response))
+				.orElseGet(() -> ResponseEntity.notFound().build());
 	}
 }
