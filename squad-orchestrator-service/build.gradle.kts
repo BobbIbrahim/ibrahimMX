@@ -28,6 +28,7 @@ dependencies {
     implementation("org.flywaydb:flyway-database-postgresql")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui")
     implementation("org.mapstruct:mapstruct")
+    implementation("io.temporal:temporal-spring-boot-starter")
 
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")

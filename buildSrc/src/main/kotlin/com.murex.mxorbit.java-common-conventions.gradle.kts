@@ -23,6 +23,7 @@ dependencyManagement {
     imports {
         mavenBom("org.springframework.boot:spring-boot-dependencies:${property("springBootVersion")}")
         mavenBom("org.springframework.cloud:spring-cloud-dependencies:${property("springCloudVersion")}")
+        mavenBom("io.temporal:temporal-bom:1.29.0")
     }
     dependencies {
         dependency("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9")

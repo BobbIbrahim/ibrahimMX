@@ -1,6 +1,13 @@
 spring:
   application:
     name: squad-orchestrator-service
+  temporal:
+    connection:
+      target: ${TEMPORAL_HOST:localhost}:${TEMPORAL_PORT:7233}
+    namespace: ${TEMPORAL_NAMESPACE:default}
+    workers-auto-discovery:
+      packages:
+        - com.murex.mxorbit.squadorchestrator
   datasource:
     driver-class-name: org.postgresql.Driver
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:squad_orchestrator}

@@ -2,10 +2,18 @@ server:
   port: 8080
 
 spring:
+  temporal:
+    connection:
+      target: ${TEMPORAL_HOST:localhost}:${TEMPORAL_PORT:7233}
+    namespace: ${TEMPORAL_NAMESPACE:default}
+    workers-auto-discovery:
+      packages:
+        - com.murex.mxorbit.squadorchestrator
   datasource:
-    url: jdbc:postgresql://localhost:5433/squad_orchestrator
-    username: postgres
-    password: postgres
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:squad_orchestrator}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
 
 logging:
   level:

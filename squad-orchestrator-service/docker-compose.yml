@@ -32,6 +32,67 @@ services:
       psql -h squad-orchestrator-postgres -U postgres -d squad_orchestrator -f /init_app_user.sql
     restart: "no"
 
+  temporal-postgresql:
+    container_name: temporal-postgresql
+    image: ${POSTGRES_IMAGE:-postgres:16}
+    environment:
+      POSTGRES_DB: temporal
+      POSTGRES_USER: temporal
+      POSTGRES_PASSWORD: temporal
+    expose:
+      - 5432
+    volumes:
+      - temporal_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U temporal -d temporal"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  temporal:
+    container_name: temporal
+    depends_on:
+      temporal-postgresql:
+        condition: service_healthy
+    environment:
+      - DB=postgres12
+      - DB_PORT=5432
+      - POSTGRES_USER=temporal
+      - POSTGRES_PWD=temporal
+      - POSTGRES_SEEDS=temporal-postgresql
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/temporal-config.yaml
+    image: ${TEMPORAL_SERVER_IMAGE:-temporalio/auto-setup:1.29.3}
+    ports:
+      - "7233:7233"
+    volumes:
+      - ./docker_compose/temporal/dynamicconfig:/etc/temporal/config/dynamicconfig
+    healthcheck:
+      test: ["CMD", "tctl", "--address", "temporal:7233", "cluster", "h"]
+      interval: 10s
+      timeout: 60s
+      retries: 10
+
+  temporal-admin-tools:
+    container_name: temporal-admin-tools
+    depends_on:
+      - temporal
+    environment:
+      - TEMPORAL_CLI_ADDRESS=temporal:7233
+    image: ${TEMPORAL_ADMIN_TOOLS_IMAGE:-temporalio/admin-tools:1.30.1}
+    stdin_open: true
+    tty: true
+
+  temporal-ui:
+    container_name: temporal-ui
+    depends_on:
+      - temporal
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CORS_ORIGINS=http://localhost:3000
+    image: ${TEMPORAL_UI_IMAGE:-temporalio/ui:2.47.2}
+    ports:
+      - "8088:8080"
 
 volumes:
   squad_orchestrator_data:
+  temporal_data:
