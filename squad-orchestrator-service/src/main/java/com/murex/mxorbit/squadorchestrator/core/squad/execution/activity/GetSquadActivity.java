@@ -1,6 +1,7 @@
 package com.murex.mxorbit.squadorchestrator.core.squad.execution.activity;
 
-import com.murex.mxorbit.squadorchestrator.core.squad.model.Squad;
+import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.GetSquadRequest;
+import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.GetSquadResult;
 import io.temporal.activity.ActivityInterface;
 import io.temporal.activity.ActivityMethod;
 
@@ -8,5 +9,5 @@ import io.temporal.activity.ActivityMethod;
 public interface GetSquadActivity {
 
 	@ActivityMethod
-	Squad getSquadById(String squadId);
+	GetSquadResult getSquad(GetSquadRequest request);
 }
