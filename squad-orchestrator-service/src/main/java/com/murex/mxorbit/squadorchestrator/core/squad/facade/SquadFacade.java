@@ -3,6 +3,7 @@ package com.murex.mxorbit.squadorchestrator.core.squad.facade;
 import com.murex.mxorbit.squadorchestrator.core.squad.creator.request.CreateSquadRequest;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadRunStartResult;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.Squad;
+import com.murex.mxorbit.squadorchestrator.core.squad.run.model.SquadRunSummary;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,4 +19,6 @@ public interface SquadFacade {
 	Optional<Squad> updateSquad(String squadId, CreateSquadRequest request);
 
 	Optional<SquadRunStartResult> startSquadRun(String squadId);
+
+	List<SquadRunSummary> getSquadRuns();
 }

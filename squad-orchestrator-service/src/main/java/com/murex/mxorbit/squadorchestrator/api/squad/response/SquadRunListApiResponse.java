@@ -1,0 +1,33 @@
+package com.murex.mxorbit.squadorchestrator.api.squad.response;
+
+import java.time.Instant;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class SquadRunListApiResponse {
+
+	@NonNull
+	private String squadId;
+
+	@NonNull
+	private String squadName;
+
+	@NonNull
+	private String workflowId;
+
+	@NonNull
+	private String runId;
+
+	@NonNull
+	private Instant startedAt;
+
+	@NonNull
+	private String status;
+}

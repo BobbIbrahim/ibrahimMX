@@ -35,17 +35,19 @@ public class TemporalClientService implements TemporalClient {
 
 	@Override
 	public boolean isWorkflowRunning(String workflowId, String workflowType) {
-		DescribeWorkflowExecutionRequest request = DescribeWorkflowExecutionRequest.newBuilder()
-				.setNamespace(temporalProperties.getNamespace())
-				.setExecution(WorkflowExecution.newBuilder().setWorkflowId(workflowId).build()).build();
+		return getWorkflowStatus(workflowId, workflowType) == WorkflowRunStatus.RUNNING;
+	}
+
+	@Override
+	public WorkflowRunStatus getWorkflowStatus(String workflowId, String workflowType) {
 		try {
-			DescribeWorkflowExecutionResponse response = workflowServiceStubs.blockingStub()
-					.describeWorkflowExecution(request);
-			WorkflowExecutionInfo info = response.getWorkflowExecutionInfo();
-			return info.getType().getName().equals(workflowType)
-					&& info.getStatus() == WorkflowExecutionStatus.WORKFLOW_EXECUTION_STATUS_RUNNING;
+			WorkflowExecutionInfo info = describeWorkflowExecution(workflowId);
+			if (!info.getType().getName().equals(workflowType)) {
+				return WorkflowRunStatus.FAILED;
+			}
+			return mapStatus(info.getStatus());
 		} catch (StatusRuntimeException e) {
-			return false;
+			return WorkflowRunStatus.FAILED;
 		}
 	}
 
@@ -57,5 +59,25 @@ public class TemporalClientService implements TemporalClient {
 	@Override
 	public WorkflowStub getWorkflowStub(String workflowId) {
 		return client.newUntypedWorkflowStub(workflowId);
+	}
+
+	private WorkflowExecutionInfo describeWorkflowExecution(String workflowId) {
+		DescribeWorkflowExecutionRequest request = DescribeWorkflowExecutionRequest.newBuilder()
+				.setNamespace(temporalProperties.getNamespace())
+				.setExecution(WorkflowExecution.newBuilder().setWorkflowId(workflowId).build()).build();
+
+		DescribeWorkflowExecutionResponse response = workflowServiceStubs.blockingStub()
+				.describeWorkflowExecution(request);
+		return response.getWorkflowExecutionInfo();
+	}
+
+	private WorkflowRunStatus mapStatus(WorkflowExecutionStatus status) {
+		if (status == WorkflowExecutionStatus.WORKFLOW_EXECUTION_STATUS_RUNNING) {
+			return WorkflowRunStatus.RUNNING;
+		}
+		if (status == WorkflowExecutionStatus.WORKFLOW_EXECUTION_STATUS_COMPLETED) {
+			return WorkflowRunStatus.COMPLETED;
+		}
+		return WorkflowRunStatus.FAILED;
 	}
 }

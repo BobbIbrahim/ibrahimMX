@@ -12,6 +12,8 @@ public interface TemporalClient {
 
 	boolean isWorkflowRunning(String workflowId, String workflowType);
 
+	WorkflowRunStatus getWorkflowStatus(String workflowId, String workflowType);
+
 	<T> T getWorkflowExecutionStub(Class<T> workflowClass, String workflowId);
 
 	WorkflowStub getWorkflowStub(String workflowId);

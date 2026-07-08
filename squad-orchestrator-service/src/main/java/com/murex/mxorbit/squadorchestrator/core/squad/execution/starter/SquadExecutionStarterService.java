@@ -3,6 +3,7 @@ package com.murex.mxorbit.squadorchestrator.core.squad.execution.starter;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadExecutionRequest;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadRunStartResult;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.workflow.SquadExecutionWorkflow;
+import com.murex.mxorbit.squadorchestrator.core.squad.run.creator.SquadRunCreator;
 import io.temporal.client.WorkflowClient;
 import io.temporal.client.WorkflowOptions;
 import io.temporal.client.WorkflowStub;
@@ -21,6 +22,7 @@ public class SquadExecutionStarterService implements SquadExecutionStarter {
 	private static final String TASK_QUEUE = "squad-orchestration-task-queue";
 
 	private final WorkflowClient workflowClient;
+	private final SquadRunCreator squadRunCreator;
 
 	@Override
 	public Optional<SquadRunStartResult> startSquadRun(String squadId) {
@@ -39,6 +41,8 @@ public class SquadExecutionStarterService implements SquadExecutionStarter {
 		workflowStub.start(request);
 
 		String runId = workflowStub.getExecution().getRunId();
+
+		squadRunCreator.createSquadRun(squadId, workflowId, runId);
 
 		log.info("Started squad Temporal workflow. squadId: {}, workflowId: {}, runId: {}", squadId, workflowId, runId);
 

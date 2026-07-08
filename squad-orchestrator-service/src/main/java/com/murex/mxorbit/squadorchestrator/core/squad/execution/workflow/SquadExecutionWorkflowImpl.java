@@ -42,6 +42,7 @@ public class SquadExecutionWorkflowImpl implements SquadExecutionWorkflow {
 	public SquadExecutionResult execute(SquadExecutionRequest request) {
 		GetSquadResult getSquadResult = getSquadActivity
 				.getSquad(GetSquadRequest.builder().squadId(request.getSquadId()).build());
+
 		Squad squad = getSquadResult.getSquad();
 
 		List<SquadStep> steps = squad.getSteps();

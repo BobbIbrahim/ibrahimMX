@@ -16,10 +16,8 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-@JsonSubTypes({@JsonSubTypes.Type(value = AiAgentStep.class, name = "AI_AGENT")
-// Add new step types here: @JsonSubTypes.Type(value = HttpCallStep.class, name
-// = "etc..")
-})
+@JsonSubTypes({@JsonSubTypes.Type(value = AiAgentStep.class, name = "AI_AGENT")})
+
 public abstract class SquadStep {
 
 	@NonNull
