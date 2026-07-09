@@ -4,6 +4,7 @@ import com.murex.mxorbit.squadorchestrator.api.squad.request.CreateSquadApiReque
 import com.murex.mxorbit.squadorchestrator.api.squad.response.SquadApiResponse;
 import com.murex.mxorbit.squadorchestrator.api.squad.response.SquadRunListApiResponse;
 import com.murex.mxorbit.squadorchestrator.api.squad.response.SquadRunApiResponse;
+import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadExecutionStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -34,6 +35,13 @@ public interface SquadApi {
 	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Squads retrieved"),
 			@ApiResponse(responseCode = "500", description = "Internal error")})
 	ResponseEntity<List<SquadApiResponse>> getSquads();
+
+	@GetMapping("/runs/{squadRunId}")
+	@Operation(summary = "Get a squad run execution status")
+	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Squad run execution status retrieved"),
+			@ApiResponse(responseCode = "404", description = "Squad run not found"),
+			@ApiResponse(responseCode = "500", description = "Internal error")})
+	ResponseEntity<SquadExecutionStatus> getSquadRunStatus(@PathVariable String squadRunId);
 
 	@GetMapping("/{squadId}")
 	@Operation(summary = "Get a squad by ID")

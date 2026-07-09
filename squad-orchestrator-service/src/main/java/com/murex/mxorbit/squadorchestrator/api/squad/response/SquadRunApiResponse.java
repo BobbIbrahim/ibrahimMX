@@ -16,10 +16,7 @@ public class SquadRunApiResponse {
 	private String squadId;
 
 	@NonNull
-	private String workflowId;
-
-	@NonNull
-	private String runId;
+	private String squadRunId;
 
 	@NonNull
 	private String status;

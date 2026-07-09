@@ -9,6 +9,7 @@ import com.murex.mxorbit.squadorchestrator.core.squad.provider.SquadProvider;
 import com.murex.mxorbit.squadorchestrator.core.squad.run.model.SquadRunSummary;
 import com.murex.mxorbit.squadorchestrator.core.squad.run.provider.SquadRunProvider;
 import com.murex.mxorbit.squadorchestrator.core.squad.updater.SquadUpdater;
+import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadExecutionStatus;
 
 import java.util.List;
 import java.util.Optional;
@@ -54,5 +55,10 @@ public class SquadFacadeService implements SquadFacade {
 	@Override
 	public List<SquadRunSummary> getSquadRuns() {
 		return squadRunProvider.getSquadRuns();
+	}
+
+	@Override
+	public Optional<SquadExecutionStatus> getSquadRunStatus(String squadRunId) {
+		return squadRunProvider.getSquadRunStatus(squadRunId);
 	}
 }

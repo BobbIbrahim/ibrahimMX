@@ -4,6 +4,8 @@ import io.temporal.client.WorkflowOptions;
 import io.temporal.client.WorkflowStub;
 import io.temporal.workflow.Functions;
 
+import java.util.List;
+
 public interface TemporalClient {
 
 	<T> T createWorkflowExecutionStub(Class<T> workflowClass, WorkflowOptions workflowOptions);
@@ -13,6 +15,8 @@ public interface TemporalClient {
 	boolean isWorkflowRunning(String workflowId, String workflowType);
 
 	WorkflowRunStatus getWorkflowStatus(String workflowId, String workflowType);
+
+	List<WorkflowExecutionSummary> listWorkflowExecutions(String workflowType);
 
 	<T> T getWorkflowExecutionStub(Class<T> workflowClass, String workflowId);
 

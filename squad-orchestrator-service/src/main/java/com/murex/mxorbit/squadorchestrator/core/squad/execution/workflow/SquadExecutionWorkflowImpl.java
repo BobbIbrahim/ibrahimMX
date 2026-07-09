@@ -5,19 +5,24 @@ import com.murex.mxorbit.squadorchestrator.core.squad.execution.activity.RunAiAg
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.GetSquadRequest;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.GetSquadResult;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadExecutionRequest;
+import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadExecutionStatus;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadExecutionResult;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadStepExecutionRequest;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadStepExecutionResult;
+import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadStepExecutionStatus;
+import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadStepStatus;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.AiAgentStep;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.Squad;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadEdge;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadStep;
+import com.murex.mxorbit.squadorchestrator.core.workflow.client.WorkflowRunStatus;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
 import io.temporal.failure.ApplicationFailure;
 import io.temporal.spring.boot.WorkflowImpl;
 import io.temporal.workflow.Async;
 import io.temporal.workflow.Workflow;
+import io.temporal.workflow.Promise;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -38,24 +43,35 @@ public class SquadExecutionWorkflowImpl implements SquadExecutionWorkflow {
 	private final RunAiAgentActivity runAiAgentActivity = Workflow.newActivityStub(RunAiAgentActivity.class,
 			buildActivityOptions());
 
+	private final Map<String, SquadStep> stepsById = new LinkedHashMap<>();
+	private final Map<String, SquadStepStatus> stepStatusesById = new LinkedHashMap<>();
+	private final Set<String> startedStepIds = new LinkedHashSet<>();
+	private final Set<String> finishedStepIds = new LinkedHashSet<>();
+	private final Map<String, SquadStepExecutionResult> resultsByStepId = new LinkedHashMap<>();
+
+	private String squadId;
+	private WorkflowRunStatus overallStatus = WorkflowRunStatus.RUNNING;
+	private boolean workflowFailed;
+	private String workflowFailureMessage;
+	private String workflowFailureType;
+
 	@Override
 	public SquadExecutionResult execute(SquadExecutionRequest request) {
+		squadId = request.getSquadId();
 		GetSquadResult getSquadResult = getSquadActivity
 				.getSquad(GetSquadRequest.builder().squadId(request.getSquadId()).build());
 
 		Squad squad = getSquadResult.getSquad();
+		squadId = squad.getId();
 
 		List<SquadStep> steps = squad.getSteps();
-		Map<String, SquadStep> stepsById = new LinkedHashMap<>();
 		for (SquadStep step : steps) {
 			stepsById.put(step.getId(), step);
+			stepStatusesById.put(step.getId(), SquadStepStatus.builder().stepId(step.getId()).stepName(step.getName())
+					.status(SquadStepExecutionStatus.PENDING).build());
 		}
 
 		Map<String, Set<String>> dependenciesByStepId = buildDependenciesMap(squad.getEdges(), stepsById.keySet());
-
-		Set<String> startedStepIds = new LinkedHashSet<>();
-		Set<String> finishedStepIds = new LinkedHashSet<>();
-		Map<String, SquadStepExecutionResult> resultsByStepId = new LinkedHashMap<>();
 
 		while (finishedStepIds.size() < stepsById.size()) {
 			List<SquadStep> readySteps = findReadySteps(steps, dependenciesByStepId, startedStepIds, finishedStepIds);
@@ -67,22 +83,41 @@ public class SquadExecutionWorkflowImpl implements SquadExecutionWorkflow {
 
 			for (SquadStep readyStep : readySteps) {
 				startedStepIds.add(readyStep.getId());
-				startStepExecution(squad.getId(), readyStep, finishedStepIds, resultsByStepId);
+				startStepExecution(readyStep);
 			}
 
 			int finishedCountBeforeWait = finishedStepIds.size();
-			Workflow.await(() -> finishedStepIds.size() > finishedCountBeforeWait);
+			Workflow.await(() -> finishedStepIds.size() > finishedCountBeforeWait || workflowFailed);
+
+			if (workflowFailed) {
+				overallStatus = WorkflowRunStatus.FAILED;
+				throw ApplicationFailure.newNonRetryableFailure(workflowFailureMessage, workflowFailureType);
+			}
 		}
 
+		overallStatus = WorkflowRunStatus.COMPLETED;
 		return SquadExecutionResult.builder().squadId(squad.getId()).status("COMPLETED")
 				.message("Executed " + resultsByStepId.size() + " step(s) for squad " + squad.getId()).build();
 	}
 
-	private void startStepExecution(String squadId, SquadStep step, Set<String> finishedStepIds,
-			Map<String, SquadStepExecutionResult> resultsByStepId) {
-		Async.function(() -> executeStep(squadId, step)).thenApply(stepExecutionResult -> {
+	@Override
+	public SquadExecutionStatus getExecutionStatus() {
+		return SquadExecutionStatus.builder().squadId(squadId).overallStatus(overallStatus)
+				.steps(buildStepStatusesSnapshot()).build();
+	}
+
+	private void startStepExecution(SquadStep step) {
+		markStepRunning(step);
+
+		Promise<SquadStepExecutionResult> stepPromise = Async.function(() -> executeStep(squadId, step));
+		stepPromise.handle((stepExecutionResult, throwable) -> {
+			if (throwable != null) {
+				markStepFailed(step, throwable);
+				return null;
+			}
+
 			resultsByStepId.put(step.getId(), stepExecutionResult);
-			finishedStepIds.add(step.getId());
+			markStepCompleted(step, stepExecutionResult);
 			return stepExecutionResult;
 		});
 	}
@@ -138,6 +173,63 @@ public class SquadExecutionWorkflowImpl implements SquadExecutionWorkflow {
 						"Unsupported step type " + step.getType() + " for step " + step.getId(),
 						"UNSUPPORTED_STEP_TYPE");
 		}
+	}
+
+	private void markStepRunning(SquadStep step) {
+		updateStepStatus(step, SquadStepExecutionStatus.RUNNING, "Running step \"" + step.getName() + "\".");
+	}
+
+	private void markStepCompleted(SquadStep step, SquadStepExecutionResult result) {
+		updateStepStatus(step, SquadStepExecutionStatus.COMPLETED, result.getMessage());
+		finishedStepIds.add(step.getId());
+	}
+
+	private void markStepFailed(SquadStep step, Throwable throwable) {
+		String failureMessage = extractFailureMessage(throwable);
+		String workflowMessage = "Step \"" + step.getName() + "\" failed: " + failureMessage;
+
+		resultsByStepId.put(step.getId(), SquadStepExecutionResult.builder().stepId(step.getId()).status("FAILED")
+				.message(workflowMessage).build());
+		updateStepStatus(step, SquadStepExecutionStatus.FAILED, workflowMessage);
+		finishedStepIds.add(step.getId());
+		workflowFailed = true;
+		workflowFailureMessage = workflowMessage;
+		workflowFailureType = "SQUAD_STEP_FAILED";
+	}
+
+	private String extractFailureMessage(Throwable throwable) {
+		Throwable current = throwable;
+		while (current.getCause() != null && current.getCause() != current) {
+			current = current.getCause();
+		}
+
+		String message = current.getMessage();
+		if (message == null || message.isEmpty()) {
+			message = current.getClass().getSimpleName();
+		}
+		return message;
+	}
+
+	private void updateStepStatus(SquadStep step, SquadStepExecutionStatus status, String message) {
+		SquadStepStatus stepStatus = stepStatusesById.get(step.getId());
+		if (stepStatus == null) {
+			stepStatus = SquadStepStatus.builder().stepId(step.getId()).stepName(step.getName()).build();
+			stepStatusesById.put(step.getId(), stepStatus);
+		}
+
+		stepStatus.setStatus(status);
+		stepStatus.setMessage(message);
+	}
+
+	private List<SquadStepStatus> buildStepStatusesSnapshot() {
+		List<SquadStepStatus> stepStatuses = new ArrayList<>();
+		for (SquadStep step : stepsById.values()) {
+			SquadStepStatus stepStatus = stepStatusesById.get(step.getId());
+			if (stepStatus != null) {
+				stepStatuses.add(stepStatus);
+			}
+		}
+		return stepStatuses;
 	}
 
 	private ActivityOptions buildActivityOptions() {

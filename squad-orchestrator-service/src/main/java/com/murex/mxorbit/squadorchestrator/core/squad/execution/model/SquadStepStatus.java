@@ -10,14 +10,16 @@ import lombok.NonNull;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SquadRunStartResult {
+public class SquadStepStatus {
 
 	@NonNull
-	private String squadId;
+	private String stepId;
 
 	@NonNull
-	private String squadRunId;
+	private String stepName;
 
 	@NonNull
-	private String status;
+	private SquadStepExecutionStatus status;
+
+	private String message;
 }

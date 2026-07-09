@@ -20,14 +20,8 @@ public class SquadRunListApiResponse {
 	private String squadName;
 
 	@NonNull
-	private String workflowId;
-
-	@NonNull
-	private String runId;
+	private String squadRunId;
 
 	@NonNull
 	private Instant startedAt;
-
-	@NonNull
-	private String status;
 }

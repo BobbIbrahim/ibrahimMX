@@ -11,13 +11,26 @@ import org.springframework.stereotype.Component;
 @ActivityImpl(taskQueues = "squad-orchestration-task-queue")
 public class RunAiAgentActivityImpl implements RunAiAgentActivity {
 
+	private static final long TEMPORARY_TEST_DELAY_MILLIS = 10000L;
+
 	@Override
 	public SquadStepExecutionResult runAiAgent(SquadStepExecutionRequest request) {
 		log.info("Running AI agent. squadId: {}, stepId: {}, stepName: {}, agentKey: {}", request.getSquadId(),
 				request.getStepId(), request.getStepName(), request.getAgentKey());
 
+		waitForStatusTesting();
+
 		return SquadStepExecutionResult.builder().stepId(request.getStepId()).status("COMPLETED")
 				.message("Executed step \"" + request.getStepName() + "\" using AI agent " + request.getAgentKey())
 				.build();
+	}
+
+	private void waitForStatusTesting() {
+		try {
+			Thread.sleep(TEMPORARY_TEST_DELAY_MILLIS);
+		} catch (InterruptedException exception) {
+			Thread.currentThread().interrupt();
+			throw new IllegalStateException("AI agent execution test delay was interrupted.", exception);
+		}
 	}
 }

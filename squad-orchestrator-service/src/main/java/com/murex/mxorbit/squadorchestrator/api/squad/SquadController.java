@@ -6,6 +6,7 @@ import com.murex.mxorbit.squadorchestrator.api.squad.response.SquadApiResponse;
 import com.murex.mxorbit.squadorchestrator.api.squad.response.SquadRunListApiResponse;
 import com.murex.mxorbit.squadorchestrator.api.squad.response.SquadRunApiResponse;
 import com.murex.mxorbit.squadorchestrator.core.squad.facade.SquadFacade;
+import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadExecutionStatus;
 
 import java.util.List;
 import java.util.Optional;
@@ -62,8 +63,8 @@ public class SquadController implements SquadApi {
 		log.debug("Received request to start squad run for squad id: {}", squadId);
 
 		return squadFacade.startSquadRun(squadId)
-				.map(run -> SquadRunApiResponse.builder().squadId(run.getSquadId()).workflowId(run.getWorkflowId())
-						.runId(run.getRunId()).status(run.getStatus()).build())
+				.map(run -> SquadRunApiResponse.builder().squadId(run.getSquadId()).squadRunId(run.getSquadRunId())
+						.status(run.getStatus()).build())
 				.map(response -> ResponseEntity.status(HttpStatus.ACCEPTED).body(response))
 				.orElseGet(() -> ResponseEntity.notFound().build());
 	}
@@ -73,8 +74,13 @@ public class SquadController implements SquadApi {
 		log.debug("Received request to get all squad runs");
 		return ResponseEntity.ok(squadFacade.getSquadRuns().stream()
 				.map(run -> SquadRunListApiResponse.builder().squadId(run.getSquadId()).squadName(run.getSquadName())
-						.workflowId(run.getWorkflowId()).runId(run.getRunId()).startedAt(run.getStartedAt())
-						.status(run.getStatus()).build())
+						.squadRunId(run.getSquadRunId()).startedAt(run.getStartedAt()).build())
 				.toList());
+	}
+
+	@Override
+	public ResponseEntity<SquadExecutionStatus> getSquadRunStatus(String squadRunId) {
+		log.debug("Received request to get squad run status. squadRunId: {}", squadRunId);
+		return ResponseEntity.of(squadFacade.getSquadRunStatus(squadRunId));
 	}
 }

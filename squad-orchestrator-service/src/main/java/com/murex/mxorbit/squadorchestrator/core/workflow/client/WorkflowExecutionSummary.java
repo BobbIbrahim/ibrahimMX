@@ -1,6 +1,7 @@
-package com.murex.mxorbit.squadorchestrator.core.squad.run.model;
+package com.murex.mxorbit.squadorchestrator.core.workflow.client;
 
 import java.time.Instant;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,20 +12,14 @@ import lombok.NonNull;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class StoredSquadRun {
-
-	@NonNull
-	private String squadId;
-
-	@NonNull
-	private String squadName;
+public class WorkflowExecutionSummary {
 
 	@NonNull
 	private String workflowId;
 
 	@NonNull
-	private String runId;
+	private Instant startTime;
 
 	@NonNull
-	private Instant startedAt;
+	private Map<String, String> memo;
 }
