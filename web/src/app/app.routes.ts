@@ -8,6 +8,7 @@ import { SquadsPage } from './features/squads/pages/squads-page/squads-page';
 import { AgentDetailsPage } from './features/agent-registry/pages/agent-details-page/agent-details-page';
 import { ProjectDetailsPage } from './features/project-registry/pages/project-details-page/project-details-page';
 import { SquadBuilderPage } from './features/squads/pages/squad-builder-page/squad-builder-page';
+import { SquadLiveRunPage } from './features/squads/pages/squad-live-run-page/squad-live-run-page';
 
 export const routes: Routes = [
   {
@@ -53,6 +54,11 @@ export const routes: Routes = [
         path: 'squads/builder/:squadId',
         component: SquadBuilderPage,
         title: 'Squad Builder',
+      },
+      {
+        path: 'squads/live-run/:squadId',
+        component: SquadLiveRunPage,
+        title: 'Squad Live Run',
       },
       {
         path: 'autopilot',

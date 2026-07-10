@@ -269,10 +269,20 @@ export class SquadBuilderPage implements OnInit {
     URL.revokeObjectURL(objectUrl);
   }
 
+  startLiveRun(): void {
+    const squadId = this.getRouteSquadId();
+
+    if (!squadId) {
+      return;
+    }
+
+    void this.router.navigate(['/squads/live-run', squadId]);
+  }
+
   private loadExistingSquadFromRouteIfNeeded(): void {
     const squadId = this.getRouteSquadId();
 
-    if (!squadId || this.draft()) {
+    if (!squadId) {
       return;
     }
 

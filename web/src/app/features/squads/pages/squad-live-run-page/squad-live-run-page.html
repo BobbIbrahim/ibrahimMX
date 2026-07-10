@@ -1,0 +1,111 @@
+<section class="live-run-page">
+  <header class="live-run-header">
+    <div class="live-run-header__content">
+      <h1>
+        {{ squad()?.name ?? 'Live Run' }}
+      </h1>
+
+      <p>
+        Observe workflow execution in real time.
+      </p>
+    </div>
+
+    <div class="live-run-header__actions">
+      <a
+        mat-stroked-button
+        [routerLink]="['/squads/builder', squadId()]"
+      >
+        Back to Builder
+      </a>
+
+      <button
+        mat-flat-button
+        color="primary"
+        type="button"
+        (click)="runWorkflow()"
+      >
+        {{ activeSquadRunId() ? 'Run Again' : 'Run' }}
+      </button>
+    </div>
+  </header>
+
+  <section class="run-summary-card">
+    <div class="run-summary-header">
+      <div class="run-status-badge">
+        {{ executionStatus()?.overallStatus ?? 'IDLE' }}
+      </div>
+
+      <div class="run-progress-value">
+        {{ progressPercentage() }}%
+      </div>
+    </div>
+
+    <div class="run-summary-metrics">
+      <span>{{ totalSteps() }} Steps</span>
+      <span>{{ completedSteps() }} Completed</span>
+      <span>{{ runningSteps() }} Running</span>
+      <span>{{ pendingSteps() }} Pending</span>
+      <span>{{ failedSteps() }} Failed</span>
+    </div>
+
+    <div class="progress-bar">
+      <div
+        class="progress-bar-fill"
+        [style.width.%]="progressPercentage()"
+      ></div>
+    </div>
+  </section>
+
+  <section class="live-run-layout">
+    <main class="live-run-canvas">
+      @if (squad(); as squadData) {
+        <app-rete-squad-flow-editor
+          [steps]="mapSteps(squadData)"
+          [edges]="mapEdges(squadData)"
+          [agentNamesById]="agentNamesById()"
+          [executionStatus]="executionStatus()"
+        ></app-rete-squad-flow-editor>
+      } @else {
+        <div class="live-run-placeholder">
+          Loading workflow...
+        </div>
+      }
+    </main>
+
+    <aside class="active-execution-panel">
+      <div class="active-execution-panel__header">
+        <h2>Active Execution</h2>
+
+        <span class="execution-status">
+          {{ executionStatus()?.overallStatus ?? 'IDLE' }}
+        </span>
+      </div>
+
+      <div class="execution-content">
+        @if (executionStatus(); as status) {
+          @for (step of status.steps; track step.stepId) {
+            <div class="execution-event">
+              <div
+                class="execution-event__status"
+                [class.execution-event__status--completed]="step.status === 'COMPLETED'"
+                [class.execution-event__status--running]="step.status === 'RUNNING'"
+                [class.execution-event__status--failed]="step.status === 'FAILED'"
+                [class.execution-event__status--pending]="step.status === 'PENDING'"
+              >
+                {{ step.status }}
+              </div>
+
+              <span class="execution-event__title">
+                {{ step.stepName }}
+              </span>
+            </div>
+          }
+        } @else {
+          <div class="execution-placeholder">
+            No run started yet.
+          </div>
+        }
+      </div>
+    </aside>
+  </section>
+</section>

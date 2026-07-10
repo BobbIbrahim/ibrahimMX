@@ -5,6 +5,8 @@ import { Observable, map, tap } from 'rxjs';
 import { SquadSavePayload } from '../models/squad-builder.model';
 import { Squad } from '../models/squad.model';
 
+import { SquadExecutionStatus, SquadRunStartResponse } from '../models/squad-run.model';
+
 export interface SquadApiStepResponse {
   id: string;
   name: string;
@@ -79,9 +81,7 @@ export class SquadService {
         return [squad, ...squads];
       }
 
-      return squads.map((existingSquad) =>
-        existingSquad.id === squad.id ? squad : existingSquad,
-      );
+      return squads.map((existingSquad) => (existingSquad.id === squad.id ? squad : existingSquad));
     });
   }
 
@@ -90,11 +90,7 @@ export class SquadService {
   }
 
   private mapApiResponseToSquad(apiSquad: SquadApiResponse): Squad {
-    const uniqueAgentKeys = new Set(
-      apiSquad.steps
-        .map((step) => step.agentKey)
-        .filter(Boolean),
-    );
+    const uniqueAgentKeys = new Set(apiSquad.steps.map((step) => step.agentKey).filter(Boolean));
 
     return {
       id: apiSquad.id,
@@ -108,5 +104,13 @@ export class SquadService {
         members: uniqueAgentKeys.size,
       },
     };
+  }
+
+  startSquadRun(squadId: string): Observable<SquadRunStartResponse> {
+    return this.http.post<SquadRunStartResponse>(`${this.baseUrl}/squads/${squadId}/runs`, {});
+  }
+
+  getSquadRunStatus(squadRunId: string): Observable<SquadExecutionStatus> {
+    return this.http.get<SquadExecutionStatus>(`${this.baseUrl}/squads/runs/${squadRunId}`);
   }
 }

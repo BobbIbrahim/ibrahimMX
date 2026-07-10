@@ -17,11 +17,9 @@ import { ClassicPreset, GetSchemes, NodeEditor } from 'rete';
 import { AreaExtensions, AreaPlugin } from 'rete-area-plugin';
 import { ConnectionPlugin, Presets as ConnectionPresets } from 'rete-connection-plugin';
 import { getDOMSocketPosition } from 'rete-render-utils';
-import {
-  AngularArea2D,
-  AngularPlugin,
-  Presets as AngularPresets,
-} from 'rete-angular-plugin/21';
+import { AngularArea2D, AngularPlugin, Presets as AngularPresets } from 'rete-angular-plugin/21';
+
+import { SquadExecutionStatus } from '../../../../core/models/squad-run.model';
 
 interface ReteFlowStep {
   id: string;
@@ -75,6 +73,7 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
   @Input({ required: true }) steps: ReteFlowStep[] = [];
   @Input({ required: true }) edges: ReteFlowEdge[] = [];
   @Input() agentNamesById: Record<string, string> = {};
+  @Input() executionStatus: SquadExecutionStatus | null = null;
 
   @Output() stepSelected = new EventEmitter<string>();
   @Output() connectionCreated = new EventEmitter<ReteConnectionCreatedEvent>();
@@ -101,6 +100,7 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
   private readonly stepIdByNodeId = new Map<string, string>();
   private readonly connectionIdByEdgeKey = new Map<string, string>();
   private readonly ignoredConnectionRemovalIds = new Set<string>();
+  private readonly nodeStatusByStepId = new Map<string, string>();
 
   async ngAfterViewInit(): Promise<void> {
     await this.initializeEditor();
@@ -111,6 +111,26 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
   }
 
   async ngOnChanges(changes: SimpleChanges): Promise<void> {
+    if (changes['executionStatus']) {
+      console.log('RETE STATUS', this.executionStatus);
+    }
+
+    if (changes['executionStatus']) {
+      this.nodeStatusByStepId.clear();
+
+      const status = this.executionStatus;
+
+      if (status) {
+        status.steps.forEach((step) => {
+          this.nodeStatusByStepId.set(step.stepId, step.status);
+        });
+      }
+
+      requestAnimationFrame(() => {
+        this.applyNodeStatuses();
+      });
+    }
+
     if (!this.editorReady) {
       return;
     }
@@ -386,12 +406,7 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
         continue;
       }
 
-      const connection = new ClassicPreset.Connection(
-        sourceNode,
-        'next',
-        targetNode,
-        'previous',
-      );
+      const connection = new ClassicPreset.Connection(sourceNode, 'next', targetNode, 'previous');
 
       await this.editor.addConnection(connection);
 
@@ -575,5 +590,42 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
 
   private buildEdgeKey(sourceStepId: string, targetStepId: string): string {
     return `${sourceStepId}->${targetStepId}`;
+  }
+
+  private applyNodeStatuses(): void {
+    const container = this.reteContainer.nativeElement;
+
+    const nodeElements = container.querySelectorAll<HTMLElement>('[data-testid="node"]');
+
+    nodeElements.forEach((nodeElement) => {
+      nodeElement.classList.remove('node-running', 'node-completed', 'node-failed');
+    });
+
+    let index = 0;
+
+    for (const step of this.steps) {
+      const nodeElement = nodeElements[index];
+
+      if (!nodeElement) {
+        index++;
+        continue;
+      }
+
+      const status = this.nodeStatusByStepId.get(step.id);
+
+      if (status === 'RUNNING') {
+        nodeElement.classList.add('node-running');
+      }
+
+      if (status === 'COMPLETED') {
+        nodeElement.classList.add('node-completed');
+      }
+
+      if (status === 'FAILED') {
+        nodeElement.classList.add('node-failed');
+      }
+
+      index++;
+    }
   }
 }

@@ -20,10 +20,12 @@
 
           <p>Build a hardcoded execution flow by assigning agents to ordered workflow steps.</p>
 
-          <span>
-            <mat-icon>hub</mat-icon>
-            Visual flow editor
-          </span>
+          <div class="builder-meta">
+            <span>
+              <mat-icon>hub</mat-icon>
+              Visual flow editor
+            </span>
+          </div>
         </div>
       </div>
 
@@ -72,8 +74,13 @@
           </div>
 
           <div class="canvas-toolbar__tabs">
-            <button type="button" class="builder-tab builder-tab--active">Canvas</button>
-            <button type="button" class="builder-tab" disabled>Live Run</button>
+            <button type="button" class="builder-tab builder-tab--active">
+              Canvas
+            </button>
+
+            <button type="button" class="builder-tab" (click)="startLiveRun()">
+              Live Run
+            </button>
           </div>
         </div>
 
