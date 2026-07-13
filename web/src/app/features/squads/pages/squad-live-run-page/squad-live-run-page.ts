@@ -1,9 +1,15 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { finalize, switchMap } from 'rxjs';
 
 import { ReteSquadFlowEditor } from '../../components/rete-squad-flow-editor/rete-squad-flow-editor';
+import {
+  SquadStopConfirmDialog,
+  SquadStopConfirmDialogData,
+} from '../../components/squad-stop-confirm-dialog/squad-stop-confirm-dialog';
 import {
   SquadExecutionStatus,
   SquadRunStartResponse,
@@ -17,22 +23,30 @@ type LiveRunAgent = {
 
 @Component({
   selector: 'app-squad-live-run-page',
-  imports: [RouterLink, MatButtonModule, ReteSquadFlowEditor],
+  imports: [RouterLink, MatButtonModule, MatDialogModule, ReteSquadFlowEditor],
   templateUrl: './squad-live-run-page.html',
   styleUrl: './squad-live-run-page.scss',
 })
-export class SquadLiveRunPage implements OnInit {
+export class SquadLiveRunPage implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly squadService = inject(SquadService);
+  private readonly dialog = inject(MatDialog);
 
   private pollingHandle?: number;
+  private workflowStartedAt: number | null = null;
+  private timerHandle?: number;
+
+  readonly elapsedSeconds = signal(0);
 
   readonly squad = signal<SquadApiResponse | null>(null);
 
   readonly activeSquadRunId = signal<string | null>(null);
 
   readonly executionStatus = signal<SquadExecutionStatus | null>(null);
+
+  readonly followModeEnabled = signal(true);
+  readonly isStoppingWorkflow = signal(false);
 
   readonly executionEvents = signal<string[]>([]);
 
@@ -92,8 +106,35 @@ export class SquadLiveRunPage implements OnInit {
     return Math.round((this.completedSteps() / total) * 100);
   });
 
+  readonly isWorkflowRunning = computed(() => {
+    return this.executionStatus()?.overallStatus === 'RUNNING';
+  });
+
+  readonly workflowCancelled = computed(() => {
+    return this.executionStatus()?.overallStatus === 'CANCELLED';
+  });
+
+  readonly canStopWorkflow = computed(() => {
+    return this.isWorkflowRunning() && !this.isStoppingWorkflow() && !!this.activeSquadRunId();
+  });
+
+  readonly formattedDuration = computed(() => {
+    const totalSeconds = this.elapsedSeconds();
+
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    return [hours, minutes, seconds].map((value) => value.toString().padStart(2, '0')).join(':');
+  });
+
   ngOnInit(): void {
     this.loadSquad();
+  }
+
+  ngOnDestroy(): void {
+    this.stopPolling();
+    this.stopTimer();
   }
 
   runWorkflow(): void {
@@ -104,26 +145,32 @@ export class SquadLiveRunPage implements OnInit {
     }
 
     this.executionStatus.set(null);
+    this.followModeEnabled.set(true);
     this.executionEvents.set(['Starting workflow...']);
 
     this.squadService.startSquadRun(squadId).subscribe({
       next: (response: SquadRunStartResponse) => {
         this.activeSquadRunId.set(response.squadRunId);
 
-        this.executionEvents.update((events) => [
-          ...events,
-          'Workflow started',
-        ]);
+        this.executionEvents.update((events) => [...events, 'Workflow started']);
+
+        this.workflowStartedAt = Date.now();
+        this.elapsedSeconds.set(0);
+
+        this.timerHandle = window.setInterval(() => {
+          if (!this.workflowStartedAt) {
+            return;
+          }
+
+          this.elapsedSeconds.set(Math.floor((Date.now() - this.workflowStartedAt) / 1000));
+        }, 1000);
 
         this.startPolling(response.squadRunId);
       },
       error: (error) => {
         console.error('Failed to start workflow', error);
 
-        this.executionEvents.update((events) => [
-          ...events,
-          'Failed to start workflow',
-        ]);
+        this.executionEvents.update((events) => [...events, 'Failed to start workflow']);
       },
     });
   }
@@ -148,6 +195,40 @@ export class SquadLiveRunPage implements OnInit {
     }));
   }
 
+  toggleFollowMode(): void {
+    this.followModeEnabled.update((enabled) => !enabled);
+  }
+
+  stopWorkflow(): void {
+    const squadRunId = this.activeSquadRunId();
+
+    if (!squadRunId || !this.isWorkflowRunning() || this.isStoppingWorkflow()) {
+      return;
+    }
+
+    const dialogRef = this.dialog.open<SquadStopConfirmDialog, SquadStopConfirmDialogData, boolean>(
+      SquadStopConfirmDialog,
+      {
+        data: {
+          squadName: this.squad()?.name ?? 'This workflow',
+        },
+        width: '28rem',
+        maxWidth: '92vw',
+        autoFocus: false,
+        restoreFocus: false,
+        panelClass: 'squad-stop-dialog-panel',
+      },
+    );
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (!confirmed) {
+        return;
+      }
+
+      this.cancelSquadRun(squadRunId);
+    });
+  }
+
   private loadSquad(): void {
     const squadId = this.squadId();
 
@@ -169,9 +250,7 @@ export class SquadLiveRunPage implements OnInit {
   }
 
   private startPolling(squadRunId: string): void {
-    if (this.pollingHandle) {
-      clearInterval(this.pollingHandle);
-    }
+    this.stopPolling();
 
     this.pollingHandle = window.setInterval(() => {
       this.squadService.getSquadRunStatus(squadRunId).subscribe({
@@ -182,16 +261,68 @@ export class SquadLiveRunPage implements OnInit {
 
           this.executionEvents.set(events);
 
-          if (status.overallStatus === 'COMPLETED' || status.overallStatus === 'FAILED') {
-            clearInterval(this.pollingHandle);
+          if (
+            status.overallStatus === 'COMPLETED' ||
+            status.overallStatus === 'FAILED' ||
+            status.overallStatus === 'CANCELLED'
+          ) {
+            this.stopTimer();
+            this.stopPolling();
           }
         },
         error: (error) => {
           console.error('STATUS ERROR', error);
 
-          clearInterval(this.pollingHandle);
+          this.stopPolling();
         },
       });
     }, 1000);
+  }
+
+  private cancelSquadRun(squadRunId: string): void {
+    this.stopTimer();
+    this.isStoppingWorkflow.set(true);
+
+    this.squadService
+      .cancelSquadRun(squadRunId)
+      .pipe(
+        switchMap(() => this.squadService.getSquadRunStatus(squadRunId)),
+        finalize(() => this.isStoppingWorkflow.set(false)),
+      )
+      .subscribe({
+        next: (status) => {
+          this.stopPolling();
+          this.stopTimer();
+
+          this.executionStatus.set({
+            ...status,
+            overallStatus: 'CANCELLED',
+          });
+
+          this.executionEvents.update((events) => [...events, 'Workflow cancelled']);
+        },
+        error: (error) => {
+          console.error('Failed to stop workflow', error);
+
+          this.executionEvents.update((events) => [...events, 'Failed to stop workflow']);
+        },
+      });
+  }
+  private stopTimer(): void {
+    if (!this.timerHandle) {
+      return;
+    }
+
+    clearInterval(this.timerHandle);
+    this.timerHandle = undefined;
+  }
+
+  private stopPolling(): void {
+    if (!this.pollingHandle) {
+      return;
+    }
+
+    clearInterval(this.pollingHandle);
+    this.pollingHandle = undefined;
   }
 }

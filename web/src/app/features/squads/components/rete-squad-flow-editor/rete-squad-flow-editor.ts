@@ -21,6 +21,8 @@ import { AngularArea2D, AngularPlugin, Presets as AngularPresets } from 'rete-an
 
 import { SquadExecutionStatus } from '../../../../core/models/squad-run.model';
 
+type StepExecutionState = SquadExecutionStatus['steps'][number]['status'];
+
 interface ReteFlowStep {
   id: string;
   name: string;
@@ -63,6 +65,19 @@ type ReteSchemes = GetSchemes<ReteNode, ReteConnection>;
 
 type AreaExtra = AngularArea2D<ReteSchemes>;
 
+type EdgeAnimationState = 'pending' | 'running' | 'completed';
+
+interface ReteConnectionView {
+  element: HTMLElement;
+}
+
+interface AreaWithConnectionViews {
+  connectionViews?: Map<string, ReteConnectionView>;
+}
+
+const NODE_WIDTH = 210;
+const NODE_HEIGHT = 92;
+
 @Component({
   selector: 'app-rete-squad-flow-editor',
   imports: [],
@@ -74,6 +89,8 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
   @Input({ required: true }) edges: ReteFlowEdge[] = [];
   @Input() agentNamesById: Record<string, string> = {};
   @Input() executionStatus: SquadExecutionStatus | null = null;
+  @Input() workflowCancelled = false;
+  @Input() followModeEnabled = true;
 
   @Output() stepSelected = new EventEmitter<string>();
   @Output() connectionCreated = new EventEmitter<ReteConnectionCreatedEvent>();
@@ -100,7 +117,13 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
   private readonly stepIdByNodeId = new Map<string, string>();
   private readonly connectionIdByEdgeKey = new Map<string, string>();
   private readonly ignoredConnectionRemovalIds = new Set<string>();
-  private readonly nodeStatusByStepId = new Map<string, string>();
+  private readonly nodeStatusByStepId = new Map<string, StepExecutionState>();
+  private readonly edgeAnimationStateByEdgeKey = new Map<string, EdgeAnimationState>();
+  private readonly runningStepStartedAtByStepId = new Map<string, number>();
+  private runningStepStartSequence = 0;
+  private latestRunningStepId: string | null = null;
+  private lastFollowedStepId: string | null = null;
+  private followAnimationFrameId: number | null = null;
 
   async ngAfterViewInit(): Promise<void> {
     await this.initializeEditor();
@@ -108,27 +131,23 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
     this.editorReady = true;
 
     await this.syncGraphFromInputs();
+    this.applyNodeStatuses();
+    this.scheduleFollowToActiveNode();
   }
 
   async ngOnChanges(changes: SimpleChanges): Promise<void> {
     if (changes['executionStatus']) {
-      console.log('RETE STATUS', this.executionStatus);
+      this.handleExecutionStatusChange();
     }
 
-    if (changes['executionStatus']) {
-      this.nodeStatusByStepId.clear();
-
-      const status = this.executionStatus;
-
-      if (status) {
-        status.steps.forEach((step) => {
-          this.nodeStatusByStepId.set(step.stepId, step.status);
-        });
+    if (changes['followModeEnabled']) {
+      if (this.followModeEnabled) {
+        this.lastFollowedStepId = null;
+        this.scheduleFollowToActiveNode();
+      } else if (this.followAnimationFrameId !== null) {
+        cancelAnimationFrame(this.followAnimationFrameId);
+        this.followAnimationFrameId = null;
       }
-
-      requestAnimationFrame(() => {
-        this.applyNodeStatuses();
-      });
     }
 
     if (!this.editorReady) {
@@ -137,10 +156,24 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
 
     if (changes['steps'] || changes['edges'] || changes['agentNamesById']) {
       await this.syncGraphFromInputs();
+      this.scheduleFollowToActiveNode();
+    }
+    if (changes['workflowCancelled']) {
+      this.updateEdgeAnimationStates();
+      this.applyNodeStatuses();
+
+      requestAnimationFrame(() => {
+        this.applyConnectionAnimationStates();
+      });
     }
   }
 
   ngOnDestroy(): void {
+    if (this.followAnimationFrameId !== null) {
+      cancelAnimationFrame(this.followAnimationFrameId);
+      this.followAnimationFrameId = null;
+    }
+
     this.connectionArrowObserver?.disconnect();
     this.connectionArrowObserver = null;
 
@@ -219,6 +252,7 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
 
         requestAnimationFrame(() => {
           this.applyConnectionArrows();
+          this.applyConnectionAnimationStates();
         });
       }
 
@@ -346,9 +380,76 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
       await this.removeDeletedNodes();
       await this.addOrUpdateNodes();
       await this.addMissingConnections();
+      this.updateEdgeAnimationStates();
+      this.applyNodeStatuses();
+      this.applyConnectionAnimationStates();
     } finally {
       this.isSyncingFromAngularState = false;
     }
+  }
+
+  private handleExecutionStatusChange(): void {
+    const previousStatuses = new Map(this.nodeStatusByStepId);
+    const currentlyRunningStepIds = new Set<string>();
+
+    this.nodeStatusByStepId.clear();
+
+    const status = this.executionStatus;
+
+    if (status) {
+      status.steps.forEach((step) => {
+        this.nodeStatusByStepId.set(step.stepId, step.status);
+
+        if (step.status === 'RUNNING') {
+          currentlyRunningStepIds.add(step.stepId);
+
+          if (previousStatuses.get(step.stepId) !== 'RUNNING') {
+            this.runningStepStartSequence += 1;
+            this.runningStepStartedAtByStepId.set(step.stepId, this.runningStepStartSequence);
+          } else if (!this.runningStepStartedAtByStepId.has(step.stepId)) {
+            this.runningStepStartSequence += 1;
+            this.runningStepStartedAtByStepId.set(step.stepId, this.runningStepStartSequence);
+          }
+        } else {
+          this.runningStepStartedAtByStepId.delete(step.stepId);
+        }
+      });
+    }
+
+    for (const stepId of this.runningStepStartedAtByStepId.keys()) {
+      if (!currentlyRunningStepIds.has(stepId)) {
+        this.runningStepStartedAtByStepId.delete(stepId);
+      }
+    }
+
+    this.latestRunningStepId = this.resolveLatestRunningStepId(Array.from(currentlyRunningStepIds));
+    this.updateEdgeAnimationStates();
+
+    requestAnimationFrame(() => {
+      this.applyNodeStatuses();
+      this.applyConnectionAnimationStates();
+      this.scheduleFollowToActiveNode();
+    });
+  }
+
+  private resolveLatestRunningStepId(currentlyRunningStepIds: string[]): string | null {
+    if (currentlyRunningStepIds.length === 0) {
+      return null;
+    }
+
+    let latestStepId = currentlyRunningStepIds[0];
+    let latestStartedAt = this.runningStepStartedAtByStepId.get(latestStepId) ?? -1;
+
+    for (const stepId of currentlyRunningStepIds) {
+      const startedAt = this.runningStepStartedAtByStepId.get(stepId) ?? -1;
+
+      if (startedAt >= latestStartedAt) {
+        latestStepId = stepId;
+        latestStartedAt = startedAt;
+      }
+    }
+
+    return latestStepId;
   }
 
   private async addOrUpdateNodes(): Promise<void> {
@@ -412,6 +513,7 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
 
       requestAnimationFrame(() => {
         this.applyConnectionArrows();
+        this.applyConnectionAnimationStates();
       });
 
       this.connectionIdByEdgeKey.set(edgeKey, connection.id);
@@ -463,8 +565,8 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
       height?: number;
     };
 
-    sizedNode.width = 210;
-    sizedNode.height = 92;
+    sizedNode.width = NODE_WIDTH;
+    sizedNode.height = NODE_HEIGHT;
   }
 
   private updateGridPosition(x: number, y: number): void {
@@ -487,6 +589,7 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
 
     this.connectionArrowObserver = new MutationObserver(() => {
       this.applyConnectionArrows();
+      this.applyConnectionAnimationStates();
     });
 
     this.connectionArrowObserver.observe(container, {
@@ -496,6 +599,7 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
 
     requestAnimationFrame(() => {
       this.applyConnectionArrows();
+      this.applyConnectionAnimationStates();
     });
   }
 
@@ -556,7 +660,7 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
     const arrowPath = document.createElementNS(svgNamespace, 'path');
 
     arrowPath.setAttribute('d', 'M 2 2 L 10 6 L 2 10 z');
-    arrowPath.setAttribute('fill', 'currentColor');
+    arrowPath.setAttribute('fill', 'context-stroke');
 
     marker.appendChild(arrowPath);
     defs.appendChild(marker);
@@ -573,7 +677,129 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
       path.setAttribute('marker-end', `url(#${this.connectionArrowMarkerId})`);
       path.setAttribute('stroke-linecap', 'round');
       path.setAttribute('stroke-linejoin', 'round');
+      path.classList.add('edge-path');
     });
+  }
+
+  private updateEdgeAnimationStates(): void {
+    this.edgeAnimationStateByEdgeKey.clear();
+
+    for (const edge of this.edges) {
+      const edgeKey = this.buildEdgeKey(edge.sourceStepId, edge.targetStepId);
+
+      const sourceStatus = this.nodeStatusByStepId.get(edge.sourceStepId);
+      const targetStatus = this.nodeStatusByStepId.get(edge.targetStepId);
+
+      if (this.workflowCancelled) {
+        if (
+          sourceStatus === 'COMPLETED' &&
+          (targetStatus === 'COMPLETED' || targetStatus === 'CANCELLED')
+        ) {
+          this.edgeAnimationStateByEdgeKey.set(edgeKey, 'completed');
+        } else {
+          this.edgeAnimationStateByEdgeKey.set(edgeKey, 'pending');
+        }
+        continue;
+      }
+
+      if (sourceStatus === 'RUNNING' && targetStatus !== 'COMPLETED') {
+        this.edgeAnimationStateByEdgeKey.set(edgeKey, 'running');
+        continue;
+      }
+
+      if (sourceStatus === 'COMPLETED' && targetStatus === 'COMPLETED') {
+        this.edgeAnimationStateByEdgeKey.set(edgeKey, 'completed');
+        continue;
+      }
+
+      this.edgeAnimationStateByEdgeKey.set(edgeKey, 'pending');
+    }
+  }
+
+  private applyConnectionAnimationStates(): void {
+    this.clearConnectionAnimationClasses();
+
+    if (!this.area) {
+      return;
+    }
+
+    for (const [edgeKey, connectionId] of this.connectionIdByEdgeKey.entries()) {
+      const animationState = this.edgeAnimationStateByEdgeKey.get(edgeKey);
+
+      if (!animationState || animationState === 'pending') {
+        continue;
+      }
+
+      const connectionElement = this.findConnectionElement(connectionId);
+
+      if (!connectionElement) {
+        continue;
+      }
+
+      const connectionClass =
+        animationState === 'running' ? 'edge-status--running' : 'edge-status--completed';
+      const pathClass =
+        animationState === 'running' ? 'edge-path--running' : 'edge-path--completed';
+
+      connectionElement.classList.add(connectionClass);
+
+      const paths = connectionElement.querySelectorAll<SVGPathElement>('path');
+
+      paths.forEach((path) => {
+        if (path.closest('marker')) {
+          return;
+        }
+
+        path.classList.add(pathClass);
+      });
+    }
+  }
+
+  private clearConnectionAnimationClasses(): void {
+    const container = this.reteContainer.nativeElement;
+    const roots = this.collectRenderableRoots(container);
+
+    roots.forEach((root) => {
+      const connectionElements = root.querySelectorAll<HTMLElement>('[data-testid="connection"]');
+
+      connectionElements.forEach((connectionElement) => {
+        connectionElement.classList.remove('edge-status--running', 'edge-status--completed');
+      });
+
+      const edgePaths = root.querySelectorAll<SVGPathElement>('path.edge-path');
+
+      edgePaths.forEach((path) => {
+        path.classList.remove('edge-path--running', 'edge-path--completed');
+      });
+    });
+  }
+
+  private findConnectionElement(connectionId: string): HTMLElement | null {
+    if (!this.area) {
+      return null;
+    }
+
+    const areaWithConnectionViews = this.area as unknown as AreaWithConnectionViews;
+    const viewElement = areaWithConnectionViews.connectionViews?.get(connectionId)?.element;
+
+    if (viewElement) {
+      return viewElement;
+    }
+
+    const container = this.reteContainer.nativeElement;
+    const roots = this.collectRenderableRoots(container);
+
+    for (const root of roots) {
+      const byDataId = root.querySelector<HTMLElement>(
+        `[data-testid="connection"][data-id="${connectionId}"]`,
+      );
+
+      if (byDataId) {
+        return byDataId;
+      }
+    }
+
+    return null;
   }
 
   private buildNodeLabel(step: ReteFlowStep): string {
@@ -592,13 +818,128 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
     return `${sourceStepId}->${targetStepId}`;
   }
 
+  private scheduleFollowToActiveNode(): void {
+    if (!this.followModeEnabled || !this.latestRunningStepId) {
+      return;
+    }
+
+    const stepId = this.latestRunningStepId;
+
+    if (this.lastFollowedStepId === stepId) {
+      return;
+    }
+
+    this.lastFollowedStepId = stepId;
+
+    requestAnimationFrame(() => {
+      void this.followStep(stepId);
+    });
+  }
+
+  private async followStep(stepId: string): Promise<void> {
+    if (!this.area || !this.followModeEnabled) {
+      return;
+    }
+
+    const node = this.nodeByStepId.get(stepId);
+
+    if (!node) {
+      return;
+    }
+
+    const nodeView = this.area.nodeViews.get(node.id);
+
+    if (!nodeView) {
+      return;
+    }
+
+    const viewportWidth = this.area.container.clientWidth;
+    const viewportHeight = this.area.container.clientHeight;
+    const transform = this.area.area.transform;
+    const nodeWidth = nodeView.element.clientWidth || NODE_WIDTH;
+    const nodeHeight = nodeView.element.clientHeight || NODE_HEIGHT;
+
+    const nodeCenterX = nodeView.position.x + nodeWidth / 2;
+    const nodeCenterY = nodeView.position.y + nodeHeight / 2;
+
+    const targetX = viewportWidth / 2 - nodeCenterX * transform.k;
+    const targetY = viewportHeight / 2 - nodeCenterY * transform.k;
+
+    await this.animateAreaTranslation(targetX, targetY);
+  }
+
+  private async animateAreaTranslation(targetX: number, targetY: number): Promise<void> {
+    if (!this.area) {
+      return;
+    }
+
+    if (this.followAnimationFrameId !== null) {
+      cancelAnimationFrame(this.followAnimationFrameId);
+      this.followAnimationFrameId = null;
+    }
+
+    const area = this.area.area;
+    const startX = area.transform.x;
+    const startY = area.transform.y;
+    const deltaX = targetX - startX;
+    const deltaY = targetY - startY;
+
+    if (Math.abs(deltaX) < 1 && Math.abs(deltaY) < 1) {
+      await area.translate(targetX, targetY);
+      return;
+    }
+
+    const durationMs = 420;
+    const startedAt = performance.now();
+
+    await new Promise<void>((resolve) => {
+      const stepAnimation = async (timestamp: number) => {
+        if (!this.area || !this.followModeEnabled) {
+          this.followAnimationFrameId = null;
+          resolve();
+          return;
+        }
+
+        const progress = Math.min((timestamp - startedAt) / durationMs, 1);
+        const easedProgress =
+          progress < 0.5
+            ? 4 * progress * progress * progress
+            : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+        const nextX = startX + deltaX * easedProgress;
+        const nextY = startY + deltaY * easedProgress;
+
+        await area.translate(nextX, nextY);
+
+        if (progress >= 1) {
+          this.followAnimationFrameId = null;
+          resolve();
+          return;
+        }
+
+        this.followAnimationFrameId = requestAnimationFrame((frameTime) => {
+          void stepAnimation(frameTime);
+        });
+      };
+
+      this.followAnimationFrameId = requestAnimationFrame((frameTime) => {
+        void stepAnimation(frameTime);
+      });
+    });
+  }
+
   private applyNodeStatuses(): void {
     const container = this.reteContainer.nativeElement;
 
     const nodeElements = container.querySelectorAll<HTMLElement>('[data-testid="node"]');
 
     nodeElements.forEach((nodeElement) => {
-      nodeElement.classList.remove('node-running', 'node-completed', 'node-failed');
+      nodeElement.classList.remove(
+        'node-running',
+        'node-completed',
+        'node-failed',
+        'node-cancelled',
+      );
     });
 
     let index = 0;
@@ -614,7 +955,11 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
       const status = this.nodeStatusByStepId.get(step.id);
 
       if (status === 'RUNNING') {
-        nodeElement.classList.add('node-running');
+        if (this.workflowCancelled) {
+          nodeElement.classList.add('node-cancelled');
+        } else {
+          nodeElement.classList.add('node-running');
+        }
       }
 
       if (status === 'COMPLETED') {
@@ -623,6 +968,10 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
 
       if (status === 'FAILED') {
         nodeElement.classList.add('node-failed');
+      }
+
+      if (status === 'CANCELLED') {
+        nodeElement.classList.add('node-cancelled');
       }
 
       index++;

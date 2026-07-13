@@ -11,6 +11,16 @@
     </div>
 
     <div class="live-run-header__actions">
+      <button
+        mat-stroked-button
+        type="button"
+        class="follow-mode-button"
+        [class.follow-mode-button--active]="followModeEnabled()"
+        (click)="toggleFollowMode()"
+      >
+        {{ followModeEnabled() ? 'Unfollow' : 'Follow' }}
+      </button>
+
       <a
         mat-stroked-button
         [routerLink]="['/squads/builder', squadId()]"
@@ -26,17 +36,33 @@
       >
         {{ activeSquadRunId() ? 'Run Again' : 'Run' }}
       </button>
+
+      <button
+        mat-stroked-button
+        type="button"
+        class="stop-workflow-button"
+        [disabled]="!canStopWorkflow()"
+        (click)="stopWorkflow()"
+      >
+        Stop
+      </button>
     </div>
   </header>
 
   <section class="run-summary-card">
     <div class="run-summary-header">
-      <div class="run-status-badge">
+      <div
+        class="run-status-badge"
+        [class.run-status-badge--cancelled]="executionStatus()?.overallStatus === 'CANCELLED'"
+      >
         {{ executionStatus()?.overallStatus ?? 'IDLE' }}
       </div>
 
-      <div class="run-progress-value">
-        {{ progressPercentage() }}%
+      <div class="progress-header">
+        <span>{{ progressPercentage() }}%</span>
+        <span class="workflow-duration">
+    Duration: {{ formattedDuration() }}
+  </span>
       </div>
     </div>
 
@@ -59,16 +85,18 @@
   <section class="live-run-layout">
     <main class="live-run-canvas">
       @if (squad(); as squadData) {
-        <app-rete-squad-flow-editor
-          [steps]="mapSteps(squadData)"
-          [edges]="mapEdges(squadData)"
-          [agentNamesById]="agentNamesById()"
-          [executionStatus]="executionStatus()"
-        ></app-rete-squad-flow-editor>
+      <app-rete-squad-flow-editor
+        [steps]="mapSteps(squadData)"
+        [edges]="mapEdges(squadData)"
+        [agentNamesById]="agentNamesById()"
+        [executionStatus]="executionStatus()"
+        [followModeEnabled]="followModeEnabled()"
+        [workflowCancelled]="workflowCancelled()"
+      ></app-rete-squad-flow-editor>
       } @else {
-        <div class="live-run-placeholder">
-          Loading workflow...
-        </div>
+      <div class="live-run-placeholder">
+        Loading workflow...
+      </div>
       }
     </main>
 
@@ -76,34 +104,38 @@
       <div class="active-execution-panel__header">
         <h2>Active Execution</h2>
 
-        <span class="execution-status">
+        <span
+          class="execution-status"
+          [class.execution-status--cancelled]="executionStatus()?.overallStatus === 'CANCELLED'"
+        >
           {{ executionStatus()?.overallStatus ?? 'IDLE' }}
         </span>
       </div>
 
       <div class="execution-content">
         @if (executionStatus(); as status) {
-          @for (step of status.steps; track step.stepId) {
-            <div class="execution-event">
-              <div
-                class="execution-event__status"
-                [class.execution-event__status--completed]="step.status === 'COMPLETED'"
-                [class.execution-event__status--running]="step.status === 'RUNNING'"
-                [class.execution-event__status--failed]="step.status === 'FAILED'"
-                [class.execution-event__status--pending]="step.status === 'PENDING'"
-              >
-                {{ step.status }}
-              </div>
+        @for (step of status.steps; track step.stepId) {
+        <div class="execution-event">
+          <div
+            class="execution-event__status"
+            [class.execution-event__status--completed]="step.status === 'COMPLETED'"
+            [class.execution-event__status--running]="step.status === 'RUNNING'"
+            [class.execution-event__status--failed]="step.status === 'FAILED'"
+            [class.execution-event__status--pending]="step.status === 'PENDING'"
+            [class.execution-event__status--cancelled]="step.status === 'CANCELLED'"
+          >
+            {{ step.status }}
+          </div>
 
-              <span class="execution-event__title">
+          <span class="execution-event__title">
                 {{ step.stepName }}
               </span>
-            </div>
-          }
+        </div>
+        }
         } @else {
-          <div class="execution-placeholder">
-            No run started yet.
-          </div>
+        <div class="execution-placeholder">
+          No run started yet.
+        </div>
         }
       </div>
     </aside>

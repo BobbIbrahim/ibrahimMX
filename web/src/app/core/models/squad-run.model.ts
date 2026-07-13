@@ -1,4 +1,6 @@
-export type SquadStepExecutionStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+export type SquadStepExecutionStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+
+export type SquadRunOverallStatus = 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 
 export interface SquadRunStartResponse {
   squadId: string;
@@ -15,19 +17,6 @@ export interface SquadStepStatus {
 
 export interface SquadExecutionStatus {
   squadId: string;
-  overallStatus: string;
-  steps: SquadStepStatus[];
-}
-
-export interface SquadStepStatus {
-  stepId: string;
-  stepName: string;
-  status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
-  message: string;
-}
-
-export interface SquadExecutionStatus {
-  squadId: string;
-  overallStatus: string;
+  overallStatus: SquadRunOverallStatus;
   steps: SquadStepStatus[];
 }

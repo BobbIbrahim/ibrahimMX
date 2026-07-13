@@ -1,0 +1,27 @@
+<section class="stop-dialog">
+  <header class="stop-dialog__header">
+    <h2>Stop workflow?</h2>
+    <p>
+      {{ data.squadName }} is currently running. Stopping now will cancel its Temporal execution.
+    </p>
+  </header>
+
+  <footer class="stop-dialog__actions">
+    <button
+      type="button"
+      mat-stroked-button
+      (click)="keepRunning()"
+    >
+      Keep Running
+    </button>
+
+    <button
+      type="button"
+      mat-flat-button
+      class="stop-dialog__confirm"
+      (click)="confirmStop()"
+    >
+      Stop Workflow
+    </button>
+  </footer>
+</section>

@@ -113,4 +113,8 @@ export class SquadService {
   getSquadRunStatus(squadRunId: string): Observable<SquadExecutionStatus> {
     return this.http.get<SquadExecutionStatus>(`${this.baseUrl}/squads/runs/${squadRunId}`);
   }
+
+  cancelSquadRun(squadRunId: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/squads/runs/${squadRunId}/cancel`, {});
+  }
 }

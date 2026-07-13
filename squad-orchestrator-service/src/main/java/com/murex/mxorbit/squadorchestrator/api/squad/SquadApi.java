@@ -23,52 +23,56 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("squads")
 public interface SquadApi {
 
-	@PostMapping
-	@Operation(summary = "Create a squad")
-	@ApiResponses(value = {@ApiResponse(responseCode = "201", description = "Squad created"),
-			@ApiResponse(responseCode = "400", description = "Invalid request"),
-			@ApiResponse(responseCode = "500", description = "Internal error")})
-	ResponseEntity<SquadApiResponse> createSquad(@RequestBody @Valid CreateSquadApiRequest request);
+    @PostMapping
+    @Operation(summary = "Create a squad")
+    @ApiResponses(value = {@ApiResponse(responseCode = "201", description = "Squad created"),
+            @ApiResponse(responseCode = "400", description = "Invalid request"),
+            @ApiResponse(responseCode = "500", description = "Internal error")})
+    ResponseEntity<SquadApiResponse> createSquad(@RequestBody @Valid CreateSquadApiRequest request);
 
-	@GetMapping
-	@Operation(summary = "Get all squads")
-	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Squads retrieved"),
-			@ApiResponse(responseCode = "500", description = "Internal error")})
-	ResponseEntity<List<SquadApiResponse>> getSquads();
+    @GetMapping
+    @Operation(summary = "Get all squads")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Squads retrieved"),
+            @ApiResponse(responseCode = "500", description = "Internal error")})
+    ResponseEntity<List<SquadApiResponse>> getSquads();
 
-	@GetMapping("/runs/{squadRunId}")
-	@Operation(summary = "Get a squad run execution status")
-	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Squad run execution status retrieved"),
-			@ApiResponse(responseCode = "404", description = "Squad run not found"),
-			@ApiResponse(responseCode = "500", description = "Internal error")})
-	ResponseEntity<SquadExecutionStatus> getSquadRunStatus(@PathVariable String squadRunId);
+    @GetMapping("/runs/{squadRunId}")
+    @Operation(summary = "Get a squad run execution status")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Squad run execution status retrieved"),
+            @ApiResponse(responseCode = "404", description = "Squad run not found"),
+            @ApiResponse(responseCode = "500", description = "Internal error")})
+    ResponseEntity<SquadExecutionStatus> getSquadRunStatus(@PathVariable String squadRunId);
 
-	@GetMapping("/{squadId}")
-	@Operation(summary = "Get a squad by ID")
-	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Squad retrieved"),
-			@ApiResponse(responseCode = "404", description = "Squad not found"),
-			@ApiResponse(responseCode = "500", description = "Internal error")})
-	ResponseEntity<SquadApiResponse> getSquadById(@PathVariable String squadId);
+    @GetMapping("/{squadId}")
+    @Operation(summary = "Get a squad by ID")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Squad retrieved"),
+            @ApiResponse(responseCode = "404", description = "Squad not found"),
+            @ApiResponse(responseCode = "500", description = "Internal error")})
+    ResponseEntity<SquadApiResponse> getSquadById(@PathVariable String squadId);
 
-	@PutMapping("/{squadId}")
-	@Operation(summary = "Update a squad")
-	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Squad updated"),
-			@ApiResponse(responseCode = "400", description = "Invalid request"),
-			@ApiResponse(responseCode = "404", description = "Squad not found"),
-			@ApiResponse(responseCode = "500", description = "Internal error")})
-	ResponseEntity<SquadApiResponse> updateSquad(@PathVariable String squadId,
-			@RequestBody @Valid CreateSquadApiRequest request);
+    @PutMapping("/{squadId}")
+    @Operation(summary = "Update a squad")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Squad updated"),
+            @ApiResponse(responseCode = "400", description = "Invalid request"),
+            @ApiResponse(responseCode = "404", description = "Squad not found"),
+            @ApiResponse(responseCode = "500", description = "Internal error")})
+    ResponseEntity<SquadApiResponse> updateSquad(@PathVariable String squadId,
+                                                 @RequestBody @Valid CreateSquadApiRequest request);
 
-	@PostMapping("/{squadId}/runs")
-	@Operation(summary = "Start a squad execution")
-	@ApiResponses(value = {@ApiResponse(responseCode = "202", description = "Squad execution started"),
-			@ApiResponse(responseCode = "404", description = "Squad not found"),
-			@ApiResponse(responseCode = "500", description = "Internal error")})
-	ResponseEntity<SquadRunApiResponse> startSquadRun(@PathVariable String squadId);
+    @PostMapping("/{squadId}/runs")
+    @Operation(summary = "Start a squad execution")
+    @ApiResponses(value = {@ApiResponse(responseCode = "202", description = "Squad execution started"),
+            @ApiResponse(responseCode = "404", description = "Squad not found"),
+            @ApiResponse(responseCode = "500", description = "Internal error")})
+    ResponseEntity<SquadRunApiResponse> startSquadRun(@PathVariable String squadId);
 
-	@GetMapping("/runs")
-	@Operation(summary = "Get all squad runs")
-	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Squad runs retrieved"),
-			@ApiResponse(responseCode = "500", description = "Internal error")})
-	ResponseEntity<List<SquadRunListApiResponse>> getSquadRuns();
+    @GetMapping("/runs")
+    @Operation(summary = "Get all squad runs")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Squad runs retrieved"),
+            @ApiResponse(responseCode = "500", description = "Internal error")})
+    ResponseEntity<List<SquadRunListApiResponse>> getSquadRuns();
+
+    @PostMapping("/runs/{squadRunId}/cancel")
+    ResponseEntity<Void> cancelSquadRun(@PathVariable String squadRunId);
+
 }
