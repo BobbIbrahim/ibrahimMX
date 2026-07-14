@@ -12,16 +12,28 @@ import lombok.NonNull;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SquadStepExecutionResult {
+public class SaveSquadStepExecutionRequest {
+
+	@NonNull
+	private String squadRunId;
+
+	@NonNull
+	private String squadId;
 
 	@NonNull
 	private String stepId;
 
 	@NonNull
-	private String status;
+	private String stepName;
 
 	@NonNull
+	private String status;
+
 	private String message;
+
+	@Builder.Default
+	@NonNull
+	private Map<String, Object> input = new LinkedHashMap<>();
 
 	@Builder.Default
 	@NonNull

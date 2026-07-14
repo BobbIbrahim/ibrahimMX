@@ -11,19 +11,19 @@ import java.util.Optional;
 
 public interface SquadFacade {
 
-    Squad createSquad(CreateSquadRequest request);
+	Squad createSquad(CreateSquadRequest request);
 
-    List<Squad> getSquads();
+	List<Squad> getSquads();
 
-    Optional<Squad> getSquadById(String squadId);
+	Optional<Squad> getSquadById(String squadId);
 
-    Optional<Squad> updateSquad(String squadId, CreateSquadRequest request);
+	Optional<Squad> updateSquad(String squadId, CreateSquadRequest request);
 
-    Optional<SquadRunStartResult> startSquadRun(String squadId);
+	Optional<SquadRunStartResult> startSquadRun(String squadId);
 
-    List<SquadRunSummary> getSquadRuns();
+	List<SquadRunSummary> getSquadRuns();
 
-    Optional<SquadExecutionStatus> getSquadRunStatus(String squadRunId);
+	Optional<SquadExecutionStatus> getSquadRunStatus(String squadRunId);
 
-    void cancelSquadRun(String squadRunId);
+	void cancelSquadRun(String squadRunId);
 }

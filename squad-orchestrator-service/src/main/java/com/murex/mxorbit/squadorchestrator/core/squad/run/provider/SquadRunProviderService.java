@@ -4,6 +4,7 @@ import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadExecu
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.workflow.SquadExecutionWorkflow;
 import com.murex.mxorbit.squadorchestrator.core.squad.run.SquadRunMemoKeys;
 import com.murex.mxorbit.squadorchestrator.core.squad.run.model.SquadRunSummary;
+import com.murex.mxorbit.squadorchestrator.infra.persistence.squad.execution.SquadStepExecutionJpaStore;
 import com.murex.mxorbit.squadorchestrator.core.workflow.client.TemporalClient;
 import com.murex.mxorbit.squadorchestrator.core.workflow.client.WorkflowExecutionSummary;
 import io.temporal.client.WorkflowNotFoundException;
@@ -23,6 +24,7 @@ public class SquadRunProviderService implements SquadRunProvider {
 	private static final String SQUAD_EXECUTION_WORKFLOW_TYPE = SquadExecutionWorkflow.class.getSimpleName();
 
 	private final TemporalClient temporalClient;
+	private final SquadStepExecutionJpaStore squadStepExecutionJpaStore;
 
 	@Override
 	public List<SquadRunSummary> getSquadRuns() {
@@ -39,11 +41,26 @@ public class SquadRunProviderService implements SquadRunProvider {
 				squadRunId);
 
 		try {
-			return Optional.of(workflow.getExecutionStatus());
+			SquadExecutionStatus status = workflow.getExecutionStatus();
+			enrichWithStepExecutionData(squadRunId, status);
+			return Optional.of(status);
 		} catch (WorkflowNotFoundException e) {
 			log.debug("Squad run not found. squadRunId: {}", squadRunId);
 			return Optional.empty();
 		}
+	}
+
+	private void enrichWithStepExecutionData(String squadRunId, SquadExecutionStatus status) {
+		var stepExecutionDataMap = squadStepExecutionJpaStore.findBySquadRunId(squadRunId).stream()
+				.collect(java.util.stream.Collectors.toMap(data -> data.getStepId(), data -> data));
+
+		status.getSteps().forEach(step -> {
+			var executionData = stepExecutionDataMap.get(step.getStepId());
+			if (executionData != null) {
+				step.setInput(executionData.getInput());
+				step.setOutput(executionData.getOutput());
+			}
+		});
 	}
 
 	private SquadRunSummary toSquadRunSummary(WorkflowExecutionSummary execution) {

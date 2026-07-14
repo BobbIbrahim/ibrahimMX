@@ -1,5 +1,7 @@
 package com.murex.mxorbit.squadorchestrator.core.squad.execution.model;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,4 +24,10 @@ public class SquadStepStatus {
 	private SquadStepExecutionStatus status;
 
 	private String message;
+
+	@Schema(description = "Step input parameters as a JSON object (Map<String, Object>)")
+	private Map<String, Object> input;
+
+	@Schema(description = "Step output result as a JSON object (Map<String, Object>)")
+	private Map<String, Object> output;
 }

@@ -1,5 +1,7 @@
 package com.murex.mxorbit.squadorchestrator.core.squad.execution.model;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,4 +25,8 @@ public class SquadStepExecutionRequest {
 
 	@NonNull
 	private String agentKey;
+
+	@Builder.Default
+	@NonNull
+	private Map<String, Object> input = new LinkedHashMap<>();
 }

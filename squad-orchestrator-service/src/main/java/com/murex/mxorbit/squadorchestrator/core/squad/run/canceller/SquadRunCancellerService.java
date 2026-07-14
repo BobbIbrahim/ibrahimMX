@@ -11,16 +11,16 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class SquadRunCancellerService implements SquadRunCanceller {
 
-    private final TemporalClient temporalClient;
+	private final TemporalClient temporalClient;
 
-    @Override
-    public void cancelSquadRun(String squadRunId) {
-        log.info("Cancelling squad run. squadRunId: {}", squadRunId);
+	@Override
+	public void cancelSquadRun(String squadRunId) {
+		log.info("Cancelling squad run. squadRunId: {}", squadRunId);
 
-        WorkflowStub workflowStub = temporalClient.getWorkflowStub(squadRunId);
+		WorkflowStub workflowStub = temporalClient.getWorkflowStub(squadRunId);
 
-        workflowStub.cancel();
+		workflowStub.cancel();
 
-        log.info("Successfully cancelled squad run. squadRunId: {}", squadRunId);
-    }
+		log.info("Successfully cancelled squad run. squadRunId: {}", squadRunId);
+	}
 }

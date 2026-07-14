@@ -22,50 +22,50 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class SquadFacadeService implements SquadFacade {
 
-    private final SquadCreator squadCreator;
-    private final SquadProvider squadProvider;
-    private final SquadUpdater squadUpdater;
-    private final SquadExecutionStarter squadExecutionStarter;
-    private final SquadRunProvider squadRunProvider;
-    private final SquadRunCanceller squadRunCanceller;
+	private final SquadCreator squadCreator;
+	private final SquadProvider squadProvider;
+	private final SquadUpdater squadUpdater;
+	private final SquadExecutionStarter squadExecutionStarter;
+	private final SquadRunProvider squadRunProvider;
+	private final SquadRunCanceller squadRunCanceller;
 
-    @Override
-    public Squad createSquad(CreateSquadRequest request) {
-        return squadCreator.createSquad(request);
-    }
+	@Override
+	public Squad createSquad(CreateSquadRequest request) {
+		return squadCreator.createSquad(request);
+	}
 
-    @Override
-    public List<Squad> getSquads() {
-        return squadProvider.getSquads();
-    }
+	@Override
+	public List<Squad> getSquads() {
+		return squadProvider.getSquads();
+	}
 
-    @Override
-    public Optional<Squad> getSquadById(String squadId) {
-        return squadProvider.getSquadById(squadId);
-    }
+	@Override
+	public Optional<Squad> getSquadById(String squadId) {
+		return squadProvider.getSquadById(squadId);
+	}
 
-    @Override
-    public Optional<Squad> updateSquad(String squadId, CreateSquadRequest request) {
-        return squadUpdater.updateSquad(squadId, request);
-    }
+	@Override
+	public Optional<Squad> updateSquad(String squadId, CreateSquadRequest request) {
+		return squadUpdater.updateSquad(squadId, request);
+	}
 
-    @Override
-    public Optional<SquadRunStartResult> startSquadRun(String squadId) {
-        return squadExecutionStarter.startSquadRun(squadId);
-    }
+	@Override
+	public Optional<SquadRunStartResult> startSquadRun(String squadId) {
+		return squadExecutionStarter.startSquadRun(squadId);
+	}
 
-    @Override
-    public List<SquadRunSummary> getSquadRuns() {
-        return squadRunProvider.getSquadRuns();
-    }
+	@Override
+	public List<SquadRunSummary> getSquadRuns() {
+		return squadRunProvider.getSquadRuns();
+	}
 
-    @Override
-    public Optional<SquadExecutionStatus> getSquadRunStatus(String squadRunId) {
-        return squadRunProvider.getSquadRunStatus(squadRunId);
-    }
+	@Override
+	public Optional<SquadExecutionStatus> getSquadRunStatus(String squadRunId) {
+		return squadRunProvider.getSquadRunStatus(squadRunId);
+	}
 
-    @Override
-    public void cancelSquadRun(String squadRunId) {
-        squadRunCanceller.cancelSquadRun(squadRunId);
-    }
+	@Override
+	public void cancelSquadRun(String squadRunId) {
+		squadRunCanceller.cancelSquadRun(squadRunId);
+	}
 }
