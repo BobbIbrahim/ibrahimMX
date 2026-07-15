@@ -13,12 +13,23 @@ import {
 import {
   SquadExecutionStatus,
   SquadRunStartResponse,
+  SquadStepExecutionStatus,
 } from '../../../../core/models/squad-run.model';
 import { SquadApiResponse, SquadService } from '../../../../core/services/squad.service';
 
 type LiveRunAgent = {
   id: string;
   name: string;
+};
+
+type SelectedStepDetails = {
+  stepId: string;
+  stepName: string;
+  status: SquadStepExecutionStatus;
+  message: string | null;
+  input?: Record<string, unknown> | null;
+  output?: Record<string, unknown> | null;
+  hasExecutionData: boolean;
 };
 
 @Component({
@@ -44,7 +55,9 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
   readonly activeSquadRunId = signal<string | null>(null);
 
   readonly executionStatus = signal<SquadExecutionStatus | null>(null);
+  readonly selectedStepId = signal<string | null>(null);
 
+  readonly interactionLocked = signal(true);
   readonly followModeEnabled = signal(true);
   readonly isStoppingWorkflow = signal(false);
 
@@ -118,6 +131,35 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
     return this.isWorkflowRunning() && !this.isStoppingWorkflow() && !!this.activeSquadRunId();
   });
 
+  readonly selectedStepDetails = computed<SelectedStepDetails | null>(() => {
+    const selectedStepId = this.selectedStepId();
+
+    if (!selectedStepId) {
+      return null;
+    }
+
+    const executionStep = this.executionStatus()?.steps.find((step) => step.stepId === selectedStepId);
+    const squadStep = this.squad()?.steps.find((step) => step.id === selectedStepId);
+
+    if (!executionStep && !squadStep) {
+      return null;
+    }
+
+    const hasExecutionData = Boolean(
+      executionStep && (executionStep.input !== undefined || executionStep.output !== undefined),
+    );
+
+    return {
+      stepId: selectedStepId,
+      stepName: executionStep?.stepName ?? squadStep?.name ?? 'Unknown step',
+      status: executionStep?.status ?? 'PENDING',
+      message: executionStep?.message ?? null,
+      input: executionStep?.input,
+      output: executionStep?.output,
+      hasExecutionData,
+    };
+  });
+
   readonly formattedDuration = computed(() => {
     const totalSeconds = this.elapsedSeconds();
 
@@ -145,6 +187,7 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
     }
 
     this.executionStatus.set(null);
+    this.selectedStepId.set(null);
     this.followModeEnabled.set(true);
     this.executionEvents.set(['Starting workflow...']);
 
@@ -197,6 +240,38 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
 
   toggleFollowMode(): void {
     this.followModeEnabled.update((enabled) => !enabled);
+  }
+
+  toggleInteractionLock(): void {
+    this.interactionLocked.update((locked) => !locked);
+  }
+
+  selectStep(stepId: string): void {
+    this.selectedStepId.set(stepId);
+  }
+
+  closeStepDetailsDrawer(): void {
+    this.selectedStepId.set(null);
+  }
+
+  isExecutionDataMissing(step: SelectedStepDetails): boolean {
+    return !step.hasExecutionData;
+  }
+
+  isJsonUnavailable(value: Record<string, unknown> | null | undefined): boolean {
+    return value === null || value === undefined;
+  }
+
+  isEmptyJsonObject(value: Record<string, unknown> | null | undefined): boolean {
+    if (!value) {
+      return false;
+    }
+
+    return Object.keys(value).length === 0;
+  }
+
+  formatJson(value: Record<string, unknown> | null | undefined): string {
+    return JSON.stringify(value, null, 2);
   }
 
   stopWorkflow(): void {

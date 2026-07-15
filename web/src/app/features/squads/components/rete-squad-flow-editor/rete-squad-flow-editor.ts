@@ -91,6 +91,8 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
   @Input() executionStatus: SquadExecutionStatus | null = null;
   @Input() workflowCancelled = false;
   @Input() followModeEnabled = true;
+  @Input() interactionLocked = false;
+  @Input() selectedStepId: string | null = null;
 
   @Output() stepSelected = new EventEmitter<string>();
   @Output() connectionCreated = new EventEmitter<ReteConnectionCreatedEvent>();
@@ -124,12 +126,40 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
   private latestRunningStepId: string | null = null;
   private lastFollowedStepId: string | null = null;
   private followAnimationFrameId: number | null = null;
+  private readonly handleContainerPointerDown = (event: PointerEvent): void => {
+    if (!this.interactionLocked) {
+      return;
+    }
+
+    const selectedStepId = this.resolveStepIdFromDomEventTarget(event.target);
+
+    if (!selectedStepId) {
+      return;
+    }
+
+    event.stopPropagation();
+  };
+  private readonly handleContainerClick = (event: MouseEvent): void => {
+    if (!this.interactionLocked) {
+      return;
+    }
+
+    const selectedStepId = this.resolveStepIdFromDomEventTarget(event.target);
+
+    if (!selectedStepId) {
+      return;
+    }
+
+    event.stopPropagation();
+    this.stepSelected.emit(selectedStepId);
+  };
 
   async ngAfterViewInit(): Promise<void> {
     await this.initializeEditor();
 
     this.editorReady = true;
 
+    this.applyInteractionLockMode();
     await this.syncGraphFromInputs();
     this.applyNodeStatuses();
     this.scheduleFollowToActiveNode();
@@ -148,6 +178,16 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
         cancelAnimationFrame(this.followAnimationFrameId);
         this.followAnimationFrameId = null;
       }
+    }
+
+    if (changes['interactionLocked']) {
+      this.applyInteractionLockMode();
+    }
+
+    if (changes['selectedStepId']) {
+      requestAnimationFrame(() => {
+        this.applyNodeStatuses();
+      });
     }
 
     if (!this.editorReady) {
@@ -176,6 +216,13 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
 
     this.connectionArrowObserver?.disconnect();
     this.connectionArrowObserver = null;
+
+    this.reteContainer.nativeElement.removeEventListener(
+      'pointerdown',
+      this.handleContainerPointerDown,
+      true,
+    );
+    this.reteContainer.nativeElement.removeEventListener('click', this.handleContainerClick, true);
 
     this.area?.destroy();
 
@@ -224,6 +271,12 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
 
     editor.addPipe((context) => {
       if (context.type === 'connectioncreated' && !this.isSyncingFromAngularState) {
+        if (this.interactionLocked) {
+          const connectionData = context.data as ReteSchemes['Connection'];
+          void this.editor?.removeConnection(connectionData.id);
+          return context;
+        }
+
         const connectionData = context.data as ReteSchemes['Connection'];
 
         const sourceStepId = this.stepIdByNodeId.get(connectionData.source);
@@ -257,6 +310,10 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
       }
 
       if (context.type === 'connectionremoved' && !this.isSyncingFromAngularState) {
+        if (this.interactionLocked) {
+          return context;
+        }
+
         const connectionData = context.data as ReteSchemes['Connection'];
 
         if (this.ignoredConnectionRemovalIds.has(connectionData.id)) {
@@ -306,6 +363,48 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
       }
 
       if (areaContext.type === 'nodetranslated' && !this.isSyncingFromAngularState) {
+        if (this.interactionLocked) {
+          const nodeData = areaContext.data as {
+            id?: string;
+            position?: {
+              x: number;
+              y: number;
+            };
+          };
+
+          if (!nodeData.id) {
+            return context;
+          }
+
+          const stepId = this.stepIdByNodeId.get(nodeData.id);
+          const step = this.steps.find((candidate) => candidate.id === stepId);
+
+          if (!step || !this.area) {
+            return context;
+          }
+
+          const currentX = nodeData.position?.x ?? 0;
+          const currentY = nodeData.position?.y ?? 0;
+          const deltaX = Math.abs(currentX - step.position.x);
+          const deltaY = Math.abs(currentY - step.position.y);
+
+          if (deltaX < 0.5 && deltaY < 0.5) {
+            return context;
+          }
+
+          this.isSyncingFromAngularState = true;
+          void this.area
+            .translate(nodeData.id, {
+              x: step.position.x,
+              y: step.position.y,
+            })
+            .finally(() => {
+              this.isSyncingFromAngularState = false;
+            });
+
+          return context;
+        }
+
         const nodeData = areaContext.data as {
           id?: string;
           position?: {
@@ -364,6 +463,9 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
 
     this.editor = editor;
     this.area = area;
+
+    container.addEventListener('pointerdown', this.handleContainerPointerDown, true);
+    container.addEventListener('click', this.handleContainerClick, true);
 
     this.startConnectionArrowObserver(container);
   }
@@ -939,6 +1041,7 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
         'node-completed',
         'node-failed',
         'node-cancelled',
+        'node-selected-runtime',
       );
     });
 
@@ -974,7 +1077,61 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
         nodeElement.classList.add('node-cancelled');
       }
 
+      if (step.id === this.selectedStepId) {
+        nodeElement.classList.add('node-selected-runtime');
+      }
+
       index++;
     }
+  }
+
+  private applyInteractionLockMode(): void {
+    const container = this.reteContainer?.nativeElement;
+
+    if (!container) {
+      return;
+    }
+
+    container.classList.toggle('rete-squad-flow-editor--interaction-locked', this.interactionLocked);
+  }
+
+  private resolveStepIdFromDomEventTarget(target: EventTarget | null): string | null {
+    if (!(target instanceof HTMLElement)) {
+      return null;
+    }
+
+    const nodeElement = target.closest<HTMLElement>('[data-testid="node"]');
+
+    if (!nodeElement) {
+      return null;
+    }
+
+    const explicitNodeId = nodeElement.getAttribute('data-id');
+
+    if (explicitNodeId) {
+      const stepId = this.stepIdByNodeId.get(explicitNodeId);
+
+      if (stepId) {
+        return stepId;
+      }
+    }
+
+    if (!this.area) {
+      return null;
+    }
+
+    for (const [stepId, node] of this.nodeByStepId.entries()) {
+      const nodeView = this.area.nodeViews.get(node.id);
+
+      if (!nodeView) {
+        continue;
+      }
+
+      if (nodeView.element === nodeElement) {
+        return stepId;
+      }
+    }
+
+    return null;
   }
 }

@@ -21,6 +21,16 @@
         {{ followModeEnabled() ? 'Unfollow' : 'Follow' }}
       </button>
 
+      <button
+        mat-stroked-button
+        type="button"
+        class="interaction-lock-button"
+        [class.interaction-lock-button--active]="interactionLocked()"
+        (click)="toggleInteractionLock()"
+      >
+        {{ interactionLocked() ? 'Locked' : 'Unlocked' }}
+      </button>
+
       <a
         mat-stroked-button
         [routerLink]="['/squads/builder', squadId()]"
@@ -82,7 +92,10 @@
     </div>
   </section>
 
-  <section class="live-run-layout">
+  <section
+    class="live-run-layout"
+    [class.live-run-layout--drawer-open]="selectedStepId() !== null"
+  >
     <main class="live-run-canvas">
       @if (squad(); as squadData) {
       <app-rete-squad-flow-editor
@@ -92,6 +105,9 @@
         [executionStatus]="executionStatus()"
         [followModeEnabled]="followModeEnabled()"
         [workflowCancelled]="workflowCancelled()"
+        [interactionLocked]="interactionLocked()"
+        [selectedStepId]="selectedStepId()"
+        (stepSelected)="selectStep($event)"
       ></app-rete-squad-flow-editor>
       } @else {
       <div class="live-run-placeholder">
@@ -100,44 +116,60 @@
       }
     </main>
 
-    <aside class="active-execution-panel">
-      <div class="active-execution-panel__header">
-        <h2>Active Execution</h2>
+    @if (selectedStepDetails(); as selectedStep) {
+    <aside class="step-details-drawer">
+      <div class="step-details-drawer__header">
+        <div class="step-details-drawer__title-group">
+          <h2>{{ selectedStep.stepName }}</h2>
+          <span
+            class="execution-event__status"
+            [class.execution-event__status--completed]="selectedStep.status === 'COMPLETED'"
+            [class.execution-event__status--running]="selectedStep.status === 'RUNNING'"
+            [class.execution-event__status--failed]="selectedStep.status === 'FAILED'"
+            [class.execution-event__status--pending]="selectedStep.status === 'PENDING'"
+            [class.execution-event__status--cancelled]="selectedStep.status === 'CANCELLED'"
+          >
+            {{ selectedStep.status }}
+          </span>
+        </div>
 
-        <span
-          class="execution-status"
-          [class.execution-status--cancelled]="executionStatus()?.overallStatus === 'CANCELLED'"
+        <button
+          mat-stroked-button
+          type="button"
+          (click)="closeStepDetailsDrawer()"
         >
-          {{ executionStatus()?.overallStatus ?? 'IDLE' }}
-        </span>
+          Close
+        </button>
       </div>
 
-      <div class="execution-content">
-        @if (executionStatus(); as status) {
-        @for (step of status.steps; track step.stepId) {
-        <div class="execution-event">
-          <div
-            class="execution-event__status"
-            [class.execution-event__status--completed]="step.status === 'COMPLETED'"
-            [class.execution-event__status--running]="step.status === 'RUNNING'"
-            [class.execution-event__status--failed]="step.status === 'FAILED'"
-            [class.execution-event__status--pending]="step.status === 'PENDING'"
-            [class.execution-event__status--cancelled]="step.status === 'CANCELLED'"
-          >
-            {{ step.status }}
+      <div class="step-details-drawer__content">
+        <section class="step-details-section">
+          <h3>Input</h3>
+          <div class="json-viewer">
+            @if (isExecutionDataMissing(selectedStep) || isJsonUnavailable(selectedStep.input)) {
+            <div class="json-viewer__placeholder">Not available yet</div>
+            } @else if (isEmptyJsonObject(selectedStep.input)) {
+            <div class="json-viewer__placeholder">No input</div>
+            } @else {
+            <pre>{{ formatJson(selectedStep.input) }}</pre>
+            }
           </div>
+        </section>
 
-          <span class="execution-event__title">
-                {{ step.stepName }}
-              </span>
-        </div>
-        }
-        } @else {
-        <div class="execution-placeholder">
-          No run started yet.
-        </div>
-        }
+        <section class="step-details-section">
+          <h3>Output</h3>
+          <div class="json-viewer">
+            @if (isExecutionDataMissing(selectedStep) || isJsonUnavailable(selectedStep.output)) {
+            <div class="json-viewer__placeholder">Not available yet</div>
+            } @else if (isEmptyJsonObject(selectedStep.output)) {
+            <div class="json-viewer__placeholder">No output</div>
+            } @else {
+            <pre>{{ formatJson(selectedStep.output) }}</pre>
+            }
+          </div>
+        </section>
       </div>
     </aside>
+    }
   </section>
 </section>

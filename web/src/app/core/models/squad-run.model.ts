@@ -12,7 +12,9 @@ export interface SquadStepStatus {
   stepId: string;
   stepName: string;
   status: SquadStepExecutionStatus;
-  message: string;
+  message?: string | null;
+  input?: Record<string, unknown> | null;
+  output?: Record<string, unknown> | null;
 }
 
 export interface SquadExecutionStatus {

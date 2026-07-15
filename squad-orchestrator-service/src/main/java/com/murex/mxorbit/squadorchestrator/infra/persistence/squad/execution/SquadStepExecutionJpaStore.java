@@ -22,8 +22,8 @@ public class SquadStepExecutionJpaStore {
 	}
 
 	public List<SquadStepExecutionData> findBySquadRunId(String squadRunId) {
-		return squadStepExecutionRepository.findBySquadRunId(squadRunId).stream().map(this::toSquadStepExecutionData)
-				.toList();
+		return squadStepExecutionRepository.findBySquadRunIdOrderByIdAsc(squadRunId).stream()
+				.map(this::toSquadStepExecutionData).toList();
 	}
 
 	private SquadStepExecutionEntity toEntity(SaveSquadStepExecutionRequest request) {

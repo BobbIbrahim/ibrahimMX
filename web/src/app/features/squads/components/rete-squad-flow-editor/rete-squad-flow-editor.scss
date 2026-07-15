@@ -88,6 +88,18 @@
       0 16px 38px rgba(2, 6, 18, 0.58);
     }
 
+    [data-testid='node'].node-selected-runtime {
+      border-color: var(--color-accent) !important;
+      background: linear-gradient(
+        160deg,
+        color-mix(in srgb, var(--color-accent) 18%, var(--color-surface-soft)),
+        var(--color-surface)
+      );
+      box-shadow: 0 0 0 1px var(--color-accent),
+      0 0 0 4px color-mix(in srgb, var(--color-accent) 22%, transparent),
+      0 16px 38px rgba(2, 6, 18, 0.58);
+    }
+
     /* ---- Node label ---------------------------------------------- */
     [data-testid='node'] .title {
       display: -webkit-box;
@@ -260,6 +272,29 @@
 
       to {
         stroke-dashoffset: -52;
+      }
+    }
+
+    .rete-squad-flow-editor--interaction-locked {
+      ::ng-deep {
+        [data-testid='node'] {
+          cursor: pointer;
+        }
+
+        [data-testid='node']:active {
+          cursor: pointer;
+        }
+
+        [data-testid='input-socket'],
+        [data-testid='output-socket'] {
+          pointer-events: none;
+        }
+
+        [data-testid='connection'],
+        [data-testid='connection'] > svg,
+        [data-testid='connection'] > path {
+          pointer-events: none;
+        }
       }
     }
 
