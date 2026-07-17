@@ -5,11 +5,14 @@ import com.murex.mxorbit.squadorchestrator.core.squad.model.Squad;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadEdge;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadStep;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadStepType;
+import com.murex.mxorbit.squadorchestrator.core.squad.model.StepInputRef;
 import com.murex.mxorbit.squadorchestrator.core.squad.store.request.CreateSquadStoreRequest;
 import com.murex.mxorbit.squadorchestrator.infra.persistence.squad.entity.SquadEdgeEntity;
 import com.murex.mxorbit.squadorchestrator.infra.persistence.squad.entity.SquadEntity;
 import com.murex.mxorbit.squadorchestrator.infra.persistence.squad.entity.SquadStepEntity;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -58,9 +61,15 @@ public interface SquadPersistenceMapper {
 	SquadEdgeEntity toEdgeEntity(SquadEdge edge);
 
 	default SquadStep toStep(SquadStepEntity entity) {
+		List<StepInputRef> inputRefs = entity.getInputRefs();
+		if (inputRefs == null) {
+			inputRefs = new ArrayList<>();
+		}
+
 		return switch (entity.getType()) {
-			case AI_AGENT -> AiAgentStep.builder().id(entity.getId()).name(entity.getName())
-					.agentKey((String) entity.getConfig().get("agentKey")).build();
+			case AI_AGENT ->
+				AiAgentStep.builder().id(entity.getId()).name(entity.getName()).inputRefs(new ArrayList<>(inputRefs))
+						.agentKey((String) entity.getConfig().get("agentKey")).build();
 		};
 	}
 

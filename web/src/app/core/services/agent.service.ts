@@ -9,6 +9,7 @@ export class AgentService {
   private readonly agentsSignal = signal<Agent[]>([
     {
       id: 'agent-001',
+      agentKey: 'code-sentinel',
       name: 'Code Sentinel',
       role: 'Code Review Specialist',
       model: 'GPT-4.1',
@@ -17,11 +18,14 @@ export class AgentService {
       accentColor: '#20d9ef',
       status: 'online',
       capabilities: ['Code Review', 'Security Scan', 'Refactoring'],
+      inputs: [],
+      outputs: ['message'],
       runCount: 248,
       successRate: 97,
     },
     {
       id: 'agent-002',
+      agentKey: 'test-weaver',
       name: 'Test Weaver',
       role: 'Test Generation Specialist',
       model: 'Claude Sonnet',
@@ -30,11 +34,14 @@ export class AgentService {
       accentColor: '#8b5cf6',
       status: 'idle',
       capabilities: ['Unit Tests', 'Integration Tests', 'Coverage'],
+      inputs: [],
+      outputs: ['message'],
       runCount: 164,
       successRate: 94,
     },
     {
       id: 'agent-003',
+      agentKey: 'flow-architect',
       name: 'Flow Architect',
       role: 'Workflow Design Specialist',
       model: 'Gemini Pro',
@@ -43,6 +50,8 @@ export class AgentService {
       accentColor: '#22c55e',
       status: 'online',
       capabilities: ['Planning', 'DAG Design', 'Coordination'],
+      inputs: [],
+      outputs: ['message'],
       runCount: 91,
       successRate: 92,
     },
@@ -57,5 +66,8 @@ export class AgentService {
   getAgentById(agentId: string) {
     return this.agents().find((agent) => agent.id === agentId);
   }
-  
+
+  getAgentByKey(agentKey: string) {
+    return this.agents().find((agent) => agent.agentKey === agentKey);
+  }
 }

@@ -15,10 +15,11 @@ import {
   SquadRunStartResponse,
   SquadStepExecutionStatus,
 } from '../../../../core/models/squad-run.model';
+import { AgentService } from '../../../../core/services/agent.service';
 import { SquadApiResponse, SquadService } from '../../../../core/services/squad.service';
 
 type LiveRunAgent = {
-  id: string;
+  agentKey: string;
   name: string;
 };
 
@@ -41,6 +42,7 @@ type SelectedStepDetails = {
 export class SquadLiveRunPage implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly agentService = inject(AgentService);
   private readonly squadService = inject(SquadService);
   private readonly dialog = inject(MatDialog);
 
@@ -63,20 +65,12 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
 
   readonly executionEvents = signal<string[]>([]);
 
-  readonly agents = signal<LiveRunAgent[]>([
-    {
-      id: 'code-sentinel',
-      name: 'Code Sentinel',
-    },
-    {
-      id: 'test-weaver',
-      name: 'Test Weaver',
-    },
-    {
-      id: 'flow-architect',
-      name: 'Flow Architect',
-    },
-  ]);
+  readonly agents = computed<LiveRunAgent[]>(() => {
+    return this.agentService.getAgents()().map((agent) => ({
+      agentKey: agent.agentKey,
+      name: agent.name,
+    }));
+  });
 
   readonly squadId = computed(() => {
     return this.route.snapshot.paramMap.get('squadId');
@@ -84,7 +78,7 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
 
   readonly agentNamesById = computed(() => {
     return this.agents().reduce<Record<string, string>>((agentNames, agent) => {
-      agentNames[agent.id] = agent.name;
+      agentNames[agent.agentKey] = agent.name;
       return agentNames;
     }, {});
   });

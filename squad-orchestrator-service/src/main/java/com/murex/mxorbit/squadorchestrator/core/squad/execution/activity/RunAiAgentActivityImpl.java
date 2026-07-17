@@ -1,19 +1,25 @@
 package com.murex.mxorbit.squadorchestrator.core.squad.execution.activity;
 
+import com.murex.mxorbit.squadorchestrator.core.squad.agent.AgentExecutor;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadStepExecutionRequest;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadStepExecutionResult;
 import io.temporal.spring.boot.ActivityImpl;
-import java.util.LinkedHashMap;
+
 import java.util.Map;
+
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 @ActivityImpl(taskQueues = "squad-orchestration-task-queue")
 public class RunAiAgentActivityImpl implements RunAiAgentActivity {
 
 	private static final long TEMPORARY_TEST_DELAY_MILLIS = 3000L;
+
+	private final AgentExecutor agentExecutor;
 
 	@Override
 	public SquadStepExecutionResult runAiAgent(SquadStepExecutionRequest request) {
@@ -23,12 +29,15 @@ public class RunAiAgentActivityImpl implements RunAiAgentActivity {
 
 		waitForStatusTesting();
 
-		Map<String, Object> output = new LinkedHashMap<>();
-		output.put("message",
-				"Executed step \"" + request.getStepName() + "\" using AI agent " + request.getAgentKey());
+		Map<String, Object> output = agentExecutor.execute(request.getAgentKey(), request.getStepName(),
+				request.getInput());
 
-		return SquadStepExecutionResult.builder().stepId(request.getStepId()).status("COMPLETED")
-				.message("Executed step \"" + request.getStepName() + "\" using AI agent " + request.getAgentKey())
+		log.info("AI agent output: {}", output);
+
+		String message = String.valueOf(output.getOrDefault("message",
+				"Executed step \"" + request.getStepName() + "\" using AI agent " + request.getAgentKey()));
+
+		return SquadStepExecutionResult.builder().stepId(request.getStepId()).status("COMPLETED").message(message)
 				.output(output).build();
 	}
 

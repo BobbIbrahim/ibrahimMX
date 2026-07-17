@@ -14,11 +14,13 @@ import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadEdge;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadStep;
 import com.murex.mxorbit.squadorchestrator.core.squad.creator.request.AiAgentStepRequest;
 import com.murex.mxorbit.squadorchestrator.core.squad.creator.request.SquadStepRequest;
+import java.util.ArrayList;
+import java.util.List;
+import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
-
-import java.util.List;
+import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface SquadApiMapper {
@@ -34,6 +36,13 @@ public interface SquadApiMapper {
 	}
 
 	AiAgentStepRequest toAiAgentStepRequest(AiAgentStepApiRequest request);
+
+	@AfterMapping
+	default void ensureInputRefs(AiAgentStepApiRequest request, @MappingTarget AiAgentStepRequest stepRequest) {
+		if (stepRequest.getInputRefs() == null) {
+			stepRequest.setInputRefs(new ArrayList<>());
+		}
+	}
 
 	SquadEdgeRequest toSquadEdgeRequest(SquadEdgeApiRequest request);
 
@@ -51,6 +60,13 @@ public interface SquadApiMapper {
 	}
 
 	AiAgentStepApiResponse toAiAgentStepApiResponse(AiAgentStep step);
+
+	@AfterMapping
+	default void ensureInputRefs(AiAgentStep step, @MappingTarget AiAgentStepApiResponse stepResponse) {
+		if (stepResponse.getInputRefs() == null) {
+			stepResponse.setInputRefs(new ArrayList<>());
+		}
+	}
 
 	SquadEdgeApiResponse toSquadEdgeApiResponse(SquadEdge edge);
 

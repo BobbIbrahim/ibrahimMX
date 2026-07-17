@@ -1,5 +1,6 @@
 package com.murex.mxorbit.squadorchestrator.infra.persistence.squad.entity;
 
+import com.murex.mxorbit.squadorchestrator.core.squad.model.StepInputRef;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadStepType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,6 +11,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -45,9 +48,14 @@ public class SquadStepEntity {
 	@Column(nullable = false)
 	private String name;
 
+	@Builder.Default
+	@JdbcTypeCode(SqlTypes.JSON)
+	@Column(name = "input_refs", nullable = false)
+	private List<StepInputRef> inputRefs = new ArrayList<>();
+
 	/**
 	 * Holds type-specific fields for this step (e.g. agentKey for AI_AGENT). Shared
-	 * fields are stored as proper columns above.
+	 * fields are stored as proper columns (e.g. input_refs).
 	 */
 	@JdbcTypeCode(SqlTypes.JSON)
 	@Column(nullable = false)

@@ -140,7 +140,7 @@
                   (ngModelChange)="updateSelectedStepAssignedAgent($event)"
                 >
                   <mat-select-trigger>
-                    @if (getAgentById(step.assignedAgentId); as selectedAgent) {
+                    @if (getAgentByKey(step.assignedAgentId); as selectedAgent) {
                       <span class="agent-select-trigger">
                         <span class="agent-avatar">
                           {{ getAgentInitials(selectedAgent.name) }}
@@ -178,8 +178,8 @@
                     </span>
                   </mat-option>
 
-                  @for (agent of agents(); track agent.id) {
-                    <mat-option [value]="agent.id">
+                  @for (agent of agents(); track agent.agentKey) {
+                    <mat-option [value]="agent.agentKey">
                       <span class="agent-option">
                         <span class="agent-avatar">
                           {{ getAgentInitials(agent.name) }}
