@@ -31,31 +31,32 @@ public class SquadInputRefValidator {
         Map<String, Set<String>> reverseEdges = buildReverseEdges(request.getEdges());
 
         for (SquadStepRequest step : request.getSteps()) {
-            Set<String> seenKeys = new HashSet<>();
+            Set<String> seenRefs = new HashSet<>();
             for (StepInputRef ref : step.getInputRefs()) {
-                validateRef(step.getId(), ref, stepMap, reverseEdges, seenKeys);
+                validateRef(step.getId(), ref, stepMap, reverseEdges, seenRefs);
             }
         }
     }
 
     private void validateRef(String stepId, StepInputRef ref, Map<String, SquadStepRequest> stepMap,
-                             Map<String, Set<String>> reverseEdges, Set<String> seenKeys) {
+                             Map<String, Set<String>> reverseEdges, Set<String> seenRefs) {
         String fromStepId = ref.getFromStepId();
         String key = ref.getKey();
 
         if (!stepMap.containsKey(fromStepId)) {
-            reject(stepId, fromStepId, key, "unknown-step");
+            throw buildException(stepId, fromStepId, key, "unknown-step");
         }
 
         Set<String> ancestors = computeAncestors(stepId, reverseEdges);
         if (!ancestors.contains(fromStepId)) {
-            reject(stepId, fromStepId, key, "not-ancestor");
+            throw buildException(stepId, fromStepId, key, "not-ancestor");
         }
 
         validateProduces(stepId, fromStepId, key, stepMap);
 
-        if (!seenKeys.add(key)) {
-            reject(stepId, fromStepId, key, "duplicate");
+        // Duplicate = Same key from different steps is allowed
+        if (!seenRefs.add(fromStepId + ":" + key)) {
+            throw buildException(stepId, fromStepId, key, "duplicate");
         }
     }
 
@@ -64,8 +65,7 @@ public class SquadInputRefValidator {
         if (!(fromStep instanceof AiAgentStepRequest aiStep)) {
             throw buildException(stepId, fromStepId, key, "not-produced");
         }
-        List<String> outputs = agentRegistry.findByKey(aiStep.getAgentKey())
-                .map(def -> def.getOutputs())
+        List<String> outputs = agentRegistry.findByKey(aiStep.getAgentKey()).map(def -> def.getOutputs())
                 .orElseThrow(() -> buildException(stepId, fromStepId, key, "not-produced"));
         if (!outputs.contains(key)) {
             throw buildException(stepId, fromStepId, key, "not-produced");
@@ -98,8 +98,7 @@ public class SquadInputRefValidator {
     private static Map<String, Set<String>> buildReverseEdges(List<SquadEdgeRequest> edges) {
         Map<String, Set<String>> reverse = new HashMap<>();
         for (SquadEdgeRequest edge : edges) {
-            reverse.computeIfAbsent(edge.getTargetStepId(), k -> new HashSet<>())
-                    .add(edge.getSourceStepId());
+            reverse.computeIfAbsent(edge.getTargetStepId(), k -> new HashSet<>()).add(edge.getSourceStepId());
         }
         return reverse;
     }
@@ -108,8 +107,7 @@ public class SquadInputRefValidator {
         throw buildException(stepId, fromStepId, key, reason);
     }
 
-    private static ResponseStatusException buildException(String stepId, String fromStepId, String key,
-                                                          String reason) {
+    private static ResponseStatusException buildException(String stepId, String fromStepId, String key, String reason) {
         String message = String.format("stepId=%s fromStepId=%s key=%s reason=%s", stepId, fromStepId, key, reason);
         return new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
     }

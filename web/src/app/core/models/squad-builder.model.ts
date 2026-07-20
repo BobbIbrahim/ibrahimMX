@@ -11,12 +11,18 @@ export interface SquadBuilderStep {
   assignedAgentId: string | null;
   parameters: Record<string, string>;
   position: SquadBuilderPosition;
+  inputRefs: SquadBuilderInputRef[];
 }
 
 export interface SquadBuilderEdge {
   id: string;
   sourceStepId: string;
   targetStepId: string;
+}
+
+export interface SquadBuilderInputRef {
+  fromStepId: string;
+  key: string;
 }
 
 export interface SquadBuilderDraft {
@@ -33,6 +39,7 @@ export interface SquadSaveStepPayload {
   name: string;
   type: string;
   agentKey: string;
+  inputRefs: SquadBuilderInputRef[];
 }
 
 export interface SquadSaveEdgePayload {

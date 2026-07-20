@@ -28,9 +28,25 @@ type SelectedStepDetails = {
   stepName: string;
   status: SquadStepExecutionStatus;
   message: string | null;
+  configuredInputRefs: Array<{
+    fromStepId: string;
+    key: string;
+  }>;
   input?: Record<string, unknown> | null;
   output?: Record<string, unknown> | null;
   hasExecutionData: boolean;
+};
+
+type InputInspectorRefRow = {
+  sourceStepName: string;
+  outputKey: string;
+  value: unknown;
+  hasResolvedValue: boolean;
+};
+
+type OutputInspectorEntry = {
+  outputKey: string;
+  value: unknown;
 };
 
 @Component({
@@ -81,6 +97,22 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
       agentNames[agent.agentKey] = agent.name;
       return agentNames;
     }, {});
+  });
+
+  readonly stepNamesById = computed(() => {
+    const stepNames: Record<string, string> = {};
+
+    this.squad()?.steps.forEach((step) => {
+      stepNames[step.id] = step.name;
+    });
+
+    this.executionStatus()?.steps.forEach((step) => {
+      if (!stepNames[step.stepId]) {
+        stepNames[step.stepId] = step.stepName;
+      }
+    });
+
+    return stepNames;
   });
 
   readonly completedSteps = computed(() => {
@@ -148,6 +180,7 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
       stepName: executionStep?.stepName ?? squadStep?.name ?? 'Unknown step',
       status: executionStep?.status ?? 'PENDING',
       message: executionStep?.message ?? null,
+      configuredInputRefs: squadStep?.inputRefs ?? [],
       input: executionStep?.input,
       output: executionStep?.output,
       hasExecutionData,
@@ -264,8 +297,75 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
     return Object.keys(value).length === 0;
   }
 
-  formatJson(value: Record<string, unknown> | null | undefined): string {
+  getInputInspectorRows(step: SelectedStepDetails): InputInspectorRefRow[] {
+    if (step.configuredInputRefs.length === 0) {
+      return [];
+    }
+
+    return step.configuredInputRefs.map((inputRef) => {
+      const sourcePayload = step.input ? step.input[inputRef.fromStepId] : undefined;
+      if (!this.isRecord(sourcePayload)) {
+        return {
+          sourceStepName: this.resolveStepName(inputRef.fromStepId),
+          outputKey: inputRef.key,
+          value: undefined,
+          hasResolvedValue: false,
+        };
+      }
+
+      const hasResolvedValue = Object.prototype.hasOwnProperty.call(sourcePayload, inputRef.key);
+      return {
+        sourceStepName: this.resolveStepName(inputRef.fromStepId),
+        outputKey: inputRef.key,
+        value: hasResolvedValue ? sourcePayload[inputRef.key] : undefined,
+        hasResolvedValue,
+      };
+    });
+  }
+
+  getOutputInspectorEntries(step: SelectedStepDetails): OutputInspectorEntry[] {
+    if (!step.output || this.isEmptyJsonObject(step.output)) {
+      return [];
+    }
+
+    return Object.entries(step.output).map(([outputKey, value]) => ({
+      outputKey,
+      value,
+    }));
+  }
+
+  formatInspectorValue(value: unknown): string {
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value);
+    }
+
+    if (value === null) {
+      return 'null';
+    }
+
     return JSON.stringify(value, null, 2);
+  }
+
+  formatRawJson(value: Record<string, unknown> | null | undefined): string {
+    return JSON.stringify(value, null, 2);
+  }
+
+  private resolveStepName(stepId: string): string {
+    const stepName = this.stepNamesById()[stepId];
+
+    if (!stepName) {
+      return 'Unknown source step';
+    }
+
+    return stepName;
+  }
+
+  private isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
   }
 
   stopWorkflow(): void {

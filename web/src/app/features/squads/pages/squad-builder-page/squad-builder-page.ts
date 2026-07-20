@@ -1,5 +1,5 @@
 import { TitleCasePipe } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
@@ -10,6 +10,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 
 import { Agent } from '../../../../core/models/agent.model';
+import { SquadBuilderInputRef, SquadBuilderStep } from '../../../../core/models/squad-builder.model';
 import { AgentService } from '../../../../core/services/agent.service';
 import { SquadBuilderStateService } from '../../../../core/services/squad-builder-state.service';
 import { SquadService } from '../../../../core/services/squad.service';
@@ -57,6 +58,15 @@ export class SquadBuilderPage implements OnInit {
   readonly steps = this.squadBuilderState.steps;
   readonly edges = this.squadBuilderState.edges;
   readonly selectedStep = this.squadBuilderState.selectedStep;
+  readonly ancestorStepsForSelectedStep = computed<SquadBuilderStep[]>(() => {
+    const selectedStep = this.selectedStep();
+
+    if (!selectedStep) {
+      return [];
+    }
+
+    return this.squadBuilderState.getAncestorSteps(selectedStep.id);
+  });
 
   readonly isSaving = signal(false);
   readonly saveError = signal<string | null>(null);
@@ -114,6 +124,31 @@ export class SquadBuilderPage implements OnInit {
     );
   });
 
+  constructor() {
+    effect(() => {
+      const selectedStep = this.selectedStep();
+
+      if (!selectedStep) {
+        return;
+      }
+
+      selectedStep.inputRefs.forEach((inputRef, index) => {
+        if (!inputRef.key) {
+          return;
+        }
+
+        const availableOutputKeys = this.getOutputKeysForSourceStepId(inputRef.fromStepId);
+        if (availableOutputKeys.includes(inputRef.key)) {
+          return;
+        }
+
+        this.squadBuilderState.updateSelectedStepInputRef(index, {
+          key: '',
+        });
+      });
+    });
+  }
+
   ngOnInit(): void {
     this.loadExistingSquadFromRouteIfNeeded();
   }
@@ -142,6 +177,37 @@ export class SquadBuilderPage implements OnInit {
     });
   }
 
+  addSelectedStepInputRef(): void {
+    this.squadBuilderState.addSelectedStepInputRef();
+  }
+
+  updateSelectedStepInputRefSource(index: number, fromStepId: string | null): void {
+    if (!fromStepId) {
+      return;
+    }
+
+    const selectedStep = this.selectedStep();
+    const currentInputRef = selectedStep?.inputRefs[index];
+    const availableOutputKeys = this.getOutputKeysForSourceStepId(fromStepId);
+    const nextKey =
+      currentInputRef && availableOutputKeys.includes(currentInputRef.key) ? currentInputRef.key : '';
+
+    this.squadBuilderState.updateSelectedStepInputRef(index, {
+      fromStepId,
+      key: nextKey,
+    });
+  }
+
+  updateSelectedStepInputRefKey(index: number, key: string): void {
+    this.squadBuilderState.updateSelectedStepInputRef(index, {
+      key,
+    });
+  }
+
+  removeSelectedStepInputRef(index: number): void {
+    this.squadBuilderState.removeSelectedStepInputRef(index);
+  }
+
   handleReteConnectionCreated(event: ReteConnectionEvent): void {
     this.squadBuilderState.addEdge(event.sourceStepId, event.targetStepId);
   }
@@ -156,6 +222,23 @@ export class SquadBuilderPage implements OnInit {
 
   getStepName(stepId: string): string {
     return this.steps().find((step) => step.id === stepId)?.name ?? 'Unknown step';
+  }
+
+  trackInputRef(index: number, inputRef: SquadBuilderInputRef): string {
+    return `${index}-${inputRef.fromStepId}-${inputRef.key}`;
+  }
+
+  getOutputKeysForSourceStepId(fromStepId: string | null): string[] {
+    if (!fromStepId) {
+      return [];
+    }
+
+    const sourceStep = this.steps().find((step) => step.id === fromStepId);
+    if (!sourceStep?.assignedAgentId) {
+      return [];
+    }
+
+    return this.getAgentByKey(sourceStep.assignedAgentId)?.outputs ?? [];
   }
 
   getAgentName(agentKey: string | null): string {

@@ -1,6 +1,10 @@
 package com.murex.mxorbit.squadorchestrator.core.squad.execution.model;
 
+import com.murex.mxorbit.squadorchestrator.core.squad.model.StepInputRef;
+
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,5 +32,9 @@ public class SquadStepExecutionRequest {
 
 	@Builder.Default
 	@NonNull
-	private Map<String, Object> input = new LinkedHashMap<>();
+	private List<StepInputRef> inputRefs = new ArrayList<>();
+
+	@Builder.Default
+	@NonNull
+	private Map<String, Map<String, Object>> stepOutputsByStepId = new LinkedHashMap<>();
 }

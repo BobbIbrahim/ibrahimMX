@@ -200,6 +200,110 @@
   font-size: 0.9rem;
 }
 
+.inspector-panel {
+  border-radius: 0.85rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-soft);
+  padding: 0.75rem;
+}
+
+.inspector-panel__placeholder {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.inspector-list {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.inspector-card {
+  border: 1px solid var(--color-border);
+  border-radius: 0.7rem;
+  background: color-mix(in srgb, var(--color-surface) 75%, transparent);
+  padding: 0.7rem;
+}
+
+.inspector-card__source {
+  margin: 0 0 0.7rem;
+  color: var(--color-text-primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.inspector-entry {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.inspector-entry + .inspector-entry {
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
+  border-top: 1px dashed var(--color-border);
+}
+
+.inspector-entry__label {
+  color: var(--color-text-secondary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.inspector-entry__key {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.inspector-entry__value {
+  margin: 0;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.55rem;
+  background: color-mix(in srgb, var(--color-surface) 85%, transparent);
+  color: var(--color-text-primary);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+}
+
+.developer-details {
+  border: 1px solid var(--color-border);
+  border-radius: 0.85rem;
+  background: var(--color-surface-soft);
+}
+
+.developer-details summary {
+  cursor: pointer;
+  padding: 0.8rem 0.9rem;
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.developer-details__content {
+  display: grid;
+  gap: 0.7rem;
+  padding: 0 0.8rem 0.8rem;
+}
+
+.developer-details__meta {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.developer-details__meta code {
+  color: var(--color-text-primary);
+  font-size: 0.78rem;
+  word-break: break-word;
+}
+
 .live-run-placeholder {
   display: flex;
   align-items: center;
