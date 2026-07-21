@@ -90,7 +90,7 @@ public class SquadExecutionWorkflowImpl implements SquadExecutionWorkflow {
 
 			for (SquadStep readyStep : readySteps) {
 				startedStepIds.add(readyStep.getId());
-				startStepExecution(readyStep, dependenciesByStepId);
+				startStepExecution(readyStep);
 			}
 
 			int finishedCountBeforeWait = finishedStepIds.size();
@@ -113,11 +113,14 @@ public class SquadExecutionWorkflowImpl implements SquadExecutionWorkflow {
 				.steps(buildStepStatusesSnapshot()).build();
 	}
 
-	private void startStepExecution(SquadStep step, Map<String, Set<String>> dependenciesByStepId) {
-		Map<String, Object> stepInput = buildStepInput(step, dependenciesByStepId);
+	private void startStepExecution(SquadStep step) {
+		Map<String, Map<String, Object>> stepOutputsByStepId = buildStepOutputsByStepId();
+		Map<String, Object> stepInput = new LinkedHashMap<>();
+		stepInput.putAll(stepOutputsByStepId);
 		markStepRunning(step);
 
-		Promise<SquadStepExecutionResult> stepPromise = Async.function(() -> executeStep(squadId, step, stepInput));
+		Promise<SquadStepExecutionResult> stepPromise = Async
+				.function(() -> executeStep(squadId, step, stepOutputsByStepId));
 		stepPromise.handle((stepExecutionResult, throwable) -> {
 			if (throwable != null) {
 				markStepFailed(step, stepInput, throwable);
@@ -170,31 +173,24 @@ public class SquadExecutionWorkflowImpl implements SquadExecutionWorkflow {
 		return readySteps;
 	}
 
-	private Map<String, Object> buildStepInput(SquadStep step, Map<String, Set<String>> dependenciesByStepId) {
-		Map<String, Object> stepInput = new LinkedHashMap<>();
-		Set<String> dependencies = dependenciesByStepId.getOrDefault(step.getId(), new LinkedHashSet<>());
-
-		for (String dependencyStepId : dependencies) {
-			SquadStepExecutionResult dependencyResult = resultsByStepId.get(dependencyStepId);
-			if (dependencyResult == null) {
-				throw ApplicationFailure.newNonRetryableFailure(
-						"Missing execution result for dependency " + dependencyStepId + " of step " + step.getId(),
-						"SQUAD_STEP_DEPENDENCY_RESULT_MISSING");
-			}
-
-			stepInput.put(dependencyStepId, dependencyResult.getOutput());
+	private Map<String, Map<String, Object>> buildStepOutputsByStepId() {
+		Map<String, Map<String, Object>> stepOutputsByStepId = new LinkedHashMap<>();
+		for (Map.Entry<String, SquadStepExecutionResult> entry : resultsByStepId.entrySet()) {
+			Map<String, Object> stepOutput = entry.getValue().getOutput();
+			stepOutputsByStepId.put(entry.getKey(), new LinkedHashMap<>(stepOutput));
 		}
-
-		return stepInput;
+		return stepOutputsByStepId;
 	}
 
-	private SquadStepExecutionResult executeStep(String squadId, SquadStep step, Map<String, Object> input) {
+	private SquadStepExecutionResult executeStep(String squadId, SquadStep step,
+			Map<String, Map<String, Object>> stepOutputsByStepId) {
 		switch (step.getType()) {
 			case AI_AGENT :
 				AiAgentStep aiAgentStep = (AiAgentStep) step;
 				return runAiAgentActivity.runAiAgent(SquadStepExecutionRequest.builder().squadId(squadId)
 						.stepId(aiAgentStep.getId()).stepName(aiAgentStep.getName()).agentKey(aiAgentStep.getAgentKey())
-						.input(input).build());
+						.inputRefs(new ArrayList<>(aiAgentStep.getInputRefs()))
+						.stepOutputsByStepId(stepOutputsByStepId).build());
 			default :
 				throw ApplicationFailure.newNonRetryableFailure(
 						"Unsupported step type " + step.getType() + " for step " + step.getId(),

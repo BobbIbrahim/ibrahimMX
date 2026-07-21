@@ -133,43 +133,70 @@
           </span>
         </div>
 
-        <button
-          mat-stroked-button
-          type="button"
-          (click)="closeStepDetailsDrawer()"
-        >
-          Close
-        </button>
+        <div class="step-details-drawer__header-actions">
+          <button
+            mat-stroked-button
+            type="button"
+            (click)="openExpandedStepDetailsDialog()"
+          >
+            Expand
+          </button>
+
+          <button
+            mat-stroked-button
+            type="button"
+            (click)="closeStepDetailsDrawer()"
+          >
+            Close
+          </button>
+        </div>
       </div>
 
       <div class="step-details-drawer__content">
-        <section class="step-details-section">
-          <h3>Input</h3>
-          <div class="json-viewer">
-            @if (isExecutionDataMissing(selectedStep) || isJsonUnavailable(selectedStep.input)) {
-            <div class="json-viewer__placeholder">Not available yet</div>
-            } @else if (isEmptyJsonObject(selectedStep.input)) {
-            <div class="json-viewer__placeholder">No input</div>
-            } @else {
-            <pre>{{ formatJson(selectedStep.input) }}</pre>
-            }
-          </div>
-        </section>
-
-        <section class="step-details-section">
-          <h3>Output</h3>
-          <div class="json-viewer">
-            @if (isExecutionDataMissing(selectedStep) || isJsonUnavailable(selectedStep.output)) {
-            <div class="json-viewer__placeholder">Not available yet</div>
-            } @else if (isEmptyJsonObject(selectedStep.output)) {
-            <div class="json-viewer__placeholder">No output</div>
-            } @else {
-            <pre>{{ formatJson(selectedStep.output) }}</pre>
-            }
-          </div>
-        </section>
+        <app-squad-step-details-inspector
+          [step]="selectedStep"
+          [stepNamesById]="stepNamesById()"
+        ></app-squad-step-details-inspector>
       </div>
     </aside>
     }
   </section>
 </section>
+
+<ng-template #expandedStepDetailsDialogTemplate>
+  @if (selectedStepDetails(); as expandedStep) {
+  <section class="step-details-dialog">
+    <header class="step-details-dialog__header">
+      <div class="step-details-dialog__title-group">
+        <h2>{{ expandedStep.stepName }}</h2>
+        <span
+          class="execution-event__status"
+          [class.execution-event__status--completed]="expandedStep.status === 'COMPLETED'"
+          [class.execution-event__status--running]="expandedStep.status === 'RUNNING'"
+          [class.execution-event__status--failed]="expandedStep.status === 'FAILED'"
+          [class.execution-event__status--pending]="expandedStep.status === 'PENDING'"
+          [class.execution-event__status--cancelled]="expandedStep.status === 'CANCELLED'"
+        >
+          {{ expandedStep.status }}
+        </span>
+      </div>
+
+      <button
+        mat-stroked-button
+        type="button"
+        (click)="closeExpandedStepDetailsDialog()"
+      >
+        Close
+      </button>
+    </header>
+
+    <div class="step-details-dialog__content">
+      <app-squad-step-details-inspector
+        [step]="expandedStep"
+        [stepNamesById]="stepNamesById()"
+        [expanded]="true"
+      ></app-squad-step-details-inspector>
+    </div>
+  </section>
+  }
+</ng-template>

@@ -607,6 +607,32 @@
   border-color: var(--color-accent) !important;
 }
 
+.step-input-refs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.step-input-ref-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.step-input-ref-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 0.55rem;
+  align-items: start;
+}
+
+.step-input-refs-empty {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
 /* =========================================================
    Agent selector
    ========================================================= */
@@ -1044,6 +1070,10 @@
     align-items: flex-start;
     flex-direction: column;
   }
+
+  .step-input-ref-item {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (min-width: 1280px) {
@@ -1051,5 +1081,3 @@
     height: clamp(42rem, calc(100vh - 22rem), 54rem);
   }
 }
-
-

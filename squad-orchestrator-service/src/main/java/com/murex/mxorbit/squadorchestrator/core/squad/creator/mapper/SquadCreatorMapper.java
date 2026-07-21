@@ -10,9 +10,12 @@ import com.murex.mxorbit.squadorchestrator.core.squad.creator.request.SquadEdgeR
 import com.murex.mxorbit.squadorchestrator.core.squad.creator.request.SquadStepRequest;
 import com.murex.mxorbit.squadorchestrator.core.squad.store.request.CreateSquadStoreRequest;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.UUID;
+import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring")
 public interface SquadCreatorMapper {
@@ -40,6 +43,13 @@ public interface SquadCreatorMapper {
 	}
 
 	AiAgentStep toAiAgentStep(AiAgentStepRequest request);
+
+	@AfterMapping
+	default void ensureInputRefs(AiAgentStepRequest request, @MappingTarget AiAgentStep step) {
+		if (step.getInputRefs() == null) {
+			step.setInputRefs(new ArrayList<>());
+		}
+	}
 
 	@Mapping(target = "steps", ignore = true)
 	@Mapping(target = "edges", ignore = true)

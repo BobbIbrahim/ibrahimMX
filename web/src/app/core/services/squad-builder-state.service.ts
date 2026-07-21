@@ -2,6 +2,8 @@ import { Injectable, computed, signal } from '@angular/core';
 import { SquadApiResponse } from './squad.service';
 import {
   SquadBuilderDraft,
+  SquadBuilderEdge,
+  SquadBuilderInputRef,
   SquadBuilderStep,
   SquadBuilderType,
   SquadSavePayload,
@@ -14,7 +16,7 @@ export type CreateSquadDraftPayload = {
 };
 
 export type UpdateSquadStepPayload = Partial<
-  Pick<SquadBuilderStep, 'name' | 'assignedAgentId' | 'parameters'>
+  Pick<SquadBuilderStep, 'name' | 'assignedAgentId' | 'parameters' | 'inputRefs'>
 >;
 
 @Injectable({
@@ -67,6 +69,10 @@ export class SquadBuilderStateService {
         name: step.name,
         assignedAgentId: step.agentKey,
         parameters: {},
+        inputRefs: (step.inputRefs ?? []).map((inputRef) => ({
+          fromStepId: inputRef.fromStepId,
+          key: inputRef.key,
+        })),
         position: {
           x: 160 + index * 220,
           y: 140 + (index % 2) * 140,
@@ -79,10 +85,11 @@ export class SquadBuilderStateService {
       })),
     };
 
-    this.draftSignal.set(draft);
+    const normalizedDraft = this.normalizeDraftInputRefs(draft);
+    this.draftSignal.set(normalizedDraft);
     this.selectedStepIdSignal.set(null);
 
-    return draft;
+    return normalizedDraft;
   }
 
   addStep(): SquadBuilderStep {
@@ -95,6 +102,7 @@ export class SquadBuilderStateService {
       name: `New Step ${stepIndex}`,
       assignedAgentId: null,
       parameters: {},
+      inputRefs: [],
       position: {
         x: 160 + currentDraft.steps.length * 220,
         y: 140 + (currentDraft.steps.length % 2) * 140,
@@ -161,6 +169,106 @@ export class SquadBuilderStateService {
     });
   }
 
+  getAncestorSteps(stepId: string): SquadBuilderStep[] {
+    const draft = this.draft();
+
+    if (!draft) {
+      return [];
+    }
+
+    const ancestorStepIds = this.computeAncestorStepIds(stepId, draft.edges);
+    const stepsById = new Map(draft.steps.map((step) => [step.id, step]));
+    const ancestors: SquadBuilderStep[] = [];
+
+    for (const ancestorStepId of ancestorStepIds) {
+      const ancestorStep = stepsById.get(ancestorStepId);
+      if (ancestorStep) {
+        ancestors.push(ancestorStep);
+      }
+    }
+
+    return ancestors;
+  }
+
+  addSelectedStepInputRef(): void {
+    const selectedStepId = this.selectedStepId();
+
+    if (!selectedStepId) {
+      return;
+    }
+
+    const ancestors = this.getAncestorSteps(selectedStepId);
+    const selectedStep = this.selectedStep();
+
+    if (ancestors.length === 0 || !selectedStep) {
+      return;
+    }
+
+    this.updateSelectedStep({
+      inputRefs: [
+        ...selectedStep.inputRefs,
+        {
+          fromStepId: ancestors[0].id,
+          key: '',
+        },
+      ],
+    });
+  }
+
+  updateSelectedStepInputRef(index: number, patch: Partial<SquadBuilderInputRef>): void {
+    const selectedStepId = this.selectedStepId();
+    const selectedStep = this.selectedStep();
+
+    if (!selectedStepId || !selectedStep) {
+      return;
+    }
+
+    if (index < 0 || index >= selectedStep.inputRefs.length) {
+      return;
+    }
+
+    const nextInputRefs = selectedStep.inputRefs.map((inputRef, inputRefIndex) => {
+      if (inputRefIndex !== index) {
+        return inputRef;
+      }
+
+      return {
+        ...inputRef,
+        ...patch,
+      };
+    });
+
+    const updatedInputRef = nextInputRefs[index];
+    if (!updatedInputRef) {
+      return;
+    }
+
+    const ancestorStepIds = new Set(this.computeAncestorStepIds(selectedStepId, this.edges()));
+    if (!ancestorStepIds.has(updatedInputRef.fromStepId)) {
+      return;
+    }
+
+    this.updateSelectedStep({
+      inputRefs: nextInputRefs,
+    });
+  }
+
+  removeSelectedStepInputRef(index: number): void {
+    const selectedStep = this.selectedStep();
+
+    if (!selectedStep) {
+      return;
+    }
+
+    if (index < 0 || index >= selectedStep.inputRefs.length) {
+      return;
+    }
+
+    this.updateSelectedStep({
+      inputRefs: selectedStep.inputRefs.filter((_, inputRefIndex) => inputRefIndex !== index),
+    });
+  }
+
   updateStepPosition(
     stepId: string,
     position: {
@@ -206,13 +314,15 @@ export class SquadBuilderStateService {
         return draft;
       }
 
-      return {
+      const nextDraft: SquadBuilderDraft = {
         ...draft,
         steps: draft.steps.filter((step) => step.id !== stepId),
         edges: draft.edges.filter(
           (edge) => edge.sourceStepId !== stepId && edge.targetStepId !== stepId,
         ),
       };
+
+      return this.normalizeDraftInputRefs(nextDraft);
     });
 
     if (this.selectedStepId() === stepId) {
@@ -245,7 +355,7 @@ export class SquadBuilderStateService {
 
       edgeCreated = true;
 
-      return {
+      const nextDraft: SquadBuilderDraft = {
         ...draft,
         edges: [
           ...draft.edges,
@@ -256,6 +366,8 @@ export class SquadBuilderStateService {
           },
         ],
       };
+
+      return this.normalizeDraftInputRefs(nextDraft);
     });
 
     return edgeCreated;
@@ -267,12 +379,14 @@ export class SquadBuilderStateService {
         return draft;
       }
 
-      return {
+      const nextDraft: SquadBuilderDraft = {
         ...draft,
         edges: draft.edges.filter(
           (edge) => edge.sourceStepId !== sourceStepId || edge.targetStepId !== targetStepId,
         ),
       };
+
+      return this.normalizeDraftInputRefs(nextDraft);
     });
   }
 
@@ -292,6 +406,10 @@ export class SquadBuilderStateService {
         name: step.name,
         type: 'AI_AGENT',
         agentKey: step.assignedAgentId ?? '',
+        inputRefs: step.inputRefs.map((inputRef) => ({
+          fromStepId: inputRef.fromStepId,
+          key: inputRef.key,
+        })),
       })),
       edges: draft.edges.map((edge) => ({
         sourceStepId: edge.sourceStepId,
@@ -313,6 +431,57 @@ export class SquadBuilderStateService {
     }
 
     return draft;
+  }
+
+  private normalizeDraftInputRefs(draft: SquadBuilderDraft): SquadBuilderDraft {
+    return {
+      ...draft,
+      steps: draft.steps.map((step) => ({
+        ...step,
+        inputRefs: this.filterValidInputRefs(step, draft),
+      })),
+    };
+  }
+
+  private filterValidInputRefs(step: SquadBuilderStep, draft: SquadBuilderDraft): SquadBuilderInputRef[] {
+    const ancestorStepIds = new Set(this.computeAncestorStepIds(step.id, draft.edges));
+
+    return step.inputRefs.filter((inputRef) => ancestorStepIds.has(inputRef.fromStepId));
+  }
+
+  private computeAncestorStepIds(stepId: string, edges: SquadBuilderEdge[]): string[] {
+    const reverseEdges = new Map<string, Set<string>>();
+    for (const edge of edges) {
+      const parentStepIds = reverseEdges.get(edge.targetStepId) ?? new Set<string>();
+      parentStepIds.add(edge.sourceStepId);
+      reverseEdges.set(edge.targetStepId, parentStepIds);
+    }
+
+    const ancestors = new Set<string>();
+    const queue: string[] = [stepId];
+
+    while (queue.length > 0) {
+      const currentStepId = queue.shift();
+      if (!currentStepId) {
+        continue;
+      }
+
+      const parentStepIds = reverseEdges.get(currentStepId);
+      if (!parentStepIds) {
+        continue;
+      }
+
+      for (const parentStepId of parentStepIds) {
+        if (parentStepId === stepId || ancestors.has(parentStepId)) {
+          continue;
+        }
+
+        ancestors.add(parentStepId);
+        queue.push(parentStepId);
+      }
+    }
+
+    return Array.from(ancestors);
   }
 
   private generateId(prefix: string): string {

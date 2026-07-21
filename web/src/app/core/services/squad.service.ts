@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, map, tap } from 'rxjs';
 
-import { SquadSavePayload } from '../models/squad-builder.model';
+import { SquadBuilderInputRef, SquadSavePayload } from '../models/squad-builder.model';
 import { Squad } from '../models/squad.model';
 
 import { SquadExecutionStatus, SquadRunStartResponse } from '../models/squad-run.model';
@@ -12,6 +12,7 @@ export interface SquadApiStepResponse {
   name: string;
   type: string;
   agentKey: string;
+  inputRefs?: SquadBuilderInputRef[];
 }
 
 export interface SquadApiEdgeResponse {

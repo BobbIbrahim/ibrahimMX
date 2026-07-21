@@ -1,8 +1,8 @@
-import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, TemplateRef, ViewChild, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { MatButtonModule } from '@angular/material/button';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { finalize, switchMap } from 'rxjs';
 
 import { ReteSquadFlowEditor } from '../../components/rete-squad-flow-editor/rete-squad-flow-editor';
@@ -13,40 +13,37 @@ import {
 import {
   SquadExecutionStatus,
   SquadRunStartResponse,
-  SquadStepExecutionStatus,
 } from '../../../../core/models/squad-run.model';
+import { AgentService } from '../../../../core/services/agent.service';
 import { SquadApiResponse, SquadService } from '../../../../core/services/squad.service';
+import { SquadStepDetailsInspector } from '../../components/squad-step-details-inspector/squad-step-details-inspector';
+import { SelectedStepDetails } from '../../components/squad-step-details-inspector/squad-step-details.types';
 
 type LiveRunAgent = {
-  id: string;
+  agentKey: string;
   name: string;
-};
-
-type SelectedStepDetails = {
-  stepId: string;
-  stepName: string;
-  status: SquadStepExecutionStatus;
-  message: string | null;
-  input?: Record<string, unknown> | null;
-  output?: Record<string, unknown> | null;
-  hasExecutionData: boolean;
 };
 
 @Component({
   selector: 'app-squad-live-run-page',
-  imports: [RouterLink, MatButtonModule, MatDialogModule, ReteSquadFlowEditor],
+  imports: [RouterLink, MatButtonModule, MatDialogModule, ReteSquadFlowEditor, SquadStepDetailsInspector],
   templateUrl: './squad-live-run-page.html',
   styleUrl: './squad-live-run-page.scss',
 })
 export class SquadLiveRunPage implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly agentService = inject(AgentService);
   private readonly squadService = inject(SquadService);
   private readonly dialog = inject(MatDialog);
 
   private pollingHandle?: number;
   private workflowStartedAt: number | null = null;
   private timerHandle?: number;
+  private expandedStepDetailsDialogRef?: MatDialogRef<unknown>;
+
+  @ViewChild('expandedStepDetailsDialogTemplate')
+  private expandedStepDetailsDialogTemplate?: TemplateRef<unknown>;
 
   readonly elapsedSeconds = signal(0);
 
@@ -63,20 +60,12 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
 
   readonly executionEvents = signal<string[]>([]);
 
-  readonly agents = signal<LiveRunAgent[]>([
-    {
-      id: 'code-sentinel',
-      name: 'Code Sentinel',
-    },
-    {
-      id: 'test-weaver',
-      name: 'Test Weaver',
-    },
-    {
-      id: 'flow-architect',
-      name: 'Flow Architect',
-    },
-  ]);
+  readonly agents = computed<LiveRunAgent[]>(() => {
+    return this.agentService.getAgents()().map((agent) => ({
+      agentKey: agent.agentKey,
+      name: agent.name,
+    }));
+  });
 
   readonly squadId = computed(() => {
     return this.route.snapshot.paramMap.get('squadId');
@@ -84,9 +73,25 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
 
   readonly agentNamesById = computed(() => {
     return this.agents().reduce<Record<string, string>>((agentNames, agent) => {
-      agentNames[agent.id] = agent.name;
+      agentNames[agent.agentKey] = agent.name;
       return agentNames;
     }, {});
+  });
+
+  readonly stepNamesById = computed(() => {
+    const stepNames: Record<string, string> = {};
+
+    this.squad()?.steps.forEach((step) => {
+      stepNames[step.id] = step.name;
+    });
+
+    this.executionStatus()?.steps.forEach((step) => {
+      if (!stepNames[step.stepId]) {
+        stepNames[step.stepId] = step.stepName;
+      }
+    });
+
+    return stepNames;
   });
 
   readonly completedSteps = computed(() => {
@@ -154,6 +159,7 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
       stepName: executionStep?.stepName ?? squadStep?.name ?? 'Unknown step',
       status: executionStep?.status ?? 'PENDING',
       message: executionStep?.message ?? null,
+      configuredInputRefs: squadStep?.inputRefs ?? [],
       input: executionStep?.input,
       output: executionStep?.output,
       hasExecutionData,
@@ -175,6 +181,7 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.expandedStepDetailsDialogRef?.close();
     this.stopPolling();
     this.stopTimer();
   }
@@ -251,27 +258,32 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
   }
 
   closeStepDetailsDrawer(): void {
+    this.expandedStepDetailsDialogRef?.close();
     this.selectedStepId.set(null);
   }
 
-  isExecutionDataMissing(step: SelectedStepDetails): boolean {
-    return !step.hasExecutionData;
-  }
-
-  isJsonUnavailable(value: Record<string, unknown> | null | undefined): boolean {
-    return value === null || value === undefined;
-  }
-
-  isEmptyJsonObject(value: Record<string, unknown> | null | undefined): boolean {
-    if (!value) {
-      return false;
+  openExpandedStepDetailsDialog(): void {
+    if (!this.expandedStepDetailsDialogTemplate || this.expandedStepDetailsDialogRef) {
+      return;
     }
 
-    return Object.keys(value).length === 0;
+    this.expandedStepDetailsDialogRef = this.dialog.open(this.expandedStepDetailsDialogTemplate, {
+      width: 'min(96vw, 96rem)',
+      maxWidth: '96vw',
+      minHeight: '28rem',
+      maxHeight: '85vh',
+      autoFocus: false,
+      restoreFocus: false,
+      panelClass: 'squad-step-details-dialog-panel',
+    });
+
+    this.expandedStepDetailsDialogRef.afterClosed().subscribe(() => {
+      this.expandedStepDetailsDialogRef = undefined;
+    });
   }
 
-  formatJson(value: Record<string, unknown> | null | undefined): string {
-    return JSON.stringify(value, null, 2);
+  closeExpandedStepDetailsDialog(): void {
+    this.expandedStepDetailsDialogRef?.close();
   }
 
   stopWorkflow(): void {

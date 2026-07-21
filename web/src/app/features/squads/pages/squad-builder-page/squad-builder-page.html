@@ -140,7 +140,7 @@
                   (ngModelChange)="updateSelectedStepAssignedAgent($event)"
                 >
                   <mat-select-trigger>
-                    @if (getAgentById(step.assignedAgentId); as selectedAgent) {
+                    @if (getAgentByKey(step.assignedAgentId); as selectedAgent) {
                       <span class="agent-select-trigger">
                         <span class="agent-avatar">
                           {{ getAgentInitials(selectedAgent.name) }}
@@ -178,8 +178,8 @@
                     </span>
                   </mat-option>
 
-                  @for (agent of agents(); track agent.id) {
-                    <mat-option [value]="agent.id">
+                  @for (agent of agents(); track agent.agentKey) {
+                    <mat-option [value]="agent.agentKey">
                       <span class="agent-option">
                         <span class="agent-avatar">
                           {{ getAgentInitials(agent.name) }}
@@ -194,6 +194,77 @@
                   }
                 </mat-select>
               </mat-form-field>
+            </div>
+
+            <div class="field-group">
+              <div class="step-input-refs-header">
+                <label class="field-label">Inputs</label>
+                <button
+                  type="button"
+                  mat-stroked-button
+                  (click)="addSelectedStepInputRef()"
+                  [disabled]="ancestorStepsForSelectedStep().length === 0"
+                >
+                  <mat-icon>add</mat-icon>
+                  Add input
+                </button>
+              </div>
+
+              @if (step.inputRefs.length > 0) {
+                <div class="step-input-ref-list">
+                  @for (inputRef of step.inputRefs; track trackInputRef($index, inputRef)) {
+                    <div class="step-input-ref-item">
+                      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                        <mat-label>Source step</mat-label>
+                        <mat-select
+                          [ngModel]="inputRef.fromStepId"
+                          (ngModelChange)="updateSelectedStepInputRefSource($index, $event)"
+                        >
+                          @for (ancestorStep of ancestorStepsForSelectedStep(); track ancestorStep.id) {
+                            <mat-option [value]="ancestorStep.id">
+                              {{ ancestorStep.name }}
+                            </mat-option>
+                          }
+                        </mat-select>
+                      </mat-form-field>
+
+                      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                        <mat-label>Output key</mat-label>
+                        <mat-select
+                          [ngModel]="inputRef.key"
+                          (ngModelChange)="updateSelectedStepInputRefKey($index, $event)"
+                          [disabled]="!inputRef.fromStepId"
+                        >
+                          @for (outputKey of getOutputKeysForSourceStepId(inputRef.fromStepId); track outputKey) {
+                            <mat-option [value]="outputKey">
+                              {{ outputKey }}
+                            </mat-option>
+                          }
+                        </mat-select>
+                      </mat-form-field>
+
+                      <button
+                        type="button"
+                        mat-icon-button
+                        aria-label="Remove input reference"
+                        (click)="removeSelectedStepInputRef($index)"
+                      >
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <p class="step-input-refs-empty">
+                  No input references configured. Add one to consume an ancestor step output.
+                </p>
+              }
+
+              @if (ancestorStepsForSelectedStep().length === 0) {
+                <p class="step-input-refs-empty">
+                  No ancestor steps are available yet. Create incoming edges to this step first.
+                </p>
+              }
             </div>
           </div>
 
