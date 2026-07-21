@@ -1,0 +1,127 @@
+<section
+  class="step-inspector"
+  [class.step-inspector--expanded]="expanded()"
+>
+  <nav
+    class="step-inspector__tabs"
+    role="tablist"
+    aria-label="Step details tabs"
+  >
+    <button
+      type="button"
+      class="step-inspector__tab"
+      [class.step-inspector__tab--active]="activeTab() === 'inputs'"
+      [attr.aria-selected]="activeTab() === 'inputs'"
+      (click)="selectTab('inputs')"
+    >
+      Inputs
+    </button>
+    <button
+      type="button"
+      class="step-inspector__tab"
+      [class.step-inspector__tab--active]="activeTab() === 'outputs'"
+      [attr.aria-selected]="activeTab() === 'outputs'"
+      (click)="selectTab('outputs')"
+    >
+      Outputs
+    </button>
+    <button
+      type="button"
+      class="step-inspector__tab"
+      [class.step-inspector__tab--active]="activeTab() === 'developer'"
+      [attr.aria-selected]="activeTab() === 'developer'"
+      (click)="selectTab('developer')"
+    >
+      Developer
+    </button>
+  </nav>
+
+  <div
+    class="step-inspector__content"
+    [class.step-inspector__content--expanded]="expanded()"
+  >
+    @if (activeTab() === 'inputs') {
+    <div class="inspector-panel">
+      @if (step().configuredInputRefs.length === 0) {
+      <div class="inspector-panel__placeholder">No configured inputs</div>
+      } @else {
+      <div class="inspector-list">
+        @for (inputRefRow of getInputInspectorRows(step()); track $index) {
+        <article class="inspector-card">
+          <div class="inspector-card__section">
+            <span class="inspector-entry__label">Source</span>
+            <p class="inspector-card__title">{{ inputRefRow.sourceStepName }}</p>
+          </div>
+
+          <div class="inspector-card__section">
+            <span class="inspector-entry__label">Consumed Output</span>
+            <span class="inspector-chip">{{ inputRefRow.outputKey }}</span>
+          </div>
+
+          <div class="inspector-card__section">
+            <span class="inspector-entry__label">Received Data</span>
+            @if (inputRefRow.hasResolvedValue) {
+            <pre class="inspector-content-area">{{ formatInspectorValue(inputRefRow.value) }}</pre>
+            } @else {
+            <p class="inspector-panel__placeholder">Not available yet</p>
+            }
+          </div>
+        </article>
+        }
+      </div>
+      }
+    </div>
+    } @else if (activeTab() === 'outputs') {
+    <div class="inspector-panel">
+      @if (isExecutionDataMissing(step()) || isJsonUnavailable(step().output)) {
+      <div class="inspector-panel__placeholder">Not available yet</div>
+      } @else if (getOutputInspectorEntries(step()).length === 0) {
+      <div class="inspector-panel__placeholder">No outputs</div>
+      } @else {
+      <div class="inspector-list">
+        @for (entry of getOutputInspectorEntries(step()); track $index) {
+        <article class="inspector-card">
+          <div class="inspector-card__section">
+            <span class="inspector-entry__label">Produced Output</span>
+            <span class="inspector-chip">{{ entry.outputKey }}</span>
+          </div>
+
+          <div class="inspector-card__section">
+            <span class="inspector-entry__label">Result</span>
+            <pre class="inspector-content-area">{{ formatInspectorValue(entry.value) }}</pre>
+          </div>
+        </article>
+        }
+      </div>
+      }
+    </div>
+    } @else {
+    <div class="developer-details">
+      <div class="developer-details__content">
+        <div class="developer-details__meta">
+          <span class="inspector-entry__label">Step ID</span>
+          <code>{{ step().stepId }}</code>
+        </div>
+
+        <div class="json-viewer">
+          <span class="inspector-entry__label">Raw Input JSON</span>
+          @if (isJsonUnavailable(step().input)) {
+          <div class="json-viewer__placeholder">Not available yet</div>
+          } @else {
+          <pre>{{ formatRawJson(step().input) }}</pre>
+          }
+        </div>
+
+        <div class="json-viewer">
+          <span class="inspector-entry__label">Raw Output JSON</span>
+          @if (isJsonUnavailable(step().output)) {
+          <div class="json-viewer__placeholder">Not available yet</div>
+          } @else {
+          <pre>{{ formatRawJson(step().output) }}</pre>
+          }
+        </div>
+      </div>
+    </div>
+    }
+  </div>
+</section>

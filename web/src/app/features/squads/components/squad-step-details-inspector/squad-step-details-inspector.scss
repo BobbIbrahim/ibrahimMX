@@ -1,0 +1,190 @@
+:host {
+  display: block;
+  min-height: 0;
+}
+
+.step-inspector {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.step-inspector--expanded {
+  min-height: 20rem;
+  height: 100%;
+}
+
+.step-inspector--expanded .step-inspector__content {
+  flex: 1;
+  min-height: 0;
+}
+
+.step-inspector__tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-soft);
+}
+
+.step-inspector__tab {
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  border-radius: 0.55rem;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.step-inspector__tab:hover {
+  color: var(--color-text-primary);
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+}
+
+.step-inspector__tab--active {
+  color: var(--color-text-primary);
+  background: color-mix(in srgb, var(--color-accent) 20%, var(--color-surface));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent) 24%, transparent);
+}
+
+.step-inspector__content {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.step-inspector__content--expanded .json-viewer {
+  max-height: 24rem;
+}
+
+.step-inspector__content--expanded .inspector-content-area {
+  max-height: 18rem;
+}
+
+.json-viewer {
+  max-height: 16rem;
+  overflow: auto;
+  border-radius: 0.85rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-soft);
+}
+
+.json-viewer pre {
+  margin: 0;
+  padding: 0.85rem 0.95rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  white-space: pre;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  color: var(--color-text-primary);
+}
+
+.json-viewer__placeholder {
+  padding: 0.85rem 0.95rem;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.inspector-panel {
+  border-radius: 0.85rem;
+}
+
+.inspector-panel__placeholder {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.inspector-list {
+  display: grid;
+  gap: 1.35rem;
+}
+
+.inspector-card {
+  border: 1px solid var(--color-border);
+  border-radius: 0.85rem;
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  padding: 0.9rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.inspector-card__section {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.inspector-card__title {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.inspector-chip {
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-accent) 20%, var(--color-surface-soft));
+  color: color-mix(in srgb, var(--color-accent) 86%, #ffffff 14%);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.inspector-entry__label {
+  color: var(--color-text-secondary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.inspector-content-area {
+  margin: 0;
+  max-height: 11rem;
+  overflow: auto;
+  padding: 0.75rem 0.8rem;
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, var(--color-surface-soft) 92%, transparent);
+  color: var(--color-text-primary);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+}
+
+.developer-details {
+  border: 1px solid var(--color-border);
+  border-radius: 0.85rem;
+  background: var(--color-surface-soft);
+}
+
+.developer-details__content {
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.8rem;
+}
+
+.developer-details__meta {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.developer-details__meta code {
+  color: var(--color-text-primary);
+  font-size: 0.78rem;
+  word-break: break-word;
+}

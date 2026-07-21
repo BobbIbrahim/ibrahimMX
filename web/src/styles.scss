@@ -323,6 +323,27 @@ html {
   overflow: hidden !important;
 }
 
+.squad-step-details-dialog-panel {
+  --mat-dialog-container-color: var(--color-surface);
+  --mat-dialog-container-shape: 1rem;
+}
+
+.squad-step-details-dialog-panel .mat-mdc-dialog-container {
+  padding: 0;
+  border-radius: 1rem;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  box-shadow: 0 2rem 5rem rgba(0, 0, 0, 0.42);
+}
+
+.squad-step-details-dialog-panel .mdc-dialog__surface {
+  border-radius: 1rem !important;
+  background: var(--color-surface) !important;
+  color: var(--color-text-primary) !important;
+  overflow: hidden !important;
+}
+
 /* =========================================================
    MXORBIT Rete Flow Node Styling
    Global because Rete renders internal DOM dynamically.

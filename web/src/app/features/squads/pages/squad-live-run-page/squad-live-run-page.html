@@ -133,100 +133,70 @@
           </span>
         </div>
 
-        <button
-          mat-stroked-button
-          type="button"
-          (click)="closeStepDetailsDrawer()"
-        >
-          Close
-        </button>
+        <div class="step-details-drawer__header-actions">
+          <button
+            mat-stroked-button
+            type="button"
+            (click)="openExpandedStepDetailsDialog()"
+          >
+            Expand
+          </button>
+
+          <button
+            mat-stroked-button
+            type="button"
+            (click)="closeStepDetailsDrawer()"
+          >
+            Close
+          </button>
+        </div>
       </div>
 
       <div class="step-details-drawer__content">
-        <section class="step-details-section">
-          <h3>Inputs</h3>
-          <div class="inspector-panel">
-            @if (selectedStep.configuredInputRefs.length === 0) {
-            <div class="inspector-panel__placeholder">No inputs</div>
-            } @else {
-            <div class="inspector-list">
-              @for (inputRefRow of getInputInspectorRows(selectedStep); track $index) {
-              <article class="inspector-card">
-                <div class="inspector-entry">
-                  <span class="inspector-entry__label">Source Step</span>
-                  <p class="inspector-entry__key">{{ inputRefRow.sourceStepName }}</p>
-                  <span class="inspector-entry__label">Output Key</span>
-                  <p class="inspector-entry__key">{{ inputRefRow.outputKey }}</p>
-                  <span class="inspector-entry__label">Value</span>
-                  @if (inputRefRow.hasResolvedValue) {
-                  <pre class="inspector-entry__value">{{ formatInspectorValue(inputRefRow.value) }}</pre>
-                  } @else {
-                  <p class="inspector-panel__placeholder">Not available yet</p>
-                  }
-                </div>
-              </article>
-              }
-            </div>
-            }
-          </div>
-        </section>
-
-        <section class="step-details-section">
-          <h3>Outputs</h3>
-          <div class="inspector-panel">
-            @if (isExecutionDataMissing(selectedStep) || isJsonUnavailable(selectedStep.output)) {
-            <div class="inspector-panel__placeholder">Not available yet</div>
-            } @else if (getOutputInspectorEntries(selectedStep).length === 0) {
-            <div class="inspector-panel__placeholder">No outputs</div>
-            } @else {
-            <div class="inspector-list">
-              @for (entry of getOutputInspectorEntries(selectedStep); track $index) {
-              <article class="inspector-card">
-                <div class="inspector-entry inspector-entry--single">
-                  <span class="inspector-entry__label">Output Key</span>
-                  <p class="inspector-entry__key">{{ entry.outputKey }}</p>
-                  <span class="inspector-entry__label">Value</span>
-                  <pre class="inspector-entry__value">{{ formatInspectorValue(entry.value) }}</pre>
-                </div>
-              </article>
-              }
-            </div>
-            }
-          </div>
-        </section>
-
-        <section class="step-details-section">
-          <details class="developer-details">
-            <summary>Developer Details</summary>
-
-            <div class="developer-details__content">
-              <div class="developer-details__meta">
-                <span class="inspector-entry__label">Step ID</span>
-                <code>{{ selectedStep.stepId }}</code>
-              </div>
-
-              <div class="json-viewer">
-                <span class="inspector-entry__label">Raw Input JSON</span>
-                @if (isJsonUnavailable(selectedStep.input)) {
-                <div class="json-viewer__placeholder">Not available yet</div>
-                } @else {
-                <pre>{{ formatRawJson(selectedStep.input) }}</pre>
-                }
-              </div>
-
-              <div class="json-viewer">
-                <span class="inspector-entry__label">Raw Output JSON</span>
-                @if (isJsonUnavailable(selectedStep.output)) {
-                <div class="json-viewer__placeholder">Not available yet</div>
-                } @else {
-                <pre>{{ formatRawJson(selectedStep.output) }}</pre>
-                }
-              </div>
-            </div>
-          </details>
-        </section>
+        <app-squad-step-details-inspector
+          [step]="selectedStep"
+          [stepNamesById]="stepNamesById()"
+        ></app-squad-step-details-inspector>
       </div>
     </aside>
     }
   </section>
 </section>
+
+<ng-template #expandedStepDetailsDialogTemplate>
+  @if (selectedStepDetails(); as expandedStep) {
+  <section class="step-details-dialog">
+    <header class="step-details-dialog__header">
+      <div class="step-details-dialog__title-group">
+        <h2>{{ expandedStep.stepName }}</h2>
+        <span
+          class="execution-event__status"
+          [class.execution-event__status--completed]="expandedStep.status === 'COMPLETED'"
+          [class.execution-event__status--running]="expandedStep.status === 'RUNNING'"
+          [class.execution-event__status--failed]="expandedStep.status === 'FAILED'"
+          [class.execution-event__status--pending]="expandedStep.status === 'PENDING'"
+          [class.execution-event__status--cancelled]="expandedStep.status === 'CANCELLED'"
+        >
+          {{ expandedStep.status }}
+        </span>
+      </div>
+
+      <button
+        mat-stroked-button
+        type="button"
+        (click)="closeExpandedStepDetailsDialog()"
+      >
+        Close
+      </button>
+    </header>
+
+    <div class="step-details-dialog__content">
+      <app-squad-step-details-inspector
+        [step]="expandedStep"
+        [stepNamesById]="stepNamesById()"
+        [expanded]="true"
+      ></app-squad-step-details-inspector>
+    </div>
+  </section>
+  }
+</ng-template>

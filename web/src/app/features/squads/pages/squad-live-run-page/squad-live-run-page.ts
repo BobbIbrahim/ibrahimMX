@@ -1,8 +1,8 @@
-import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, TemplateRef, ViewChild, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { MatButtonModule } from '@angular/material/button';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { finalize, switchMap } from 'rxjs';
 
 import { ReteSquadFlowEditor } from '../../components/rete-squad-flow-editor/rete-squad-flow-editor';
@@ -13,45 +13,20 @@ import {
 import {
   SquadExecutionStatus,
   SquadRunStartResponse,
-  SquadStepExecutionStatus,
 } from '../../../../core/models/squad-run.model';
 import { AgentService } from '../../../../core/services/agent.service';
 import { SquadApiResponse, SquadService } from '../../../../core/services/squad.service';
+import { SquadStepDetailsInspector } from '../../components/squad-step-details-inspector/squad-step-details-inspector';
+import { SelectedStepDetails } from '../../components/squad-step-details-inspector/squad-step-details.types';
 
 type LiveRunAgent = {
   agentKey: string;
   name: string;
 };
 
-type SelectedStepDetails = {
-  stepId: string;
-  stepName: string;
-  status: SquadStepExecutionStatus;
-  message: string | null;
-  configuredInputRefs: Array<{
-    fromStepId: string;
-    key: string;
-  }>;
-  input?: Record<string, unknown> | null;
-  output?: Record<string, unknown> | null;
-  hasExecutionData: boolean;
-};
-
-type InputInspectorRefRow = {
-  sourceStepName: string;
-  outputKey: string;
-  value: unknown;
-  hasResolvedValue: boolean;
-};
-
-type OutputInspectorEntry = {
-  outputKey: string;
-  value: unknown;
-};
-
 @Component({
   selector: 'app-squad-live-run-page',
-  imports: [RouterLink, MatButtonModule, MatDialogModule, ReteSquadFlowEditor],
+  imports: [RouterLink, MatButtonModule, MatDialogModule, ReteSquadFlowEditor, SquadStepDetailsInspector],
   templateUrl: './squad-live-run-page.html',
   styleUrl: './squad-live-run-page.scss',
 })
@@ -65,6 +40,10 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
   private pollingHandle?: number;
   private workflowStartedAt: number | null = null;
   private timerHandle?: number;
+  private expandedStepDetailsDialogRef?: MatDialogRef<unknown>;
+
+  @ViewChild('expandedStepDetailsDialogTemplate')
+  private expandedStepDetailsDialogTemplate?: TemplateRef<unknown>;
 
   readonly elapsedSeconds = signal(0);
 
@@ -202,6 +181,7 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.expandedStepDetailsDialogRef?.close();
     this.stopPolling();
     this.stopTimer();
   }
@@ -278,94 +258,32 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
   }
 
   closeStepDetailsDrawer(): void {
+    this.expandedStepDetailsDialogRef?.close();
     this.selectedStepId.set(null);
   }
 
-  isExecutionDataMissing(step: SelectedStepDetails): boolean {
-    return !step.hasExecutionData;
-  }
-
-  isJsonUnavailable(value: Record<string, unknown> | null | undefined): boolean {
-    return value === null || value === undefined;
-  }
-
-  isEmptyJsonObject(value: Record<string, unknown> | null | undefined): boolean {
-    if (!value) {
-      return false;
+  openExpandedStepDetailsDialog(): void {
+    if (!this.expandedStepDetailsDialogTemplate || this.expandedStepDetailsDialogRef) {
+      return;
     }
 
-    return Object.keys(value).length === 0;
-  }
+    this.expandedStepDetailsDialogRef = this.dialog.open(this.expandedStepDetailsDialogTemplate, {
+      width: 'min(96vw, 96rem)',
+      maxWidth: '96vw',
+      minHeight: '28rem',
+      maxHeight: '85vh',
+      autoFocus: false,
+      restoreFocus: false,
+      panelClass: 'squad-step-details-dialog-panel',
+    });
 
-  getInputInspectorRows(step: SelectedStepDetails): InputInspectorRefRow[] {
-    if (step.configuredInputRefs.length === 0) {
-      return [];
-    }
-
-    return step.configuredInputRefs.map((inputRef) => {
-      const sourcePayload = step.input ? step.input[inputRef.fromStepId] : undefined;
-      if (!this.isRecord(sourcePayload)) {
-        return {
-          sourceStepName: this.resolveStepName(inputRef.fromStepId),
-          outputKey: inputRef.key,
-          value: undefined,
-          hasResolvedValue: false,
-        };
-      }
-
-      const hasResolvedValue = Object.prototype.hasOwnProperty.call(sourcePayload, inputRef.key);
-      return {
-        sourceStepName: this.resolveStepName(inputRef.fromStepId),
-        outputKey: inputRef.key,
-        value: hasResolvedValue ? sourcePayload[inputRef.key] : undefined,
-        hasResolvedValue,
-      };
+    this.expandedStepDetailsDialogRef.afterClosed().subscribe(() => {
+      this.expandedStepDetailsDialogRef = undefined;
     });
   }
 
-  getOutputInspectorEntries(step: SelectedStepDetails): OutputInspectorEntry[] {
-    if (!step.output || this.isEmptyJsonObject(step.output)) {
-      return [];
-    }
-
-    return Object.entries(step.output).map(([outputKey, value]) => ({
-      outputKey,
-      value,
-    }));
-  }
-
-  formatInspectorValue(value: unknown): string {
-    if (typeof value === 'string') {
-      return value;
-    }
-
-    if (typeof value === 'number' || typeof value === 'boolean') {
-      return String(value);
-    }
-
-    if (value === null) {
-      return 'null';
-    }
-
-    return JSON.stringify(value, null, 2);
-  }
-
-  formatRawJson(value: Record<string, unknown> | null | undefined): string {
-    return JSON.stringify(value, null, 2);
-  }
-
-  private resolveStepName(stepId: string): string {
-    const stepName = this.stepNamesById()[stepId];
-
-    if (!stepName) {
-      return 'Unknown source step';
-    }
-
-    return stepName;
-  }
-
-  private isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
+  closeExpandedStepDetailsDialog(): void {
+    this.expandedStepDetailsDialogRef?.close();
   }
 
   stopWorkflow(): void {
