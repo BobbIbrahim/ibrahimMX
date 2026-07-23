@@ -1,4 +1,13 @@
-import { Component, OnDestroy, OnInit, TemplateRef, ViewChild, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  OnDestroy,
+  OnInit,
+  TemplateRef,
+  ViewChild,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { MatButtonModule } from '@angular/material/button';
@@ -13,6 +22,7 @@ import {
 import {
   SquadExecutionStatus,
   SquadRunStartResponse,
+  SquadStepStatus,
 } from '../../../../core/models/squad-run.model';
 import { AgentService } from '../../../../core/services/agent.service';
 import { SquadApiResponse, SquadService } from '../../../../core/services/squad.service';
@@ -26,9 +36,15 @@ type LiveRunAgent = {
 
 @Component({
   selector: 'app-squad-live-run-page',
-  imports: [RouterLink, MatButtonModule, MatDialogModule, ReteSquadFlowEditor, SquadStepDetailsInspector],
+  imports: [
+    RouterLink,
+    MatButtonModule,
+    MatDialogModule,
+    ReteSquadFlowEditor,
+    SquadStepDetailsInspector,
+  ],
   templateUrl: './squad-live-run-page.html',
-  styleUrl: './squad-live-run-page.scss',
+  styleUrls: ['./squad-live-run-page.scss'],
 })
 export class SquadLiveRunPage implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
@@ -61,10 +77,12 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
   readonly executionEvents = signal<string[]>([]);
 
   readonly agents = computed<LiveRunAgent[]>(() => {
-    return this.agentService.getAgents()().map((agent) => ({
-      agentKey: agent.agentKey,
-      name: agent.name,
-    }));
+    return this.agentService
+      .getAgents()()
+      .map((agent) => ({
+        agentKey: agent.agentKey,
+        name: agent.name,
+      }));
   });
 
   readonly squadId = computed(() => {
@@ -143,7 +161,9 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
       return null;
     }
 
-    const executionStep = this.executionStatus()?.steps.find((step) => step.stepId === selectedStepId);
+    const executionStep = this.executionStatus()?.steps.find(
+      (step) => step.stepId === selectedStepId,
+    );
     const squadStep = this.squad()?.steps.find((step) => step.id === selectedStepId);
 
     if (!executionStep && !squadStep) {
@@ -153,12 +173,18 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
     const hasExecutionData = Boolean(
       executionStep && (executionStep.input !== undefined || executionStep.output !== undefined),
     );
+    const startedAt = this.parseTimestamp(executionStep?.startedAt);
+    const completedAt = this.parseTimestamp(executionStep?.completedAt);
 
     return {
       stepId: selectedStepId,
       stepName: executionStep?.stepName ?? squadStep?.name ?? 'Unknown step',
+      agentName: this.resolveAgentName(executionStep, squadStep?.agentKey),
       status: executionStep?.status ?? 'PENDING',
       message: executionStep?.message ?? null,
+      startedAt,
+      completedAt,
+      durationMs: executionStep?.durationMs ?? null,
       configuredInputRefs: squadStep?.inputRefs ?? [],
       input: executionStep?.input,
       output: executionStep?.output,
@@ -411,5 +437,29 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
 
     clearInterval(this.pollingHandle);
     this.pollingHandle = undefined;
+  }
+
+  private resolveAgentName(executionStep?: SquadStepStatus, squadStepAgentKey?: string): string {
+    const fallbackAgentKey = executionStep?.agentKey ?? squadStepAgentKey;
+
+    if (!fallbackAgentKey) {
+      return 'Unassigned';
+    }
+
+    return this.agentNamesById()[fallbackAgentKey] ?? fallbackAgentKey;
+  }
+
+  private parseTimestamp(timestamp: string | null | undefined): number | null {
+    if (!timestamp) {
+      return null;
+    }
+
+    const parsedTimestamp = Date.parse(timestamp);
+
+    if (Number.isNaN(parsedTimestamp)) {
+      return null;
+    }
+
+    return parsedTimestamp;
   }
 }

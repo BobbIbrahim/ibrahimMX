@@ -10,7 +10,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 
 import { Agent } from '../../../../core/models/agent.model';
-import { SquadBuilderInputRef, SquadBuilderStep } from '../../../../core/models/squad-builder.model';
+import {
+  SquadBuilderInputRef,
+  SquadBuilderStep,
+} from '../../../../core/models/squad-builder.model';
 import { AgentService } from '../../../../core/services/agent.service';
 import { SquadBuilderStateService } from '../../../../core/services/squad-builder-state.service';
 import { SquadService } from '../../../../core/services/squad.service';
@@ -74,17 +77,29 @@ export class SquadBuilderPage implements OnInit {
   readonly isLoadingExistingSquad = signal(false);
 
   readonly agents = computed<BuilderAgent[]>(() => {
-    return this.agentService.getAgents()().map((agent) => ({
-      agentKey: agent.agentKey,
-      name: agent.name,
-      role: agent.role,
-      inputs: agent.inputs,
-      outputs: agent.outputs,
-    }));
+    return this.agentService
+      .getAgents()()
+      .map((agent) => ({
+        agentKey: agent.agentKey,
+        name: agent.name,
+        role: agent.role,
+        inputs: agent.inputs,
+        outputs: agent.outputs,
+      }));
   });
+
+  readonly selectedStepId = computed(() => this.selectedStep()?.id ?? null);
 
   readonly assignedAgentCount = computed(() => {
     return this.steps().filter((step) => Boolean(step.assignedAgentId)).length;
+  });
+
+  readonly validationIssueCount = computed(() => {
+    return this.validationErrors().length;
+  });
+
+  readonly workflowReady = computed(() => {
+    return this.validationIssueCount() === 0;
   });
 
   readonly agentNamesById = computed(() => {
@@ -96,6 +111,22 @@ export class SquadBuilderPage implements OnInit {
 
   readonly backendReadyPayload = computed(() => {
     return this.squadBuilderState.buildSavePayload();
+  });
+
+  readonly selectedStepValidation = computed(() => {
+    const step = this.selectedStep();
+
+    if (!step) {
+      return null;
+    }
+
+    return {
+      hasAgent: Boolean(step.assignedAgentId),
+      hasInputMappings: step.inputRefs.length > 0,
+      hasConnections: this.edges().some(
+        (edge) => edge.sourceStepId === step.id || edge.targetStepId === step.id,
+      ),
+    };
   });
 
   readonly validationErrors = computed(() => {
@@ -190,7 +221,9 @@ export class SquadBuilderPage implements OnInit {
     const currentInputRef = selectedStep?.inputRefs[index];
     const availableOutputKeys = this.getOutputKeysForSourceStepId(fromStepId);
     const nextKey =
-      currentInputRef && availableOutputKeys.includes(currentInputRef.key) ? currentInputRef.key : '';
+      currentInputRef && availableOutputKeys.includes(currentInputRef.key)
+        ? currentInputRef.key
+        : '';
 
     this.squadBuilderState.updateSelectedStepInputRef(index, {
       fromStepId,

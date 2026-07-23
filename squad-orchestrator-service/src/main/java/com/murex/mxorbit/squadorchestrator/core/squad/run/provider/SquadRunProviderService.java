@@ -1,6 +1,8 @@
 package com.murex.mxorbit.squadorchestrator.core.squad.run.provider;
 
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadExecutionStatus;
+import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadStepExecutionData;
+import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadStepStatus;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.workflow.SquadExecutionWorkflow;
 import com.murex.mxorbit.squadorchestrator.core.squad.run.SquadRunMemoKeys;
 import com.murex.mxorbit.squadorchestrator.core.squad.run.model.SquadRunSummary;
@@ -43,6 +45,11 @@ public class SquadRunProviderService implements SquadRunProvider {
 		try {
 			SquadExecutionStatus status = workflow.getExecutionStatus();
 			enrichWithStepExecutionData(squadRunId, status);
+			log.debug("Execution status snapshot before API return. squadRunId: {}, steps: {}", squadRunId, status
+					.getSteps().stream()
+					.map(step -> step.getStepId() + "=" + step.getStatus() + "(startedAt=" + step.getStartedAt()
+							+ ", completedAt=" + step.getCompletedAt() + ", durationMs=" + step.getDurationMs() + ")")
+					.toList());
 			return Optional.of(status);
 		} catch (WorkflowNotFoundException e) {
 			log.debug("Squad run not found. squadRunId: {}", squadRunId);
@@ -57,10 +64,23 @@ public class SquadRunProviderService implements SquadRunProvider {
 		status.getSteps().forEach(step -> {
 			var executionData = stepExecutionDataMap.get(step.getStepId());
 			if (executionData != null) {
-				step.setInput(executionData.getInput());
-				step.setOutput(executionData.getOutput());
+				applyExecutionData(step, executionData);
 			}
 		});
+	}
+
+	static void applyExecutionData(SquadStepStatus step, SquadStepExecutionData executionData) {
+		if (step.getStartedAt() == null) {
+			step.setStartedAt(executionData.getStartedAt());
+		}
+		if (step.getCompletedAt() == null) {
+			step.setCompletedAt(executionData.getCompletedAt());
+		}
+		if (step.getDurationMs() == null) {
+			step.setDurationMs(executionData.getDurationMs());
+		}
+		step.setInput(executionData.getInput());
+		step.setOutput(executionData.getOutput());
 	}
 
 	private SquadRunSummary toSquadRunSummary(WorkflowExecutionSummary execution) {

@@ -105,6 +105,50 @@ export class SquadStepDetailsInspector {
     return JSON.stringify(value, null, 2);
   }
 
+  formatTimestamp(timestamp: number | null): string {
+    if (!timestamp) {
+      return '—';
+    }
+
+    return new Date(timestamp).toLocaleString();
+  }
+
+  formatDuration(durationMs: number | null): string {
+    if (durationMs === null) {
+      return '—';
+    }
+
+    const totalSeconds = Math.max(Math.floor(durationMs / 1000), 0);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    return [hours, minutes, seconds].map((value) => value.toString().padStart(2, '0')).join(':');
+  }
+
+  getInputsSummary(step: SelectedStepDetails): string {
+    if (step.configuredInputRefs.length === 0) {
+      return 'None';
+    }
+
+    const resolvedInputs = this.getInputInspectorRows(step).filter((row) => row.hasResolvedValue).length;
+    return `${resolvedInputs}/${step.configuredInputRefs.length} resolved`;
+  }
+
+  getOutputsSummary(step: SelectedStepDetails): string {
+    if (this.isExecutionDataMissing(step) || !step.output) {
+      return 'Not available yet';
+    }
+
+    const outputEntries = this.getOutputInspectorEntries(step);
+
+    if (outputEntries.length === 0) {
+      return 'None';
+    }
+
+    return `${outputEntries.length} item${outputEntries.length > 1 ? 's' : ''}`;
+  }
+
   private resolveStepName(stepId: string): string {
     const stepName = this.stepNamesById()[stepId];
 

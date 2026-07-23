@@ -33,8 +33,7 @@ public class RunAiAgentActivityImpl implements RunAiAgentActivity {
 
 		waitForStatusTesting();
 
-		Map<String, Object> output = agentExecutor.execute(request.getAgentKey(), request.getStepName(),
-				input);
+		Map<String, Object> output = agentExecutor.execute(request.getAgentKey(), request.getStepName(), input);
 
 		log.info("AI agent output: {}", output);
 

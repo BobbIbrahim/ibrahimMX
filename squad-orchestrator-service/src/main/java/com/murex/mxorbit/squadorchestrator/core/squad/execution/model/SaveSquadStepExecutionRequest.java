@@ -1,5 +1,6 @@
 package com.murex.mxorbit.squadorchestrator.core.squad.execution.model;
 
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.AllArgsConstructor;
@@ -30,6 +31,12 @@ public class SaveSquadStepExecutionRequest {
 	private String status;
 
 	private String message;
+
+	private Instant startedAt;
+
+	private Instant completedAt;
+
+	private Long durationMs;
 
 	@Builder.Default
 	@NonNull

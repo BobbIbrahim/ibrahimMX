@@ -12,9 +12,13 @@ export interface SquadStepStatus {
   stepId: string;
   stepName: string;
   status: SquadStepExecutionStatus;
+  agentKey?: string | null;
   message?: string | null;
   input?: Record<string, unknown> | null;
   output?: Record<string, unknown> | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  durationMs?: number | null;
 }
 
 export interface SquadExecutionStatus {

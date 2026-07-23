@@ -30,12 +30,15 @@ public class SquadStepExecutionJpaStore {
 		return SquadStepExecutionEntity.builder().id(buildId(request.getSquadRunId(), request.getStepId()))
 				.squadRunId(request.getSquadRunId()).squadId(request.getSquadId()).stepId(request.getStepId())
 				.stepName(request.getStepName()).status(request.getStatus()).message(request.getMessage())
-				.input(copy(request.getInput())).output(copy(request.getOutput())).build();
+				.startedAt(request.getStartedAt()).completedAt(request.getCompletedAt())
+				.durationMs(request.getDurationMs()).input(copy(request.getInput())).output(copy(request.getOutput()))
+				.build();
 	}
 
 	private SquadStepExecutionData toSquadStepExecutionData(SquadStepExecutionEntity entity) {
 		return SquadStepExecutionData.builder().stepId(entity.getStepId()).stepName(entity.getStepName())
-				.input(entity.getInput()).output(entity.getOutput()).build();
+				.startedAt(entity.getStartedAt()).completedAt(entity.getCompletedAt())
+				.durationMs(entity.getDurationMs()).input(entity.getInput()).output(entity.getOutput()).build();
 	}
 
 	private String buildId(String squadRunId, String stepId) {

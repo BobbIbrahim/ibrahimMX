@@ -81,7 +81,11 @@ public class SquadController implements SquadApi {
 	@Override
 	public ResponseEntity<SquadExecutionStatus> getSquadRunStatus(String squadRunId) {
 		log.debug("Received request to get squad run status. squadRunId: {}", squadRunId);
-		return ResponseEntity.of(squadFacade.getSquadRunStatus(squadRunId));
+		return ResponseEntity.of(squadFacade.getSquadRunStatus(squadRunId).map(status -> {
+			log.debug("Returning squad run status. squadRunId: {}, overallStatus: {}, stepCount: {}", squadRunId,
+					status.getOverallStatus(), status.getSteps().size());
+			return status;
+		}));
 	}
 
 	@Override

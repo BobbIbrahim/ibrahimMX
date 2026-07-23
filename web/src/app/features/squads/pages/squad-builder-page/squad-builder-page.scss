@@ -15,13 +15,12 @@
   padding: 1.1rem;
   border: 1px solid var(--color-border);
   border-radius: 1.35rem;
-  background:
-    radial-gradient(
-      circle at top left,
-      color-mix(in srgb, var(--color-accent) 16%, transparent),
-      transparent 34rem
-    ),
-    var(--color-surface);
+  background: radial-gradient(
+    circle at top left,
+    color-mix(in srgb, var(--color-accent) 16%, transparent),
+    transparent 34rem
+  ),
+  var(--color-surface);
 }
 
 .builder-hero__content {
@@ -150,7 +149,7 @@
 
 .builder-stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.85rem;
   margin-bottom: 1rem;
 }
@@ -181,6 +180,47 @@
   line-height: 1;
   text-shadow: none;
   filter: none;
+}
+
+.validation-stat {
+  transition: border-color 180ms ease,
+  background 180ms ease;
+}
+
+.validation-stat--success {
+  border-color: color-mix(
+    in srgb,
+    #22c55e 35%,
+    var(--color-border)
+  );
+
+  background: color-mix(
+    in srgb,
+    #22c55e 8%,
+    var(--color-surface)
+  );
+}
+
+.validation-stat--success strong {
+  color: #16a34a;
+}
+
+.validation-stat--warning {
+  border-color: color-mix(
+    in srgb,
+    #f59e0b 35%,
+    var(--color-border)
+  );
+
+  background: color-mix(
+    in srgb,
+    #f59e0b 8%,
+    var(--color-surface)
+  );
+}
+
+.validation-stat--warning strong {
+  color: #d97706;
 }
 
 /* =========================================================
@@ -341,13 +381,12 @@
   min-height: 32rem;
   margin-top: 0.85rem;
   overflow: auto;
-  background-image:
-    linear-gradient(color-mix(in srgb, var(--color-border) 52%, transparent) 1px, transparent 1px),
-    linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--color-border) 52%, transparent) 1px,
-      transparent 1px
-    );
+  background-image: linear-gradient(color-mix(in srgb, var(--color-border) 52%, transparent) 1px, transparent 1px),
+  linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-border) 52%, transparent) 1px,
+    transparent 1px
+  );
   background-size: 32px 32px;
   background-position: -1px -1px;
 }
@@ -442,11 +481,10 @@
   z-index: 2;
   cursor: pointer;
   box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.16);
-  transition:
-    transform 160ms ease,
-    border-color 160ms ease,
-    box-shadow 160ms ease,
-    background 160ms ease;
+  transition: transform 160ms ease,
+  border-color 160ms ease,
+  box-shadow 160ms ease,
+  background 160ms ease;
 }
 
 .step-node:hover {
@@ -457,16 +495,14 @@
 
 .step-node--selected {
   border-color: var(--color-accent);
-  box-shadow:
-    0 1rem 2.5rem rgba(0, 0, 0, 0.18),
-    0 0 0 2px color-mix(in srgb, var(--color-accent) 24%, transparent);
+  box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.18),
+  0 0 0 2px color-mix(in srgb, var(--color-accent) 24%, transparent);
 }
 
 .step-node--connection-source {
   border-color: var(--color-warning);
-  box-shadow:
-    0 1rem 2.5rem rgba(0, 0, 0, 0.18),
-    0 0 0 2px color-mix(in srgb, var(--color-warning) 32%, transparent);
+  box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.18),
+  0 0 0 2px color-mix(in srgb, var(--color-warning) 32%, transparent);
 }
 
 .step-node__icon {
@@ -533,7 +569,8 @@
 .builder-side-panel h2 {
   margin: 0;
   color: var(--color-text-primary);
-  font-size: 1.05rem;
+  font-size: 1.5rem;
+  font-weight: 800;
 }
 
 .delete-step-button {
@@ -615,8 +652,9 @@
 }
 
 .step-input-ref-list {
-  display: grid;
-  gap: 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .step-input-ref-item {
@@ -1070,14 +1108,161 @@
     align-items: flex-start;
     flex-direction: column;
   }
-
-  .step-input-ref-item {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (min-width: 1280px) {
   .builder-layout {
     height: clamp(42rem, calc(100vh - 22rem), 54rem);
   }
+}
+
+
+.step-validation-card {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.9rem;
+
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+
+  background: color-mix(
+    in srgb,
+    var(--color-bg-elevated) 75%,
+    transparent
+  );
+}
+
+.step-validation-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+
+  margin-top: 0.55rem;
+
+  font-size: 0.85rem;
+}
+
+.agent-details-card {
+  margin-top: 1rem;
+
+  padding: 1rem;
+
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+
+  background: color-mix(
+    in srgb,
+    var(--color-bg-elevated) 75%,
+    transparent
+  );
+}
+
+.agent-details-card h3 {
+  margin: 0.25rem 0;
+}
+
+.agent-details-card p {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.agent-output-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+
+  margin-top: 0.9rem;
+}
+
+.agent-output-chip {
+  padding: 0.3rem 0.65rem;
+
+  border-radius: 999px;
+
+  background: color-mix(
+    in srgb,
+    var(--color-accent) 10%,
+    transparent
+  );
+
+  color: var(--color-accent);
+
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.step-input-ref-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  padding: 1rem;
+
+  border: 1px solid color-mix(
+    in srgb,
+    var(--color-accent) 22%,
+    var(--color-border)
+  );
+
+  border-radius: 1rem;
+
+  background: color-mix(
+    in srgb,
+    var(--color-accent) 9%,
+    var(--color-bg-elevated)
+  );
+
+  box-shadow: 0 1px 2px rgb(0 0 0 / 4%),
+  0 6px 18px rgb(0 0 0 / 4%);
+}
+
+.step-input-ref-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+
+  color: var(--color-accent);
+
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.step-input-ref-card__header button {
+  color: #ef4444;
+  transition: all 180ms ease;
+}
+
+.step-input-ref-card__header button:hover {
+  color: #cf2525;
+  background: rgb(239 68 68 / 16%);
+  transform: scale(1.05);
+}
+
+.edge-list__item--selected {
+  border-color: var(--color-accent);
+
+  background: color-mix(
+    in srgb,
+    var(--color-accent) 8%,
+    var(--color-surface)
+  );
+
+  box-shadow: 0 0 0 1px color-mix(
+    in srgb,
+    var(--color-accent) 25%,
+    transparent
+  );
+}
+
+.builder-side-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.builder-side-panel::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 999px;
 }
