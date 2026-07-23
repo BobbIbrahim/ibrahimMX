@@ -2,6 +2,54 @@
   class="step-inspector"
   [class.step-inspector--expanded]="expanded()"
 >
+  <section class="step-overview">
+    <article class="step-overview__card">
+      <div class="step-overview__grid">
+        <div class="step-overview__field">
+          <span class="inspector-entry__label">Step Name</span>
+          <span class="step-overview__value">{{ step().stepName }}</span>
+        </div>
+        <div class="step-overview__field">
+          <span class="inspector-entry__label">Agent</span>
+          <span class="step-overview__value">{{ step().agentName }}</span>
+        </div>
+        <div class="step-overview__field">
+          <span class="inspector-entry__label">Status</span>
+          <span
+            class="status-chip"
+            [class.status-chip--completed]="step().status === 'COMPLETED'"
+            [class.status-chip--running]="step().status === 'RUNNING'"
+            [class.status-chip--failed]="step().status === 'FAILED'"
+            [class.status-chip--pending]="step().status === 'PENDING'"
+            [class.status-chip--cancelled]="step().status === 'CANCELLED'"
+          >
+            {{ step().status }}
+          </span>
+        </div>
+        <div class="step-overview__field">
+          <span class="inspector-entry__label">Started At</span>
+          <span class="step-overview__value">{{ formatTimestamp(step().startedAt) }}</span>
+        </div>
+        <div class="step-overview__field">
+          <span class="inspector-entry__label">Completed At</span>
+          <span class="step-overview__value">{{ formatTimestamp(step().completedAt) }}</span>
+        </div>
+        <div class="step-overview__field">
+          <span class="inspector-entry__label">Duration</span>
+          <span class="step-overview__value">{{ formatDuration(step().durationMs) }}</span>
+        </div>
+        <div class="step-overview__field">
+          <span class="inspector-entry__label">Inputs</span>
+          <span class="step-overview__value">{{ getInputsSummary(step()) }}</span>
+        </div>
+        <div class="step-overview__field">
+          <span class="inspector-entry__label">Outputs</span>
+          <span class="step-overview__value">{{ getOutputsSummary(step()) }}</span>
+        </div>
+      </div>
+    </article>
+  </section>
+
   <nav
     class="step-inspector__tabs"
     role="tablist"

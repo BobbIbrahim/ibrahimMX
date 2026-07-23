@@ -1,11 +1,26 @@
 <section class="live-run-page">
   <header class="live-run-header">
     <div class="live-run-header__content">
-      <h1>
+      <p class="live-run-header__eyebrow">Execution</p>
+      <h1 class="live-run-header__title">
         {{ squad()?.name ?? 'Live Run' }}
       </h1>
 
-      <p>
+      <div class="live-run-header__meta">
+        <span
+          class="status-chip"
+          [class.status-chip--running]="executionStatus()?.overallStatus === 'RUNNING'"
+          [class.status-chip--completed]="executionStatus()?.overallStatus === 'COMPLETED'"
+          [class.status-chip--failed]="executionStatus()?.overallStatus === 'FAILED'"
+          [class.status-chip--cancelled]="executionStatus()?.overallStatus === 'CANCELLED'"
+          [class.status-chip--pending]="!executionStatus()"
+        >
+          {{ executionStatus()?.overallStatus ?? 'IDLE' }}
+        </span>
+        <span class="workflow-duration">Duration: {{ formattedDuration() }}</span>
+      </div>
+
+      <p class="live-run-header__subtitle">
         Observe workflow execution in real time.
       </p>
     </div>
@@ -59,20 +74,32 @@
     </div>
   </header>
 
+  <section class="execution-summary-grid">
+    <article class="execution-summary-card execution-summary-card--running">
+      <span class="execution-summary-card__label">Running</span>
+      <span class="execution-summary-card__value">{{ runningSteps() }}</span>
+    </article>
+    <article class="execution-summary-card execution-summary-card--completed">
+      <span class="execution-summary-card__label">Completed</span>
+      <span class="execution-summary-card__value">{{ completedSteps() }}</span>
+    </article>
+    <article class="execution-summary-card execution-summary-card--failed">
+      <span class="execution-summary-card__label">Failed</span>
+      <span class="execution-summary-card__value">{{ failedSteps() }}</span>
+    </article>
+    <article class="execution-summary-card execution-summary-card--pending">
+      <span class="execution-summary-card__label">Pending</span>
+      <span class="execution-summary-card__value">{{ pendingSteps() }}</span>
+    </article>
+  </section>
+
   <section class="run-summary-card">
     <div class="run-summary-header">
-      <div
-        class="run-status-badge"
-        [class.run-status-badge--cancelled]="executionStatus()?.overallStatus === 'CANCELLED'"
-      >
-        {{ executionStatus()?.overallStatus ?? 'IDLE' }}
-      </div>
+      <h2 class="run-summary-header__title">Execution Progress</h2>
 
       <div class="progress-header">
-        <span>{{ progressPercentage() }}%</span>
-        <span class="workflow-duration">
-    Duration: {{ formattedDuration() }}
-  </span>
+        <span class="run-progress-value">{{ progressPercentage() }}%</span>
+        <span>{{ totalSteps() }} steps</span>
       </div>
     </div>
 
@@ -122,12 +149,12 @@
         <div class="step-details-drawer__title-group">
           <h2>{{ selectedStep.stepName }}</h2>
           <span
-            class="execution-event__status"
-            [class.execution-event__status--completed]="selectedStep.status === 'COMPLETED'"
-            [class.execution-event__status--running]="selectedStep.status === 'RUNNING'"
-            [class.execution-event__status--failed]="selectedStep.status === 'FAILED'"
-            [class.execution-event__status--pending]="selectedStep.status === 'PENDING'"
-            [class.execution-event__status--cancelled]="selectedStep.status === 'CANCELLED'"
+            class="status-chip"
+            [class.status-chip--completed]="selectedStep.status === 'COMPLETED'"
+            [class.status-chip--running]="selectedStep.status === 'RUNNING'"
+            [class.status-chip--failed]="selectedStep.status === 'FAILED'"
+            [class.status-chip--pending]="selectedStep.status === 'PENDING'"
+            [class.status-chip--cancelled]="selectedStep.status === 'CANCELLED'"
           >
             {{ selectedStep.status }}
           </span>
@@ -170,12 +197,12 @@
       <div class="step-details-dialog__title-group">
         <h2>{{ expandedStep.stepName }}</h2>
         <span
-          class="execution-event__status"
-          [class.execution-event__status--completed]="expandedStep.status === 'COMPLETED'"
-          [class.execution-event__status--running]="expandedStep.status === 'RUNNING'"
-          [class.execution-event__status--failed]="expandedStep.status === 'FAILED'"
-          [class.execution-event__status--pending]="expandedStep.status === 'PENDING'"
-          [class.execution-event__status--cancelled]="expandedStep.status === 'CANCELLED'"
+          class="status-chip"
+          [class.status-chip--completed]="expandedStep.status === 'COMPLETED'"
+          [class.status-chip--running]="expandedStep.status === 'RUNNING'"
+          [class.status-chip--failed]="expandedStep.status === 'FAILED'"
+          [class.status-chip--pending]="expandedStep.status === 'PENDING'"
+          [class.status-chip--cancelled]="expandedStep.status === 'CANCELLED'"
         >
           {{ expandedStep.status }}
         </span>

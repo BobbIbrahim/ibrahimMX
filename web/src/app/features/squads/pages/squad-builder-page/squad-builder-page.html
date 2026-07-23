@@ -55,13 +55,27 @@
       </article>
 
       <article>
-        <span>Total Edges</span>
+        <span>Connections</span>
         <strong>{{ edges().length }}</strong>
       </article>
 
       <article>
         <span>Assigned Agents</span>
         <strong>{{ assignedAgentCount() }}</strong>
+      </article>
+
+      <article
+        class="validation-stat"
+        [class.validation-stat--success]="workflowReady()"
+        [class.validation-stat--warning]="!workflowReady()"
+      >
+        <span>Validation</span>
+
+        @if (workflowReady()) {
+          <strong>Ready</strong>
+        } @else {
+          <strong>{{ validationIssueCount() }} Issues</strong>
+        }
       </article>
     </section>
 
@@ -96,7 +110,9 @@
       </main>
 
       <aside class="builder-side-panel">
+
         @if (selectedStep(); as step) {
+
           <div class="side-panel-header">
             <div>
               <span class="side-panel__eyebrow">SELECTED STEP</span>
@@ -113,6 +129,27 @@
               <mat-icon>delete</mat-icon>
             </button>
           </div>
+
+          @if (selectedStepValidation(); as validation) {
+            <section class="step-validation-card">
+              <span class="side-panel__eyebrow">STEP STATUS</span>
+
+              <div class="step-validation-item">
+                <span>{{ validation.hasAgent ? '✅' : '⚠️' }}</span>
+                <span>Agent Assigned</span>
+              </div>
+
+              <div class="step-validation-item">
+                <span>{{ validation.hasConnections ? '✅' : '⚠️' }}</span>
+                <span>Connected To Workflow</span>
+              </div>
+
+              <div class="step-validation-item">
+                <span>{{ validation.hasInputMappings ? '✅' : '⚠️' }}</span>
+                <span>Input Mapping Configured</span>
+              </div>
+            </section>
+          }
 
           <div class="step-form">
             <div class="field-group">
@@ -142,54 +179,54 @@
                   <mat-select-trigger>
                     @if (getAgentByKey(step.assignedAgentId); as selectedAgent) {
                       <span class="agent-select-trigger">
-                        <span class="agent-avatar">
-                          {{ getAgentInitials(selectedAgent.name) }}
-                        </span>
+              <span class="agent-avatar">
+                {{ getAgentInitials(selectedAgent.name) }}
+              </span>
 
-                        <span class="agent-select-trigger__content">
-                          <strong>{{ selectedAgent.name }}</strong>
-                          <small>{{ selectedAgent.role }}</small>
-                        </span>
-                      </span>
+              <span class="agent-select-trigger__content">
+                <strong>{{ selectedAgent.name }}</strong>
+                <small>{{ selectedAgent.role }}</small>
+              </span>
+            </span>
                     } @else {
                       <span class="agent-select-trigger agent-select-trigger--empty">
-                        <span class="agent-avatar agent-avatar--empty">
-                          <mat-icon>person_off</mat-icon>
-                        </span>
+              <span class="agent-avatar agent-avatar--empty">
+                <mat-icon>person_off</mat-icon>
+              </span>
 
-                        <span class="agent-select-trigger__content">
-                          <strong>Unassigned</strong>
-                          <small>No agent selected</small>
-                        </span>
-                      </span>
+              <span class="agent-select-trigger__content">
+                <strong>Unassigned</strong>
+                <small>No agent selected</small>
+              </span>
+            </span>
                     }
                   </mat-select-trigger>
 
                   <mat-option [value]="null">
-                    <span class="agent-option">
-                      <span class="agent-avatar agent-avatar--empty">
-                        <mat-icon>person_off</mat-icon>
-                      </span>
+          <span class="agent-option">
+            <span class="agent-avatar agent-avatar--empty">
+              <mat-icon>person_off</mat-icon>
+            </span>
 
-                      <span class="agent-option__content">
-                        <strong>Unassigned</strong>
-                        <small>No agent selected</small>
-                      </span>
-                    </span>
+            <span class="agent-option__content">
+              <strong>Unassigned</strong>
+              <small>No agent selected</small>
+            </span>
+          </span>
                   </mat-option>
 
                   @for (agent of agents(); track agent.agentKey) {
                     <mat-option [value]="agent.agentKey">
-                      <span class="agent-option">
-                        <span class="agent-avatar">
-                          {{ getAgentInitials(agent.name) }}
-                        </span>
+            <span class="agent-option">
+              <span class="agent-avatar">
+                {{ getAgentInitials(agent.name) }}
+              </span>
 
-                        <span class="agent-option__content">
-                          <strong>{{ agent.name }}</strong>
-                          <small>{{ agent.role }}</small>
-                        </span>
-                      </span>
+              <span class="agent-option__content">
+                <strong>{{ agent.name }}</strong>
+                <small>{{ agent.role }}</small>
+              </span>
+            </span>
                     </mat-option>
                   }
                 </mat-select>
@@ -199,6 +236,7 @@
             <div class="field-group">
               <div class="step-input-refs-header">
                 <label class="field-label">Inputs</label>
+
                 <button
                   type="button"
                   mat-stroked-button
@@ -213,9 +251,24 @@
               @if (step.inputRefs.length > 0) {
                 <div class="step-input-ref-list">
                   @for (inputRef of step.inputRefs; track trackInputRef($index, inputRef)) {
-                    <div class="step-input-ref-item">
+                    <div class="step-input-ref-card">
+
+                      <div class="step-input-ref-card__header">
+                        <span>Mapping #{{ $index + 1 }}</span>
+
+                        <button
+                          type="button"
+                          mat-icon-button
+                          aria-label="Remove input reference"
+                          (click)="removeSelectedStepInputRef($index)"
+                        >
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      </div>
+
                       <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                        <mat-label>Source step</mat-label>
+                        <mat-label>Source Step</mat-label>
+
                         <mat-select
                           [ngModel]="inputRef.fromStepId"
                           (ngModelChange)="updateSelectedStepInputRefSource($index, $event)"
@@ -229,7 +282,8 @@
                       </mat-form-field>
 
                       <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                        <mat-label>Output key</mat-label>
+                        <mat-label>Output Key</mat-label>
+
                         <mat-select
                           [ngModel]="inputRef.key"
                           (ngModelChange)="updateSelectedStepInputRefKey($index, $event)"
@@ -243,14 +297,6 @@
                         </mat-select>
                       </mat-form-field>
 
-                      <button
-                        type="button"
-                        mat-icon-button
-                        aria-label="Remove input reference"
-                        (click)="removeSelectedStepInputRef($index)"
-                      >
-                        <mat-icon>delete</mat-icon>
-                      </button>
                     </div>
                   }
                 </div>
@@ -268,32 +314,53 @@
             </div>
           </div>
 
-          <section class="step-summary">
-            <div>
-              <dt>Assigned Agent</dt>
-              <dd>{{ getAgentName(step.assignedAgentId) }}</dd>
-            </div>
-          </section>
+          @if (getAgentByKey(step.assignedAgentId); as agent) {
+            <section class="agent-details-card">
+    <span class="side-panel__eyebrow">
+      AGENT DETAILS
+    </span>
+
+              <h3>{{ agent.name }}</h3>
+
+              <p>{{ agent.role }}</p>
+
+              <div class="agent-output-list">
+                @for (output of agent.outputs; track output) {
+                  <span class="agent-output-chip">
+          {{ output }}
+        </span>
+                }
+              </div>
+            </section>
+          }
+
         } @else {
+
           <div class="side-panel-empty">
             <mat-icon>touch_app</mat-icon>
 
             <h2>Select a step</h2>
 
             <p>
-              Click a step node on the canvas to edit its name, assigned agent, and connections.
+              Click a step node on the canvas to edit its name, assigned agent,
+              and connections.
             </p>
           </div>
+
         }
 
         <section class="edge-list">
           <div class="edge-list__header">
             <div>
               <h3>Flow Connections</h3>
-              <p>Direct links between workflow steps. Branching and loops are supported.</p>
+              <p>
+                Direct links between workflow steps. Branching and loops are supported.
+              </p>
             </div>
 
-            <span class="edge-list__count">{{ edges().length }}</span>
+            <span class="edge-list__count">
+      {{ edges().length }}
+    </span>
           </div>
 
           @if (edges().length > 0) {
@@ -302,14 +369,18 @@
                 <div class="edge-list__item">
                   <div class="edge-list__node">
                     <span>From</span>
-                    <strong>{{ getStepName(edge.sourceStepId) }}</strong>
+                    <strong>
+                      {{ getStepName(edge.sourceStepId) }}
+                    </strong>
                   </div>
 
                   <mat-icon>arrow_forward</mat-icon>
 
                   <div class="edge-list__node">
                     <span>To</span>
-                    <strong>{{ getStepName(edge.targetStepId) }}</strong>
+                    <strong>
+                      {{ getStepName(edge.targetStepId) }}
+                    </strong>
                   </div>
                 </div>
               }
@@ -317,10 +388,14 @@
           } @else {
             <div class="edge-list__empty">
               <mat-icon>link_off</mat-icon>
-              <p>No connections yet. Connect nodes directly inside the canvas.</p>
+
+              <p>
+                No connections yet. Connect nodes directly inside the canvas.
+              </p>
             </div>
           }
         </section>
+
       </aside>
     </section>
 

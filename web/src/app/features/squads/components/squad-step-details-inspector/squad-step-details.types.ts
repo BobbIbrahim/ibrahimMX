@@ -3,8 +3,12 @@ import { SquadStepExecutionStatus } from '../../../../core/models/squad-run.mode
 export type SelectedStepDetails = {
   stepId: string;
   stepName: string;
+  agentName: string;
   status: SquadStepExecutionStatus;
   message: string | null;
+  startedAt: number | null;
+  completedAt: number | null;
+  durationMs: number | null;
   configuredInputRefs: Array<{
     fromStepId: string;
     key: string;

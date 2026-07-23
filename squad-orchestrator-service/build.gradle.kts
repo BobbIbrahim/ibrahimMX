@@ -35,4 +35,11 @@ dependencies {
     annotationProcessor("org.mapstruct:mapstruct-processor")
 
     runtimeOnly("org.postgresql:postgresql")
+
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
