@@ -21,6 +21,7 @@ export interface SquadBuilderEdge {
 }
 
 export interface SquadBuilderInputRef {
+  targetInput: string;
   fromStepId: string;
   key: string;
 }

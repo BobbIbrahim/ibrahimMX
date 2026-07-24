@@ -1,4 +1,5 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { AgentService } from './agent.service';
 import { SquadApiResponse } from './squad.service';
 import {
   SquadBuilderDraft,
@@ -23,6 +24,7 @@ export type UpdateSquadStepPayload = Partial<
   providedIn: 'root',
 })
 export class SquadBuilderStateService {
+  private readonly agentService = inject(AgentService);
   private readonly draftSignal = signal<SquadBuilderDraft | null>(null);
   private readonly selectedStepIdSignal = signal<string | null>(null);
 
@@ -70,6 +72,7 @@ export class SquadBuilderStateService {
         assignedAgentId: step.agentKey,
         parameters: {},
         inputRefs: (step.inputRefs ?? []).map((inputRef) => ({
+          targetInput: inputRef.targetInput ?? '',
           fromStepId: inputRef.fromStepId,
           key: inputRef.key,
         })),
@@ -155,14 +158,33 @@ export class SquadBuilderStateService {
         return draft;
       }
 
+      const currentStep = draft.steps.find((step) => step.id === stepId);
+      if (!currentStep) {
+        return draft;
+      }
+
+      const nextStep: SquadBuilderStep = {
+        ...currentStep,
+        ...payload,
+      };
+
+      const shouldReconcileTargetInputs = Object.prototype.hasOwnProperty.call(
+        payload,
+        'assignedAgentId',
+      );
+
+      const updatedStep = shouldReconcileTargetInputs
+        ? {
+            ...nextStep,
+            inputRefs: this.filterInputRefsForAssignedAgent(nextStep),
+          }
+        : nextStep;
+
       return {
         ...draft,
         steps: draft.steps.map((step) =>
           step.id === stepId
-            ? {
-                ...step,
-                ...payload,
-              }
+            ? updatedStep
             : step,
         ),
       };
@@ -199,8 +221,9 @@ export class SquadBuilderStateService {
 
     const ancestors = this.getAncestorSteps(selectedStepId);
     const selectedStep = this.selectedStep();
+    const unmappedInputs = this.getUnmappedAgentInputs(selectedStep);
 
-    if (ancestors.length === 0 || !selectedStep) {
+    if (ancestors.length === 0 || !selectedStep || unmappedInputs.length === 0) {
       return;
     }
 
@@ -208,6 +231,7 @@ export class SquadBuilderStateService {
       inputRefs: [
         ...selectedStep.inputRefs,
         {
+          targetInput: unmappedInputs[0],
           fromStepId: ancestors[0].id,
           key: '',
         },
@@ -411,6 +435,7 @@ export class SquadBuilderStateService {
         type: 'AI_AGENT',
         agentKey: step.assignedAgentId ?? '',
         inputRefs: step.inputRefs.map((inputRef) => ({
+          targetInput: inputRef.targetInput,
           fromStepId: inputRef.fromStepId,
           key: inputRef.key,
         })),
@@ -451,6 +476,42 @@ export class SquadBuilderStateService {
     const ancestorStepIds = new Set(this.computeAncestorStepIds(step.id, draft.edges));
 
     return step.inputRefs.filter((inputRef) => ancestorStepIds.has(inputRef.fromStepId));
+  }
+
+  private filterInputRefsForAssignedAgent(step: SquadBuilderStep): SquadBuilderInputRef[] {
+    const inputs = this.getAssignedAgentInputs(step);
+
+    if (inputs.length === 0) {
+      return [];
+    }
+
+    return step.inputRefs.filter((inputRef) => inputs.includes(inputRef.targetInput));
+  }
+
+  private getUnmappedAgentInputs(step: SquadBuilderStep | undefined): string[] {
+    if (!step?.assignedAgentId) {
+      return [];
+    }
+
+    const agentInputs = this.getAssignedAgentInputs(step);
+    if (agentInputs.length === 0) {
+      return [];
+    }
+
+    const mappedTargetInputs = new Set(
+      step.inputRefs.map((inputRef) => inputRef.targetInput).filter((targetInput) => Boolean(targetInput?.trim())),
+    );
+
+    return agentInputs.filter((input) => !mappedTargetInputs.has(input));
+  }
+
+  private getAssignedAgentInputs(step: SquadBuilderStep): string[] {
+    const assignedAgentId = step.assignedAgentId;
+    if (!assignedAgentId) {
+      return [];
+    }
+
+    return this.agentService.getAgentByKey(assignedAgentId)?.inputs ?? [];
   }
 
   private computeAncestorStepIds(stepId: string, edges: SquadBuilderEdge[]): string[] {

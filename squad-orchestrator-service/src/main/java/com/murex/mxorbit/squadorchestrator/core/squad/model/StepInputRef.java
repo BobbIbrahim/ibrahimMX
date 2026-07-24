@@ -17,4 +17,6 @@ public class StepInputRef {
 
 	@NonNull
 	private String key;
+
+	private String targetInput;
 }

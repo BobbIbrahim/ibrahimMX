@@ -12,15 +12,40 @@ import { describe, expect, it } from 'vitest';
 
 describe('validateSquadWorkflow', () => {
   const agents: SquadWorkflowAgent[] = [
-    { agentKey: 'code-sentinel', name: 'Code Sentinel', outputs: ['message', 'summary'] },
-    { agentKey: 'test-weaver', name: 'Test Weaver', outputs: ['message'] },
-    { agentKey: 'flow-architect', name: 'Flow Architect', outputs: ['message'] },
+    {
+      agentKey: 'code-sentinel',
+      name: 'Code Sentinel',
+      inputs: ['code', 'requirements', 'context'],
+      outputs: ['message', 'summary'],
+    },
+    {
+      agentKey: 'test-weaver',
+      name: 'Test Weaver',
+      inputs: ['code', 'requirements', 'testContext'],
+      outputs: ['message'],
+    },
+    {
+      agentKey: 'flow-architect',
+      name: 'Flow Architect',
+      inputs: ['requirement', 'context', 'constraints'],
+      outputs: ['message'],
+    },
   ];
 
-  it('validates a linear DAG with an upstream inputRef', () => {
+  it('validates a linear DAG with a target input', () => {
     const draft = workflow(
       step('step-1', 'Step 1', 'code-sentinel'),
-      step('step-2', 'Step 2', 'test-weaver', ref('step-1', 'message')),
+      step('step-2', 'Step 2', 'test-weaver', ref('step-1', 'message', 'requirements')),
+      edge('step-1', 'step-2'),
+    );
+
+    expect(validateSquadWorkflow(draft, agents)).toEqual([]);
+  });
+
+  it('allows empty inputRefs', () => {
+    const draft = workflow(
+      step('step-1', 'Step 1', 'code-sentinel'),
+      step('step-2', 'Step 2', 'test-weaver'),
       edge('step-1', 'step-2'),
     );
 
@@ -30,9 +55,9 @@ describe('validateSquadWorkflow', () => {
   it('validates branching and convergence', () => {
     const draft = workflow(
       step('step-1', 'Step 1', 'code-sentinel'),
-      step('step-2', 'Step 2', 'test-weaver', ref('step-1', 'message')),
-      step('step-3', 'Step 3', 'flow-architect', ref('step-1', 'message')),
-      step('step-4', 'Step 4', 'code-sentinel', ref('step-2', 'message'), ref('step-3', 'message')),
+      step('step-2', 'Step 2', 'test-weaver', ref('step-1', 'message', 'requirements')),
+      step('step-3', 'Step 3', 'flow-architect', ref('step-1', 'message', 'requirement')),
+      step('step-4', 'Step 4', 'code-sentinel', ref('step-2', 'message', 'code'), ref('step-3', 'message', 'context')),
       edge('step-1', 'step-2'),
       edge('step-1', 'step-3'),
       edge('step-2', 'step-4'),
@@ -74,7 +99,7 @@ describe('validateSquadWorkflow', () => {
   it('rejects invalid downstream inputRefs', () => {
     const draft = workflow(
       step('step-1', 'Step 1', 'code-sentinel'),
-      step('step-2', 'Step 2', 'test-weaver', ref('step-3', 'message')),
+      step('step-2', 'Step 2', 'test-weaver', ref('step-3', 'message', 'requirements')),
       step('step-3', 'Step 3', 'flow-architect'),
       edge('step-1', 'step-2'),
       edge('step-2', 'step-3'),
@@ -88,12 +113,18 @@ describe('validateSquadWorkflow', () => {
   it('rejects duplicate inputRefs and undeclared output keys', () => {
     const duplicateDraft = workflow(
       step('step-1', 'Step 1', 'code-sentinel'),
-      step('step-2', 'Step 2', 'test-weaver', ref('step-1', 'message'), ref('step-1', 'message')),
+      step(
+        'step-2',
+        'Step 2',
+        'test-weaver',
+        ref('step-1', 'message', 'requirements'),
+        ref('step-1', 'message', 'testContext'),
+      ),
       edge('step-1', 'step-2'),
     );
     const keyDraft = workflow(
       step('step-1', 'Step 1', 'code-sentinel'),
-      step('step-2', 'Step 2', 'test-weaver', ref('step-1', 'missing')),
+      step('step-2', 'Step 2', 'test-weaver', ref('step-1', 'missing', 'requirements')),
       edge('step-1', 'step-2'),
     );
 
@@ -103,6 +134,56 @@ describe('validateSquadWorkflow', () => {
     expect(validateSquadWorkflow(keyDraft, agents)).toContain(
       "Step 'Step 2' inputRef from Step 'Step 1' references undeclared output key 'missing'.",
     );
+  });
+
+  it('rejects blank target inputs', () => {
+    const draft = workflow(
+      step('step-1', 'Step 1', 'code-sentinel'),
+      step('step-2', 'Step 2', 'test-weaver', ref('step-1', 'message', ' ')),
+      edge('step-1', 'step-2'),
+    );
+
+    expect(validateSquadWorkflow(draft, agents)).toContain("Step 'Step 2' has an incomplete inputRef.");
+  });
+
+  it('rejects unknown target inputs', () => {
+    const draft = workflow(
+      step('step-1', 'Step 1', 'code-sentinel'),
+      step('step-2', 'Step 2', 'test-weaver', ref('step-1', 'message', 'unknown')),
+      edge('step-1', 'step-2'),
+    );
+
+    expect(validateSquadWorkflow(draft, agents)).toContain(
+      "Step 'Step 2' inputRef target input 'unknown' is not declared by agent 'Test Weaver'.",
+    );
+  });
+
+  it('rejects duplicate target inputs', () => {
+    const draft = workflow(
+      step('step-1', 'Step 1', 'code-sentinel'),
+      step(
+        'step-2',
+        'Step 2',
+        'test-weaver',
+        ref('step-1', 'message', 'requirements'),
+        ref('step-1', 'summary', 'requirements'),
+      ),
+      edge('step-1', 'step-2'),
+    );
+
+    expect(validateSquadWorkflow(draft, agents)).toContain(
+      "Step 'Step 2' has a duplicate inputRef target input 'requirements'.",
+    );
+  });
+
+  it('rejects legacy mappings without targetInput', () => {
+    const draft = workflow(
+      step('step-1', 'Step 1', 'code-sentinel'),
+      step('step-2', 'Step 2', 'test-weaver', legacyRef('step-1', 'message')),
+      edge('step-1', 'step-2'),
+    );
+
+    expect(validateSquadWorkflow(draft, agents)).toContain("Step 'Step 2' has an incomplete inputRef.");
   });
 
   it('rejects duplicate edges', () => {
@@ -157,8 +238,12 @@ function edge(sourceStepId: string, targetStepId: string): SquadBuilderEdge {
   };
 }
 
-function ref(fromStepId: string, key: string): SquadBuilderInputRef {
-  return { fromStepId, key };
+function ref(fromStepId: string, key: string, targetInput: string): SquadBuilderInputRef {
+  return { fromStepId, key, targetInput };
+}
+
+function legacyRef(fromStepId: string, key: string): SquadBuilderInputRef {
+  return { fromStepId, key } as SquadBuilderInputRef;
 }
 
 function isStep(item: SquadBuilderStep | SquadBuilderEdge): item is SquadBuilderStep {

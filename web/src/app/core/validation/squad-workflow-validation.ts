@@ -3,6 +3,7 @@ import { SquadBuilderDraft, SquadBuilderStep } from '../models/squad-builder.mod
 export type SquadWorkflowAgent = {
   agentKey: string;
   name: string;
+  inputs: string[];
   outputs: string[];
 };
 
@@ -207,10 +208,33 @@ export function validateSquadWorkflow(
   for (const step of steps) {
     const ancestorIds = computeAncestors(step.id, reverseEdges);
     const seenInputRefs = new Set<string>();
+    const stepAgentKey = step.assignedAgentId;
+    const targetInputs = new Set(
+      (stepAgentKey ? agentByKey.get(stepAgentKey)?.inputs ?? [] : []).filter((input) => Boolean(input?.trim())),
+    );
+    const seenTargetInputs = new Set<string>();
 
     for (const inputRef of step.inputRefs ?? []) {
-      if (!inputRef?.fromStepId || !inputRef.key || !inputRef.key.trim()) {
+      if (
+        !inputRef?.fromStepId ||
+        !inputRef.key ||
+        !inputRef.key.trim() ||
+        !inputRef.targetInput ||
+        !inputRef.targetInput.trim()
+      ) {
         validationErrors.push(stepLabel(step) + ' has an incomplete inputRef.');
+        continue;
+      }
+
+      if (!targetInputs.has(inputRef.targetInput)) {
+        validationErrors.push(
+          stepLabel(step) +
+            " inputRef target input '" +
+            inputRef.targetInput +
+            "' is not declared by agent '" +
+            (stepAgentKey ? agentByKey.get(stepAgentKey)?.name ?? stepAgentKey : 'unknown') +
+            "'.",
+        );
         continue;
       }
 
@@ -251,6 +275,14 @@ export function validateSquadWorkflow(
         continue;
       }
       seenInputRefs.add(duplicateKey);
+
+      if (seenTargetInputs.has(inputRef.targetInput)) {
+        validationErrors.push(
+          stepLabel(step) + " has a duplicate inputRef target input '" + inputRef.targetInput + "'.",
+        );
+        continue;
+      }
+      seenTargetInputs.add(inputRef.targetInput);
 
       const sourceStep = stepMap.get(inputRef.fromStepId);
       const sourceAgentKey = sourceStep?.assignedAgentId;
