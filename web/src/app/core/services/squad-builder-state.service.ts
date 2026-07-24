@@ -345,6 +345,10 @@ export class SquadBuilderStateService {
         return draft;
       }
 
+      if (sourceStepId === targetStepId) {
+        return draft;
+      }
+
       const edgeAlreadyExists = draft.edges.some(
         (edge) => edge.sourceStepId === sourceStepId && edge.targetStepId === targetStepId,
       );
