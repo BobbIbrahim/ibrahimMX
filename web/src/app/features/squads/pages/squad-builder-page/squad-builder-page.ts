@@ -17,6 +17,7 @@ import {
 import { AgentService } from '../../../../core/services/agent.service';
 import { SquadBuilderStateService } from '../../../../core/services/squad-builder-state.service';
 import { SquadService } from '../../../../core/services/squad.service';
+import { validateSquadWorkflow } from '../../../../core/validation/squad-workflow-validation';
 import { ReteSquadFlowEditor } from '../../components/rete-squad-flow-editor/rete-squad-flow-editor';
 
 type BuilderAgent = Pick<Agent, 'agentKey' | 'name' | 'role' | 'inputs' | 'outputs'>;
@@ -130,20 +131,7 @@ export class SquadBuilderPage implements OnInit {
   });
 
   readonly validationErrors = computed(() => {
-    const errors: string[] = [];
-    const steps = this.steps();
-
-    if (steps.length === 0) {
-      errors.push('Add at least one step before saving this squad.');
-    }
-
-    for (const step of steps) {
-      if (!step.assignedAgentId) {
-        errors.push(`Step "${step.name}" must have an assigned agent.`);
-      }
-    }
-
-    return errors;
+    return validateSquadWorkflow(this.draft(), this.agents());
   });
 
   readonly canSave = computed(() => {
