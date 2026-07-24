@@ -1,5 +1,6 @@
 package com.murex.mxorbit.squadorchestrator.core.squad.validation;
 
+import com.murex.mxorbit.squadorchestrator.core.squad.agent.AgentDefinition;
 import com.murex.mxorbit.squadorchestrator.core.squad.agent.AgentRegistry;
 import com.murex.mxorbit.squadorchestrator.core.squad.creator.request.AiAgentStepRequest;
 import com.murex.mxorbit.squadorchestrator.core.squad.creator.request.CreateSquadRequest;
@@ -220,25 +221,30 @@ public class SquadInputRefValidator {
 			Map<String, Set<String>> reverseEdges) {
 		for (SquadStepRequest step : steps) {
 			Set<String> seenRefs = new HashSet<>();
+			Set<String> seenTargetInputs = new HashSet<>();
 			Set<String> ancestors = computeAncestors(step.getId(), reverseEdges);
 			List<StepInputRef> inputRefs = step.getInputRefs();
 
 			for (StepInputRef ref : inputRefs == null ? List.<StepInputRef>of() : inputRefs) {
-				validateInputRef(step, ref, stepMap, ancestors, seenRefs);
+				validateInputRef(step, ref, stepMap, ancestors, seenRefs, seenTargetInputs);
 			}
 		}
 	}
 
 	private void validateInputRef(SquadStepRequest step, StepInputRef ref, Map<String, SquadStepRequest> stepMap,
-			Set<String> ancestors, Set<String> seenRefs) {
+			Set<String> ancestors, Set<String> seenRefs, Set<String> seenTargetInputs) {
 		if (ref == null || ref.getFromStepId() == null || ref.getFromStepId().isBlank() || ref.getKey() == null
-				|| ref.getKey().isBlank()) {
+				|| ref.getKey().isBlank() || ref.getTargetInput() == null || ref.getTargetInput().isBlank()) {
 			throw badRequest("Step " + describeStep(step) + " has an incomplete inputRef.");
 		}
 
 		String fromStepId = ref.getFromStepId();
 		String outputKey = ref.getKey();
+		String targetInput = ref.getTargetInput();
 		String stepId = step.getId();
+
+		AgentDefinition targetAgentDefinition = validateCurrentStepAgent(step);
+		validateTargetInput(step, targetAgentDefinition, targetInput);
 
 		if (!stepMap.containsKey(fromStepId)) {
 			throw badRequest("Step " + describeStep(step) + " references unknown source step "
@@ -260,7 +266,33 @@ public class SquadInputRefValidator {
 					+ describeStepLabel(fromStepId, stepMap) + " using output key '" + outputKey + "'.");
 		}
 
+		if (!seenTargetInputs.add(targetInput)) {
+			throw badRequest(
+					"Step " + describeStep(step) + " has a duplicate inputRef target input '" + targetInput + "'.");
+		}
+
 		validateInputRefOutput(step, fromStepId, outputKey, stepMap);
+	}
+
+	private AgentDefinition validateCurrentStepAgent(SquadStepRequest step) {
+		if (!(step instanceof AiAgentStepRequest aiAgentStepRequest)) {
+			throw badRequest("Step " + describeStep(step) + " must be an AI-agent step with an assigned agent.");
+		}
+
+		String agentKey = aiAgentStepRequest.getAgentKey();
+		if (agentKey == null || agentKey.isBlank()) {
+			throw badRequest("Step " + describeStep(step) + " must be an AI-agent step with an assigned agent.");
+		}
+
+		return agentRegistry.findByKey(agentKey).orElseThrow(
+				() -> badRequest("Step " + describeStep(step) + " references unknown agent '" + agentKey + "'."));
+	}
+
+	private void validateTargetInput(SquadStepRequest step, AgentDefinition agentDefinition, String targetInput) {
+		if (!agentDefinition.getInputs().contains(targetInput)) {
+			throw badRequest("Step " + describeStep(step) + " inputRef target input '" + targetInput
+					+ "' is not declared by agent '" + agentDefinition.getName() + "'.");
+		}
 	}
 
 	private void validateInputRefOutput(SquadStepRequest step, String fromStepId, String outputKey,

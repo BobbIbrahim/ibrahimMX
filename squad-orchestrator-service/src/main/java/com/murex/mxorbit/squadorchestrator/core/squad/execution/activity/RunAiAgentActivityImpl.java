@@ -47,7 +47,17 @@ public class RunAiAgentActivityImpl implements RunAiAgentActivity {
 	private Map<String, Object> resolveAgentInput(SquadStepExecutionRequest request) {
 		Map<String, Object> input = new LinkedHashMap<>();
 
+		if (request.getInputRefs() == null || request.getInputRefs().isEmpty()) {
+			return input;
+		}
+
 		for (StepInputRef inputRef : request.getInputRefs()) {
+			String targetInput = inputRef.getTargetInput();
+			if (targetInput == null || targetInput.isBlank()) {
+				throw resolutionFailure(request.getStepId(), inputRef.getFromStepId(), inputRef.getKey(),
+						"target-input-missing");
+			}
+
 			String fromStepId = inputRef.getFromStepId();
 			String key = inputRef.getKey();
 
@@ -59,10 +69,11 @@ public class RunAiAgentActivityImpl implements RunAiAgentActivity {
 				throw resolutionFailure(request.getStepId(), fromStepId, key, "key-missing");
 			}
 
-			@SuppressWarnings("unchecked")
-			Map<String, Object> fromStepInput = (Map<String, Object>) input.computeIfAbsent(fromStepId,
-					ignored -> new LinkedHashMap<String, Object>());
-			fromStepInput.put(key, fromStepOutput.get(key));
+			if (input.containsKey(targetInput)) {
+				throw resolutionFailure(request.getStepId(), fromStepId, key, "duplicate-target-input");
+			}
+
+			input.put(targetInput, fromStepOutput.get(key));
 		}
 
 		return input;

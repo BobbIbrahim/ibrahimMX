@@ -13,14 +13,14 @@ public class InMemoryAgentRegistry implements AgentRegistry {
 	private final Map<String, AgentDefinition> agentsByKey = new LinkedHashMap<>();
 
 	public InMemoryAgentRegistry() {
-		register(AgentDefinition.builder().agentKey("code-sentinel").name("Code Sentinel").inputs(List.of())
-				.outputs(List.of("message")).build());
+		register(AgentDefinition.builder().agentKey("code-sentinel").name("Code Sentinel")
+				.inputs(List.of("code", "requirements", "context")).outputs(List.of("message")).build());
 
-		register(AgentDefinition.builder().agentKey("test-weaver").name("Test Weaver").inputs(List.of())
-				.outputs(List.of("message")).build());
+		register(AgentDefinition.builder().agentKey("test-weaver").name("Test Weaver")
+				.inputs(List.of("code", "requirements", "testContext")).outputs(List.of("message")).build());
 
-		register(AgentDefinition.builder().agentKey("flow-architect").name("Flow Architect").inputs(List.of())
-				.outputs(List.of("message")).build());
+		register(AgentDefinition.builder().agentKey("flow-architect").name("Flow Architect")
+				.inputs(List.of("requirement", "context", "constraints")).outputs(List.of("message")).build());
 	}
 
 	@Override

@@ -246,7 +246,7 @@ export class SquadBuilderPage implements OnInit {
   }
 
   trackInputRef(index: number, inputRef: SquadBuilderInputRef): string {
-    return `${index}-${inputRef.fromStepId}-${inputRef.key}`;
+    return `${index}-${inputRef.targetInput}-${inputRef.fromStepId}-${inputRef.key}`;
   }
 
   getOutputKeysForSourceStepId(fromStepId: string | null): string[] {
