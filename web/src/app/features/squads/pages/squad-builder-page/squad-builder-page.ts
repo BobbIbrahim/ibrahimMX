@@ -72,6 +72,27 @@ export class SquadBuilderPage implements OnInit {
     return this.squadBuilderState.getAncestorSteps(selectedStep.id);
   });
 
+  readonly unmappedAgentInputsForSelectedStep = computed(() => {
+    const selectedStep = this.selectedStep();
+
+    if (!selectedStep?.assignedAgentId) {
+      return [];
+    }
+
+    const agent = this.getAgentByKey(selectedStep.assignedAgentId);
+    if (!agent?.inputs.length) {
+      return [];
+    }
+
+    const mappedTargetInputs = new Set(
+      selectedStep.inputRefs
+        .map((inputRef) => inputRef.targetInput)
+        .filter((targetInput): targetInput is string => Boolean(targetInput)),
+    );
+
+    return agent.inputs.filter((targetInput) => !mappedTargetInputs.has(targetInput));
+  });
+
   readonly isSaving = signal(false);
   readonly saveError = signal<string | null>(null);
   readonly saveSuccess = signal<string | null>(null);
@@ -101,6 +122,16 @@ export class SquadBuilderPage implements OnInit {
 
   readonly workflowReady = computed(() => {
     return this.validationIssueCount() === 0;
+  });
+
+  readonly canAddSelectedStepInputRef = computed(() => {
+    const selectedStep = this.selectedStep();
+
+    return (
+      Boolean(selectedStep?.assignedAgentId) &&
+      this.ancestorStepsForSelectedStep().length > 0 &&
+      this.unmappedAgentInputsForSelectedStep().length > 0
+    );
   });
 
   readonly agentNamesById = computed(() => {
@@ -200,6 +231,12 @@ export class SquadBuilderPage implements OnInit {
     this.squadBuilderState.addSelectedStepInputRef();
   }
 
+  updateSelectedStepInputRefTargetInput(index: number, targetInput: string): void {
+    this.squadBuilderState.updateSelectedStepInputRef(index, {
+      targetInput,
+    });
+  }
+
   updateSelectedStepInputRefSource(index: number, fromStepId: string | null): void {
     if (!fromStepId) {
       return;
@@ -247,6 +284,31 @@ export class SquadBuilderPage implements OnInit {
 
   trackInputRef(index: number, inputRef: SquadBuilderInputRef): string {
     return `${index}-${inputRef.targetInput}-${inputRef.fromStepId}-${inputRef.key}`;
+  }
+
+  getAvailableTargetInputsForInputRef(index: number): string[] {
+    const selectedStep = this.selectedStep();
+
+    if (!selectedStep?.assignedAgentId) {
+      return [];
+    }
+
+    const agent = this.getAgentByKey(selectedStep.assignedAgentId);
+    if (!agent?.inputs.length) {
+      return [];
+    }
+
+    const currentTargetInput = selectedStep.inputRefs[index]?.targetInput;
+    const otherMappedTargetInputs = new Set(
+      selectedStep.inputRefs
+        .filter((_, inputRefIndex) => inputRefIndex !== index)
+        .map((inputRef) => inputRef.targetInput)
+        .filter((targetInput): targetInput is string => Boolean(targetInput)),
+    );
+
+    return agent.inputs.filter(
+      (targetInput) => targetInput === currentTargetInput || !otherMappedTargetInputs.has(targetInput),
+    );
   }
 
   getOutputKeysForSourceStepId(fromStepId: string | null): string[] {

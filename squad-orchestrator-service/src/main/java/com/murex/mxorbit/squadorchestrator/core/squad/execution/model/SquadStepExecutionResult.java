@@ -25,5 +25,9 @@ public class SquadStepExecutionResult {
 
 	@Builder.Default
 	@NonNull
+	private Map<String, Object> input = new LinkedHashMap<>();
+
+	@Builder.Default
+	@NonNull
 	private Map<String, Object> output = new LinkedHashMap<>();
 }

@@ -185,7 +185,11 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
       startedAt,
       completedAt,
       durationMs: executionStep?.durationMs ?? null,
-      configuredInputRefs: squadStep?.inputRefs ?? [],
+      configuredInputRefs: squadStep?.inputRefs?.map((inputRef) => ({
+        targetInput: inputRef.targetInput,
+        fromStepId: inputRef.fromStepId,
+        key: inputRef.key,
+      })) ?? [],
       input: executionStep?.input,
       output: executionStep?.output,
       hasExecutionData,

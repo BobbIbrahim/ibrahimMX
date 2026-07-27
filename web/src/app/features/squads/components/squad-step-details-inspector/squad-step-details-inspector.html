@@ -97,9 +97,14 @@
         @for (inputRefRow of getInputInspectorRows(step()); track $index) {
         <article class="inspector-card">
           <div class="inspector-card__section">
-            <span class="inspector-entry__label">Source</span>
-            <p class="inspector-card__title">{{ inputRefRow.sourceStepName }}</p>
+          <span class="inspector-entry__label">Agent Input</span>
+          <span class="inspector-chip">{{ inputRefRow.targetInput }}</span>
           </div>
+
+        <div class="inspector-card__section">
+          <span class="inspector-entry__label">Source</span>
+          <p class="inspector-card__title">{{ inputRefRow.sourceStepName }}</p>
+        </div>
 
           <div class="inspector-card__section">
             <span class="inspector-entry__label">Consumed Output</span>

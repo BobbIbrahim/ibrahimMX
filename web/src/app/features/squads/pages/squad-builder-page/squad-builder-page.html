@@ -241,7 +241,7 @@
                   type="button"
                   mat-stroked-button
                   (click)="addSelectedStepInputRef()"
-                  [disabled]="ancestorStepsForSelectedStep().length === 0"
+                  [disabled]="!canAddSelectedStepInputRef()"
                 >
                   <mat-icon>add</mat-icon>
                   Add input
@@ -265,6 +265,21 @@
                           <mat-icon>delete</mat-icon>
                         </button>
                       </div>
+
+                      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                        <mat-label>Agent Input</mat-label>
+
+                        <mat-select
+                          [ngModel]="inputRef.targetInput"
+                          (ngModelChange)="updateSelectedStepInputRefTargetInput($index, $event)"
+                        >
+                          @for (targetInput of getAvailableTargetInputsForInputRef($index); track targetInput) {
+                            <mat-option [value]="targetInput">
+                              {{ targetInput }}
+                            </mat-option>
+                          }
+                        </mat-select>
+                      </mat-form-field>
 
                       <mat-form-field appearance="outline" subscriptSizing="dynamic">
                         <mat-label>Source Step</mat-label>

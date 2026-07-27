@@ -132,8 +132,8 @@ public class SquadExecutionWorkflowImpl implements SquadExecutionWorkflow {
 			}
 
 			resultsByStepId.put(step.getId(), stepExecutionResult);
-			markStepCompleted(step, stepInput, stepExecutionResult);
-			persistStepExecution(step, stepInput, stepExecutionResult);
+			markStepCompleted(step, stepExecutionResult.getInput(), stepExecutionResult);
+			persistStepExecution(step, stepExecutionResult.getInput(), stepExecutionResult);
 			finishedStepIds.add(step.getId());
 			return stepExecutionResult;
 		});
