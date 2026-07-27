@@ -4,6 +4,7 @@ import { Shell } from './core/layout/shell/shell';
 import { AgentRegistryPage } from './features/agent-registry/pages/agent-registry-page/agent-registry-page';
 import { AutopilotPage } from './features/autopilot/pages/autopilot-page/autopilot-page';
 import { ProjectRegistryPage } from './features/project-registry/pages/project-registry-page/project-registry-page';
+import { RunsDashboardPage } from './features/runs/pages/runs-dashboard-page/runs-dashboard-page';
 import { SquadsPage } from './features/squads/pages/squads-page/squads-page';
 import { AgentDetailsPage } from './features/agent-registry/pages/agent-details-page/agent-details-page';
 import { ProjectDetailsPage } from './features/project-registry/pages/project-details-page/project-details-page';
@@ -44,6 +45,11 @@ export const routes: Routes = [
         path: 'squads',
         component: SquadsPage,
         title: 'Squads',
+      },
+      {
+        path: 'runs',
+        component: RunsDashboardPage,
+        title: 'Squad Runs',
       },
       {
         path: 'squads/builder/new',

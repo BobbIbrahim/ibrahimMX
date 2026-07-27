@@ -43,6 +43,16 @@
       </a>
 
       <a
+        routerLink="/runs"
+        routerLinkActive="nav__link--active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="nav__link"
+      >
+        <mat-icon>monitor_heart</mat-icon>
+        <span>Runs</span>
+      </a>
+
+      <a
         routerLink="/autopilot"
         routerLinkActive="nav__link--active"
         [routerLinkActiveOptions]="{ exact: true }"

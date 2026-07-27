@@ -2,6 +2,16 @@ export type SquadStepExecutionStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FA
 
 export type SquadRunOverallStatus = 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 
+export interface SquadRunListItem {
+  squadId: string;
+  squadName: string;
+  squadRunId: string;
+  startedAt: string;
+  overallStatus?: SquadRunOverallStatus | null;
+  completedAt?: string | null;
+  durationMs?: number | null;
+}
+
 export interface SquadRunStartResponse {
   squadId: string;
   squadRunId: string;
