@@ -5,6 +5,7 @@ import { SelectedStepDetails } from './squad-step-details.types';
 type StepDetailsTab = 'inputs' | 'outputs' | 'developer';
 
 type InputInspectorRefRow = {
+  targetInput: string;
   sourceStepName: string;
   outputKey: string;
   value: unknown;
@@ -54,21 +55,15 @@ export class SquadStepDetailsInspector {
     }
 
     return step.configuredInputRefs.map((inputRef) => {
-      const sourcePayload = step.input ? step.input[inputRef.fromStepId] : undefined;
-      if (!this.isRecord(sourcePayload)) {
-        return {
-          sourceStepName: this.resolveStepName(inputRef.fromStepId),
-          outputKey: inputRef.key,
-          value: undefined,
-          hasResolvedValue: false,
-        };
-      }
+      const hasResolvedValue = Boolean(
+        step.input && Object.prototype.hasOwnProperty.call(step.input, inputRef.targetInput),
+      );
 
-      const hasResolvedValue = Object.prototype.hasOwnProperty.call(sourcePayload, inputRef.key);
       return {
+        targetInput: inputRef.targetInput,
         sourceStepName: this.resolveStepName(inputRef.fromStepId),
         outputKey: inputRef.key,
-        value: hasResolvedValue ? sourcePayload[inputRef.key] : undefined,
+        value: hasResolvedValue ? step.input?.[inputRef.targetInput] : undefined,
         hasResolvedValue,
       };
     });

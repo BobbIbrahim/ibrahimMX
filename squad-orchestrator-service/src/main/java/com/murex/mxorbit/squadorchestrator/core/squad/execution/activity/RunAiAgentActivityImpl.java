@@ -41,7 +41,7 @@ public class RunAiAgentActivityImpl implements RunAiAgentActivity {
 				"Executed step \"" + request.getStepName() + "\" using AI agent " + request.getAgentKey()));
 
 		return SquadStepExecutionResult.builder().stepId(request.getStepId()).status("COMPLETED").message(message)
-				.output(output).build();
+				.input(input).output(output).build();
 	}
 
 	private Map<String, Object> resolveAgentInput(SquadStepExecutionRequest request) {

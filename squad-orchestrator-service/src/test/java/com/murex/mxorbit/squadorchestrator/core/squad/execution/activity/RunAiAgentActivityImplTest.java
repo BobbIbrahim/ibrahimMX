@@ -25,6 +25,7 @@ class RunAiAgentActivityImplTest {
 				request(ref("step-1", "message", "requirements"), Map.of("step-1", Map.of("message", "value"))));
 
 		assertEquals(Map.of("requirements", "value"), executor.lastInput);
+		assertEquals(Map.of("requirements", "value"), result.getInput());
 		assertEquals("COMPLETED", result.getStatus());
 	}
 

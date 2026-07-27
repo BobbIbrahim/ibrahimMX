@@ -10,6 +10,7 @@ export type SelectedStepDetails = {
   completedAt: number | null;
   durationMs: number | null;
   configuredInputRefs: Array<{
+    targetInput: string;
     fromStepId: string;
     key: string;
   }>;
