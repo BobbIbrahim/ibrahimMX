@@ -4,6 +4,7 @@
 }
 
 .step-inspector {
+  flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -12,20 +13,27 @@
 
 .step-overview__card {
   border: 1px solid var(--color-border);
-  border-radius: 0.9rem;
-  background: var(--color-surface-soft);
-  padding: 0.9rem;
+  border-radius: var(--ui-card-radius);
+  background: var(--color-surface);
+  padding: 0.95rem 1rem;
+  box-shadow: 0 0.85rem 2rem color-mix(in srgb, var(--color-text-primary) 8%, transparent);
 }
 
-.step-overview__grid {
+.step-overview__row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.8rem 1rem;
 }
 
+.step-overview__row + .step-overview__row {
+  margin-top: 0.8rem;
+}
+
 .step-overview__field {
   display: grid;
   gap: 0.3rem;
+  min-width: 0;
+  align-content: start;
 }
 
 .step-overview__value {
@@ -33,7 +41,12 @@
   font-size: 0.88rem;
   font-weight: 600;
   line-height: 1.35;
+  text-align: left;
   overflow-wrap: anywhere;
+}
+
+.step-inspector--expanded .step-overview__card {
+  padding: 1rem 1.05rem;
 }
 
 .step-inspector--expanded {
@@ -51,36 +64,42 @@
   align-items: center;
   gap: 0.4rem;
   padding: 0.3rem;
-  border-radius: 0.75rem;
+  border-radius: var(--ui-card-radius);
   border: 1px solid var(--color-border);
-  background: var(--color-surface-soft);
+  background: var(--color-surface);
 }
 
 .step-inspector__tab {
   border: none;
   background: transparent;
   color: var(--color-text-secondary);
-  border-radius: 0.55rem;
-  padding: 0.45rem 0.7rem;
+  border-radius: 0.72rem;
+  padding: 0.5rem 0.8rem;
   font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  font-weight: 800;
+  letter-spacing: 0.02em;
   cursor: pointer;
-  transition: background-color 160ms ease, color 160ms ease;
+  transition: var(--ui-transition-surface);
 }
 
 .step-inspector__tab:hover {
   color: var(--color-text-primary);
-  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+}
+
+.step-inspector__tab:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-ring);
 }
 
 .step-inspector__tab--active {
-  color: var(--color-text-primary);
-  background: color-mix(in srgb, var(--color-accent) 20%, var(--color-surface));
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent) 24%, transparent);
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent) 20%, transparent);
 }
 
 .step-inspector__content {
+  flex: 1;
   min-height: 0;
   overflow-y: auto;
 }
@@ -94,40 +113,37 @@
 }
 
 .status-chip {
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
-  border-radius: 999px;
-  padding: 0.26rem 0.62rem;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+  border: 1px solid color-mix(in srgb, var(--color-border) 86%, transparent);
 }
 
 .status-chip--pending {
-  color: #6b7280;
-  background: rgba(107, 114, 128, 0.18);
+  color: var(--color-text-secondary);
+  border-color: color-mix(in srgb, var(--color-text-secondary) 24%, var(--color-border));
+  background: color-mix(in srgb, var(--color-text-secondary) 12%, transparent);
 }
 
 .status-chip--running {
-  color: #2563eb;
-  background: rgba(59, 130, 246, 0.18);
+  color: var(--color-accent);
+  border-color: color-mix(in srgb, var(--color-accent) 28%, var(--color-border));
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
 }
 
 .status-chip--completed {
-  color: #16a34a;
-  background: rgba(34, 197, 94, 0.18);
+  color: var(--color-success);
+  border-color: color-mix(in srgb, var(--color-success) 28%, var(--color-border));
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
 }
 
 .status-chip--failed {
-  color: #dc2626;
-  background: rgba(239, 68, 68, 0.18);
+  color: var(--color-danger);
+  border-color: color-mix(in srgb, var(--color-danger) 28%, var(--color-border));
+  background: color-mix(in srgb, var(--color-danger) 14%, transparent);
 }
 
 .status-chip--cancelled {
-  color: #111827;
-  background: rgba(31, 41, 55, 0.24);
+  color: var(--color-text-primary);
+  border-color: color-mix(in srgb, var(--color-text-primary) 18%, var(--color-border));
+  background: color-mix(in srgb, var(--color-text-primary) 10%, transparent);
 }
 
 .json-viewer {
@@ -155,7 +171,7 @@
 }
 
 .inspector-panel {
-  border-radius: 0.85rem;
+  border-radius: var(--ui-card-radius);
 }
 
 .inspector-panel__placeholder {
@@ -171,11 +187,12 @@
 
 .inspector-card {
   border: 1px solid var(--color-border);
-  border-radius: 0.85rem;
-  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
-  padding: 0.9rem;
+  border-radius: var(--ui-card-radius);
+  background: var(--color-surface);
+  padding: 0.95rem 1rem;
   display: grid;
   gap: 1rem;
+  box-shadow: 0 0.85rem 2rem color-mix(in srgb, var(--color-text-primary) 8%, transparent);
 }
 
 .inspector-card__section {
@@ -192,18 +209,21 @@
 }
 
 .inspector-chip {
-  width: fit-content;
   max-width: 100%;
-  padding: 0.22rem 0.6rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--color-accent) 20%, var(--color-surface-soft));
-  color: color-mix(in srgb, var(--color-accent) 86%, #ffffff 14%);
-  font-size: 0.76rem;
-  font-weight: 700;
-  line-height: 1.2;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 24%, var(--color-border));
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  color: color-mix(in srgb, var(--color-accent) 88%, var(--color-text-primary));
+  font-weight: 750;
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
+}
+
+.inspector-chip:hover,
+.inspector-chip:focus-visible {
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  box-shadow: var(--ui-focus-ring);
+  outline: none;
 }
 
 .inspector-entry__label {
@@ -218,9 +238,9 @@
   margin: 0;
   max-height: 11rem;
   overflow: auto;
-  padding: 0.75rem 0.8rem;
-  border-radius: 0.65rem;
-  background: color-mix(in srgb, var(--color-surface-soft) 92%, transparent);
+  padding: 0.8rem 0.9rem;
+  border-radius: 0.85rem;
+  background: color-mix(in srgb, var(--color-surface-soft) 86%, transparent);
   color: var(--color-text-primary);
   font-size: 0.82rem;
   line-height: 1.45;
@@ -231,14 +251,15 @@
 
 .developer-details {
   border: 1px solid var(--color-border);
-  border-radius: 0.85rem;
-  background: var(--color-surface-soft);
+  border-radius: var(--ui-card-radius);
+  background: var(--color-surface);
+  box-shadow: 0 0.85rem 2rem color-mix(in srgb, var(--color-text-primary) 8%, transparent);
 }
 
 .developer-details__content {
   display: grid;
   gap: 0.7rem;
-  padding: 0.8rem;
+  padding: 0.95rem 1rem;
 }
 
 .developer-details__meta {

@@ -4,7 +4,7 @@
 >
   <section class="step-overview">
     <article class="step-overview__card">
-      <div class="step-overview__grid">
+      <div class="step-overview__row">
         <div class="step-overview__field">
           <span class="inspector-entry__label">Step Name</span>
           <span class="step-overview__value">{{ step().stepName }}</span>
@@ -13,6 +13,9 @@
           <span class="inspector-entry__label">Agent</span>
           <span class="step-overview__value">{{ step().agentName }}</span>
         </div>
+      </div>
+
+      <div class="step-overview__row">
         <div class="step-overview__field">
           <span class="inspector-entry__label">Status</span>
           <span
@@ -27,6 +30,13 @@
           </span>
         </div>
         <div class="step-overview__field">
+          <span class="inspector-entry__label">Duration</span>
+          <span class="step-overview__value">{{ formatDuration(step().durationMs) }}</span>
+        </div>
+      </div>
+
+      <div class="step-overview__row">
+        <div class="step-overview__field">
           <span class="inspector-entry__label">Started At</span>
           <span class="step-overview__value">{{ formatTimestamp(step().startedAt) }}</span>
         </div>
@@ -34,10 +44,9 @@
           <span class="inspector-entry__label">Completed At</span>
           <span class="step-overview__value">{{ formatTimestamp(step().completedAt) }}</span>
         </div>
-        <div class="step-overview__field">
-          <span class="inspector-entry__label">Duration</span>
-          <span class="step-overview__value">{{ formatDuration(step().durationMs) }}</span>
-        </div>
+      </div>
+
+      <div class="step-overview__row">
         <div class="step-overview__field">
           <span class="inspector-entry__label">Inputs</span>
           <span class="step-overview__value">{{ getInputsSummary(step()) }}</span>

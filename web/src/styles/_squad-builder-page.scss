@@ -2,6 +2,71 @@
   min-height: calc(100vh - 4rem);
 }
 
+:root {
+  --ui-chip-min-height: 2rem;
+  --ui-chip-padding-y: 0.32rem;
+  --ui-chip-padding-x: 0.72rem;
+  --ui-chip-radius: 999px;
+  --ui-chip-font-size: 0.75rem;
+  --ui-chip-font-weight: 800;
+
+  --ui-card-radius: 1rem;
+  --ui-card-padding: 1rem;
+  --ui-card-shadow: 0 1rem 2.5rem color-mix(in srgb, var(--color-text-primary) 10%, transparent);
+
+  --ui-panel-radius: 1rem;
+  --ui-panel-padding: 0.45rem;
+  --ui-panel-shadow: 0 1.35rem 3rem color-mix(in srgb, var(--color-text-primary) 16%, transparent);
+
+  --ui-focus-ring:
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 26%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--color-accent) 18%, transparent);
+
+  --ui-transition-surface:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+@mixin orchestration-card($padding: var(--ui-card-padding), $radius: var(--ui-card-radius)) {
+  border: 1px solid var(--color-border);
+  border-radius: $radius;
+  background: var(--color-surface);
+  box-shadow: var(--ui-card-shadow);
+  padding: $padding;
+}
+
+@mixin orchestration-chip($uppercase: true) {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--ui-chip-min-height);
+  width: fit-content;
+  padding: var(--ui-chip-padding-y) var(--ui-chip-padding-x);
+  border-radius: var(--ui-chip-radius);
+  font-size: var(--ui-chip-font-size);
+  font-weight: var(--ui-chip-font-weight);
+  line-height: 1;
+  letter-spacing: 0.03em;
+  transition: var(--ui-transition-surface);
+
+  @if $uppercase {
+    text-transform: uppercase;
+  } @else {
+    text-transform: none;
+  }
+}
+
+@mixin orchestration-interactive-base {
+  transition: var(--ui-transition-surface);
+}
+
+@mixin orchestration-focus-ring {
+  outline: none;
+  box-shadow: var(--ui-focus-ring);
+}
+
 /* =========================================================
    Hero header
    ========================================================= */
@@ -1138,8 +1203,48 @@
   gap: 0.6rem;
 
   margin-top: 0.55rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.85rem;
+  background: color-mix(in srgb, var(--color-bg-elevated) 76%, transparent);
 
   font-size: 0.85rem;
+  line-height: 1.35;
+  transition: var(--ui-transition-surface);
+}
+
+.step-validation-item mat-icon {
+  flex: 0 0 auto;
+  font-size: 1.1rem;
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.step-validation-item--complete {
+  border-color: color-mix(in srgb, var(--color-success) 28%, var(--color-border));
+  background: color-mix(in srgb, var(--color-success) 10%, var(--color-bg-elevated));
+}
+
+.step-validation-item--complete mat-icon {
+  color: var(--color-success);
+}
+
+.step-validation-item--incomplete {
+  border-color: color-mix(in srgb, var(--color-warning) 30%, var(--color-border));
+  background: color-mix(in srgb, var(--color-warning) 10%, var(--color-bg-elevated));
+}
+
+.step-validation-item--incomplete mat-icon {
+  color: var(--color-warning);
+}
+
+.step-validation-item--incomplete span:last-child {
+  color: var(--color-text-primary);
+  font-weight: 700;
+}
+
+.step-validation-item--complete span:last-child {
+  font-weight: 600;
 }
 
 .agent-details-card {
@@ -1265,4 +1370,287 @@
 .builder-side-panel::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.25);
   border-radius: 999px;
+}
+
+/* =========================================================
+   Shared orchestration surfaces
+   ========================================================= */
+
+.builder-status-pill,
+.status-chip {
+  @include orchestration-chip();
+}
+
+.builder-status-pill {
+  border: 1px solid color-mix(in srgb, var(--color-accent) 34%, var(--color-border));
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  color: var(--color-accent);
+}
+
+.status-chip {
+  border: 1px solid color-mix(in srgb, var(--color-border) 86%, transparent);
+  background: color-mix(in srgb, var(--color-surface-soft) 82%, transparent);
+  color: var(--color-text-primary);
+}
+
+.status-chip--pending {
+  color: var(--color-text-secondary);
+  border-color: color-mix(in srgb, var(--color-text-secondary) 24%, var(--color-border));
+  background: color-mix(in srgb, var(--color-text-secondary) 12%, transparent);
+}
+
+.status-chip--running {
+  color: var(--color-accent);
+  border-color: color-mix(in srgb, var(--color-accent) 28%, var(--color-border));
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+}
+
+.status-chip--completed {
+  color: var(--color-success);
+  border-color: color-mix(in srgb, var(--color-success) 28%, var(--color-border));
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
+}
+
+.status-chip--failed {
+  color: var(--color-danger);
+  border-color: color-mix(in srgb, var(--color-danger) 28%, var(--color-border));
+  background: color-mix(in srgb, var(--color-danger) 14%, transparent);
+}
+
+.status-chip--cancelled {
+  color: var(--color-text-primary);
+  border-color: color-mix(in srgb, var(--color-text-primary) 18%, var(--color-border));
+  background: color-mix(in srgb, var(--color-text-primary) 10%, transparent);
+}
+
+.inspector-chip,
+.agent-output-chip {
+  @include orchestration-chip(false);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 24%, var(--color-border));
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  color: color-mix(in srgb, var(--color-accent) 88%, var(--color-text-primary));
+}
+
+.step-input-ref-card,
+.step-validation-card,
+.agent-details-card,
+.run-summary-card,
+.execution-summary-card,
+.step-overview__card,
+.inspector-card,
+.developer-details {
+  @include orchestration-card();
+}
+
+.step-input-ref-card {
+  gap: 0.8rem;
+  box-shadow: 0 0.9rem 2.1rem color-mix(in srgb, var(--color-text-primary) 8%, transparent);
+}
+
+.step-validation-card,
+.agent-details-card,
+.run-summary-card,
+.execution-summary-card,
+.step-overview__card,
+.inspector-card,
+.developer-details {
+  box-shadow: 0 0.85rem 2rem color-mix(in srgb, var(--color-text-primary) 8%, transparent);
+}
+
+.execution-summary-card {
+  padding: 0.95rem 1rem;
+}
+
+.run-summary-card {
+  padding: 1rem 1.1rem;
+}
+
+.step-overview__card,
+.inspector-card,
+.developer-details {
+  padding: 0.95rem 1rem;
+}
+
+.step-details-drawer {
+  @include orchestration-card(0);
+  overflow: hidden;
+}
+
+.step-details-drawer__header,
+.step-details-dialog__header {
+  padding: 1rem 1rem 0.9rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.step-details-drawer__content,
+.step-details-dialog__content {
+  padding: 1rem;
+}
+
+.agent-select-panel,
+.builder-select-panel {
+  padding: var(--ui-panel-padding) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--ui-panel-radius) !important;
+  background: var(--color-surface) !important;
+  color: var(--color-text-primary) !important;
+  box-shadow: var(--ui-panel-shadow) !important;
+  overflow: hidden !important;
+}
+
+.agent-select-panel.mat-mdc-select-panel,
+.builder-select-panel.mat-mdc-select-panel {
+  background: var(--color-surface) !important;
+  color: var(--color-text-primary) !important;
+}
+
+.agent-select-panel .mat-mdc-option,
+.builder-select-panel .mat-mdc-option {
+  min-height: 3.3rem;
+  margin-bottom: 0.25rem;
+  border-radius: 0.8rem;
+  color: var(--color-text-primary) !important;
+  background: transparent !important;
+  transition: var(--ui-transition-surface);
+}
+
+.agent-select-panel .mat-mdc-option:hover,
+.builder-select-panel .mat-mdc-option:hover,
+.agent-select-panel .mat-mdc-option.mdc-list-item--focused,
+.builder-select-panel .mat-mdc-option.mdc-list-item--focused,
+.agent-select-panel .mat-mdc-option:focus-visible,
+.builder-select-panel .mat-mdc-option:focus-visible {
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent) !important;
+}
+
+.agent-select-panel .mat-mdc-option.mdc-list-item--selected,
+.builder-select-panel .mat-mdc-option.mdc-list-item--selected {
+  background: color-mix(in srgb, var(--color-accent) 16%, transparent) !important;
+}
+
+.agent-select-panel .mat-mdc-option.mdc-list-item--selected .agent-option__content strong,
+.agent-select-panel .mat-mdc-option.mdc-list-item--selected .agent-option__content small,
+.builder-select-panel .mat-mdc-option.mdc-list-item--selected .agent-option__content strong,
+.builder-select-panel .mat-mdc-option.mdc-list-item--selected .agent-option__content small {
+  color: var(--color-text-primary) !important;
+}
+
+.agent-select-panel .mat-mdc-option.mdc-list-item--selected .agent-avatar,
+.builder-select-panel .mat-mdc-option.mdc-list-item--selected .agent-avatar {
+  background: color-mix(in srgb, var(--color-accent) 82%, var(--color-text-primary)) !important;
+  color: white !important;
+}
+
+.agent-select-panel .mat-pseudo-checkbox,
+.builder-select-panel .mat-pseudo-checkbox {
+  color: var(--color-accent) !important;
+}
+
+.builder-tab,
+.delete-step-button,
+.step-input-ref-card__header button,
+.follow-mode-button,
+.interaction-lock-button,
+.stop-workflow-button,
+.step-inspector__tab {
+  transition: var(--ui-transition-surface);
+}
+
+.builder-tab:hover:not(:disabled),
+.builder-tab:focus-visible {
+  color: var(--color-text-primary);
+  border-color: color-mix(in srgb, var(--color-accent) 32%, var(--color-border));
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+}
+
+.builder-tab--active {
+  color: var(--color-accent);
+  border-color: color-mix(in srgb, var(--color-accent) 34%, var(--color-border));
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent) 18%, transparent);
+}
+
+.delete-step-button:hover,
+.delete-step-button:focus-visible {
+  color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+}
+
+.delete-step-button:focus-visible,
+.step-input-ref-card__header button:focus-visible,
+.follow-mode-button:focus-visible,
+.interaction-lock-button:focus-visible,
+.stop-workflow-button:focus-visible,
+.step-inspector__tab:focus-visible {
+  @include orchestration-focus-ring;
+}
+
+.step-input-ref-card__header button:hover,
+.step-input-ref-card__header button:focus-visible {
+  color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+}
+
+.follow-mode-button {
+  min-width: 7rem;
+  border-color: color-mix(in srgb, var(--color-accent) 34%, var(--color-border)) !important;
+  color: var(--color-text-secondary) !important;
+}
+
+.follow-mode-button:hover:not(:disabled),
+.follow-mode-button:focus-visible {
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent) 58%, var(--color-border)) !important;
+  color: var(--color-accent) !important;
+}
+
+.follow-mode-button--active {
+  border-color: color-mix(in srgb, var(--color-accent) 64%, var(--color-border)) !important;
+  background: color-mix(in srgb, var(--color-accent) 16%, transparent);
+  color: var(--color-accent) !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent) 18%, transparent);
+}
+
+.interaction-lock-button {
+  min-width: 7rem;
+  border-color: color-mix(in srgb, var(--color-warning) 34%, var(--color-border)) !important;
+  color: var(--color-text-secondary) !important;
+}
+
+.interaction-lock-button:hover:not(:disabled),
+.interaction-lock-button:focus-visible {
+  background: color-mix(in srgb, var(--color-warning) 10%, transparent);
+  border-color: color-mix(in srgb, var(--color-warning) 58%, var(--color-border)) !important;
+  color: var(--color-warning) !important;
+}
+
+.interaction-lock-button--active {
+  border-color: color-mix(in srgb, var(--color-warning) 64%, var(--color-border)) !important;
+  background: color-mix(in srgb, var(--color-warning) 16%, transparent);
+  color: var(--color-warning) !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-warning) 18%, transparent);
+}
+
+.stop-workflow-button {
+  min-width: 6rem;
+  border-color: color-mix(in srgb, var(--color-danger) 36%, var(--color-border)) !important;
+  color: var(--color-danger) !important;
+}
+
+.stop-workflow-button:hover:not(:disabled),
+.stop-workflow-button:focus-visible {
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-danger) 62%, var(--color-border)) !important;
+}
+
+.step-inspector__tab:hover,
+.step-inspector__tab:focus-visible {
+  color: var(--color-text-primary);
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+}
+
+.step-inspector__tab--active {
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent) 20%, transparent);
 }
