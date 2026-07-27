@@ -134,18 +134,39 @@
             <section class="step-validation-card">
               <span class="side-panel__eyebrow">STEP STATUS</span>
 
-              <div class="step-validation-item">
-                <span>{{ validation.hasAgent ? '✅' : '⚠️' }}</span>
+              <div
+                class="step-validation-item"
+                [class.step-validation-item--complete]="validation.hasAgent"
+                [class.step-validation-item--incomplete]="!validation.hasAgent"
+                [attr.aria-label]="'Agent Assigned ' + (validation.hasAgent ? 'complete' : 'incomplete')"
+              >
+                <mat-icon aria-hidden="true">
+                  {{ validation.hasAgent ? 'check_circle' : 'warning' }}
+                </mat-icon>
                 <span>Agent Assigned</span>
               </div>
 
-              <div class="step-validation-item">
-                <span>{{ validation.hasConnections ? '✅' : '⚠️' }}</span>
+              <div
+                class="step-validation-item"
+                [class.step-validation-item--complete]="validation.hasConnections"
+                [class.step-validation-item--incomplete]="!validation.hasConnections"
+                [attr.aria-label]="'Connected To Workflow ' + (validation.hasConnections ? 'complete' : 'incomplete')"
+              >
+                <mat-icon aria-hidden="true">
+                  {{ validation.hasConnections ? 'check_circle' : 'warning' }}
+                </mat-icon>
                 <span>Connected To Workflow</span>
               </div>
 
-              <div class="step-validation-item">
-                <span>{{ validation.hasInputMappings ? '✅' : '⚠️' }}</span>
+              <div
+                class="step-validation-item"
+                [class.step-validation-item--complete]="validation.hasInputMappings"
+                [class.step-validation-item--incomplete]="!validation.hasInputMappings"
+                [attr.aria-label]="'Input Mapping Configured ' + (validation.hasInputMappings ? 'complete' : 'incomplete')"
+              >
+                <mat-icon aria-hidden="true">
+                  {{ validation.hasInputMappings ? 'check_circle' : 'warning' }}
+                </mat-icon>
                 <span>Input Mapping Configured</span>
               </div>
             </section>
@@ -270,6 +291,7 @@
                         <mat-label>Agent Input</mat-label>
 
                         <mat-select
+                          panelClass="builder-select-panel"
                           [ngModel]="inputRef.targetInput"
                           (ngModelChange)="updateSelectedStepInputRefTargetInput($index, $event)"
                         >
@@ -285,6 +307,7 @@
                         <mat-label>Source Step</mat-label>
 
                         <mat-select
+                          panelClass="builder-select-panel"
                           [ngModel]="inputRef.fromStepId"
                           (ngModelChange)="updateSelectedStepInputRefSource($index, $event)"
                         >
@@ -300,6 +323,7 @@
                         <mat-label>Output Key</mat-label>
 
                         <mat-select
+                          panelClass="builder-select-panel"
                           [ngModel]="inputRef.key"
                           (ngModelChange)="updateSelectedStepInputRefKey($index, $event)"
                           [disabled]="!inputRef.fromStepId"
