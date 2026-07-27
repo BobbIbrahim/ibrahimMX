@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -85,9 +86,14 @@ public class SquadRunProviderService implements SquadRunProvider {
 
 	private SquadRunSummary toSquadRunSummary(WorkflowExecutionSummary execution) {
 		Map<String, String> memo = execution.getMemo();
+		Long durationMs = null;
+		if (execution.getStartTime() != null && execution.getCloseTime() != null) {
+			durationMs = Duration.between(execution.getStartTime(), execution.getCloseTime()).toMillis();
+		}
 
 		return SquadRunSummary.builder().squadId(memo.get(SquadRunMemoKeys.SQUAD_ID))
 				.squadName(memo.get(SquadRunMemoKeys.SQUAD_NAME)).squadRunId(execution.getWorkflowId())
-				.startedAt(execution.getStartTime()).build();
+				.startedAt(execution.getStartTime()).overallStatus(execution.getStatus())
+				.completedAt(execution.getCloseTime()).durationMs(durationMs).build();
 	}
 }

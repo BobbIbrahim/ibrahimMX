@@ -89,6 +89,10 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
     return this.route.snapshot.paramMap.get('squadId');
   });
 
+  readonly squadRunId = computed(() => {
+    return this.route.snapshot.queryParamMap.get('runId');
+  });
+
   readonly agentNamesById = computed(() => {
     return this.agents().reduce<Record<string, string>>((agentNames, agent) => {
       agentNames[agent.agentKey] = agent.name;
@@ -208,6 +212,7 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadSquad();
+    this.loadExistingRun();
   }
 
   ngOnDestroy(): void {
@@ -251,6 +256,36 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
         console.error('Failed to start workflow', error);
 
         this.executionEvents.update((events) => [...events, 'Failed to start workflow']);
+      },
+    });
+  }
+
+  private loadExistingRun(): void {
+    const squadRunId = this.squadRunId();
+
+    if (!squadRunId) {
+      return;
+    }
+
+    this.activeSquadRunId.set(squadRunId);
+    this.executionEvents.set(['Loading existing run...']);
+
+    this.squadService.getSquadRunStatus(squadRunId).subscribe({
+      next: (status) => {
+        this.executionStatus.set(status);
+        this.executionEvents.set(status.steps.map((step) => `${step.stepName}: ${step.status}`));
+
+        if (
+          status.overallStatus !== 'COMPLETED' &&
+          status.overallStatus !== 'FAILED' &&
+          status.overallStatus !== 'CANCELLED'
+        ) {
+          this.startPolling(squadRunId);
+        }
+      },
+      error: (error) => {
+        console.error('Failed to load existing squad run', error);
+        this.executionEvents.set(['Failed to load existing run']);
       },
     });
   }
@@ -411,10 +446,7 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
           this.stopPolling();
           this.stopTimer();
 
-          this.executionStatus.set({
-            ...status,
-            overallStatus: 'CANCELLED',
-          });
+          this.executionStatus.set(status);
 
           this.executionEvents.update((events) => [...events, 'Workflow cancelled']);
         },

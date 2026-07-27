@@ -5,7 +5,7 @@ import { Observable, map, tap } from 'rxjs';
 import { SquadBuilderInputRef, SquadSavePayload } from '../models/squad-builder.model';
 import { Squad } from '../models/squad.model';
 
-import { SquadExecutionStatus, SquadRunStartResponse } from '../models/squad-run.model';
+import { SquadExecutionStatus, SquadRunListItem, SquadRunStartResponse } from '../models/squad-run.model';
 
 export interface SquadApiStepResponse {
   id: string;
@@ -109,6 +109,10 @@ export class SquadService {
 
   startSquadRun(squadId: string): Observable<SquadRunStartResponse> {
     return this.http.post<SquadRunStartResponse>(`${this.baseUrl}/squads/${squadId}/runs`, {});
+  }
+
+  getSquadRuns(): Observable<SquadRunListItem[]> {
+    return this.http.get<SquadRunListItem[]>(`${this.baseUrl}/squads/runs`);
   }
 
   getSquadRunStatus(squadRunId: string): Observable<SquadExecutionStatus> {

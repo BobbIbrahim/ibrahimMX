@@ -22,4 +22,8 @@ public class WorkflowExecutionSummary {
 
 	@NonNull
 	private Map<String, String> memo;
+
+	private WorkflowRunStatus status;
+
+	private Instant closeTime;
 }

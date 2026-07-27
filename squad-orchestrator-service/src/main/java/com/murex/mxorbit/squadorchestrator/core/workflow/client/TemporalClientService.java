@@ -70,7 +70,7 @@ public class TemporalClientService implements TemporalClient {
 	@Override
 	public List<WorkflowExecutionSummary> listWorkflowExecutions(String workflowType) {
 		List<WorkflowExecutionSummary> summaries = new ArrayList<>();
-		String query = "WorkflowType = '" + workflowType + "' AND ExecutionStatus = 'Running'";
+		String query = "WorkflowType = '" + workflowType + "'";
 		ByteString nextPageToken = ByteString.EMPTY;
 		do {
 			ListWorkflowExecutionsRequest request = ListWorkflowExecutionsRequest.newBuilder()
@@ -110,8 +110,13 @@ public class TemporalClientService implements TemporalClient {
 	}
 
 	private WorkflowExecutionSummary toWorkflowExecutionSummary(WorkflowExecutionInfo info) {
-		return WorkflowExecutionSummary.builder().workflowId(info.getExecution().getWorkflowId())
-				.startTime(toInstant(info.getStartTime())).memo(decodeMemo(info.getMemo())).build();
+		WorkflowExecutionSummary.WorkflowExecutionSummaryBuilder builder = WorkflowExecutionSummary.builder()
+				.workflowId(info.getExecution().getWorkflowId()).startTime(toInstant(info.getStartTime()))
+				.memo(decodeMemo(info.getMemo())).status(mapStatus(info.getStatus()));
+		if (info.hasCloseTime() && info.getCloseTime().getSeconds() > 0) {
+			builder.closeTime(toInstant(info.getCloseTime()));
+		}
+		return builder.build();
 	}
 
 	private Instant toInstant(Timestamp timestamp) {
@@ -133,6 +138,10 @@ public class TemporalClientService implements TemporalClient {
 		}
 		if (status == WorkflowExecutionStatus.WORKFLOW_EXECUTION_STATUS_COMPLETED) {
 			return WorkflowRunStatus.COMPLETED;
+		}
+		if (status == WorkflowExecutionStatus.WORKFLOW_EXECUTION_STATUS_CANCELED
+				|| status == WorkflowExecutionStatus.WORKFLOW_EXECUTION_STATUS_TERMINATED) {
+			return WorkflowRunStatus.CANCELLED;
 		}
 		return WorkflowRunStatus.FAILED;
 	}

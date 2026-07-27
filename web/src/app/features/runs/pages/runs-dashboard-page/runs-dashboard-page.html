@@ -1,0 +1,169 @@
+<section class="feature-page" [attr.aria-busy]="isLoading()">
+  <app-page-header
+    eyebrow="RUNS"
+    title="Squad Runs"
+    description="Monitor running, completed, and failed squad executions across the platform."
+    actionLabel="Refresh"
+    actionIcon="refresh"
+    (actionClick)="refresh()"
+  />
+
+  <section class="runs-stats" aria-label="Squad run statistics">
+    <article>
+      <span>Running</span>
+      <strong>{{ runningCount() }}</strong>
+      <small>Currently in progress</small>
+    </article>
+
+    <article>
+      <span>Completed</span>
+      <strong>{{ completedCount() }}</strong>
+      <small>Finished successfully</small>
+    </article>
+
+    <article>
+      <span>Failed</span>
+      <strong>{{ failedCount() }}</strong>
+      <small>Ended with errors</small>
+    </article>
+
+    <article>
+      <span>Total</span>
+      <strong>{{ totalCount() }}</strong>
+      <small>Across all squad runs</small>
+    </article>
+  </section>
+
+  <section class="runs-toolbar" aria-label="Squad run filters">
+    <div class="runs-toolbar__top">
+      <mat-form-field appearance="outline" class="runs-search" subscriptSizing="dynamic">
+        <mat-icon matPrefix>search</mat-icon>
+
+        <input
+          matInput
+          type="search"
+          placeholder="Search by squad name or run id"
+          [ngModel]="searchTerm()"
+          (ngModelChange)="searchTerm.set($event)"
+        />
+      </mat-form-field>
+    </div>
+
+    <div class="runs-toolbar__bottom">
+      <div class="filter-pills" aria-label="Squad run status filters">
+        <button
+          type="button"
+          class="filter-pill"
+          [class.filter-pill--active]="statusFilter() === 'all'"
+          (click)="statusFilter.set('all')"
+        >
+          All
+        </button>
+
+        <button
+          type="button"
+          class="filter-pill"
+          [class.filter-pill--active]="statusFilter() === 'RUNNING'"
+          (click)="statusFilter.set('RUNNING')"
+        >
+          Running
+        </button>
+
+        <button
+          type="button"
+          class="filter-pill"
+          [class.filter-pill--active]="statusFilter() === 'COMPLETED'"
+          (click)="statusFilter.set('COMPLETED')"
+        >
+          Completed
+        </button>
+
+        <button
+          type="button"
+          class="filter-pill"
+          [class.filter-pill--active]="statusFilter() === 'FAILED'"
+          (click)="statusFilter.set('FAILED')"
+        >
+          Failed
+        </button>
+
+        <button
+          type="button"
+          class="filter-pill"
+          [class.filter-pill--active]="statusFilter() === 'CANCELLED'"
+          (click)="statusFilter.set('CANCELLED')"
+        >
+          Cancelled
+        </button>
+      </div>
+
+      <button type="button" mat-stroked-button class="clear-button" (click)="clearFilters()">
+        <mat-icon>restart_alt</mat-icon>
+        Clear
+      </button>
+    </div>
+  </section>
+
+  @if (loadError()) {
+    <section class="squad-feedback squad-feedback--error">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ loadError() }}</span>
+    </section>
+  }
+
+  <p class="runs-result-count">
+    Showing {{ filteredRuns().length }} of {{ totalCount() }} runs
+  </p>
+
+  @if (filteredRuns().length > 0) {
+    <table class="runs-table">
+      <thead>
+        <tr>
+          <th>Status</th>
+          <th>Squad</th>
+          <th>Run ID</th>
+          <th>Started</th>
+          <th>Ended</th>
+          <th>Duration</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        @for (run of filteredRuns(); track run.squadRunId) {
+          <tr
+            role="button"
+            tabindex="0"
+            (click)="openRun(run)"
+            (keydown.enter)="openRun(run)"
+          >
+            <td>
+              <span
+                class="runs-status"
+                [class.runs-status--running]="run.overallStatus === 'RUNNING'"
+                [class.runs-status--completed]="run.overallStatus === 'COMPLETED'"
+                [class.runs-status--failed]="run.overallStatus === 'FAILED'"
+                [class.runs-status--cancelled]="run.overallStatus === 'CANCELLED'"
+                [class.runs-status--unknown]="!run.overallStatus"
+              >
+                {{ getStatusLabel(run.overallStatus) }}
+              </span>
+            </td>
+            <td>{{ run.squadName }}</td>
+            <td>
+              <code class="runs-table__run-id">{{ run.squadRunId }}</code>
+            </td>
+            <td>{{ run.startedAt }}</td>
+            <td>{{ run.completedAt ?? '—' }}</td>
+            <td>{{ formatDuration(run.durationMs) }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else {
+    <section class="squad-empty-state">
+      <mat-icon>monitor_heart</mat-icon>
+
+      <h2>No squad runs found.</h2>
+    </section>
+  }
+</section>
