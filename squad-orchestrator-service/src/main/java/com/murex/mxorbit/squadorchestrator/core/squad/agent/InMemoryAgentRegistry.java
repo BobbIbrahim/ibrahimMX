@@ -14,13 +14,13 @@ public class InMemoryAgentRegistry implements AgentRegistry {
 
 	public InMemoryAgentRegistry() {
 		register(AgentDefinition.builder().agentKey("code-sentinel").name("Code Sentinel")
-				.inputs(List.of("code", "requirements", "context")).outputs(List.of("message")).build());
+				.inputs(List.of("code", "requirements", "context")).outputs(List.of("message", "review", "summary")).build());
 
 		register(AgentDefinition.builder().agentKey("test-weaver").name("Test Weaver")
-				.inputs(List.of("code", "requirements", "testContext")).outputs(List.of("message")).build());
+				.inputs(List.of("code", "requirements", "testContext")).outputs(List.of("message", "tests", "coverage")).build());
 
 		register(AgentDefinition.builder().agentKey("flow-architect").name("Flow Architect")
-				.inputs(List.of("requirement", "context", "constraints")).outputs(List.of("message")).build());
+				.inputs(List.of("requirement", "context", "constraints")).outputs(List.of("message", "plan", "steps")).build());
 	}
 
 	@Override
