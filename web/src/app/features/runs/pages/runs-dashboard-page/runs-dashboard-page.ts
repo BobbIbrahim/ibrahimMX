@@ -1,10 +1,11 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
 
 import { SquadRunListItem, SquadRunOverallStatus } from '../../../../core/models/squad-run.model';
@@ -21,19 +22,24 @@ import { PageHeader } from '../../../../shared/components/page-header/page-heade
     MatIconModule,
     MatInputModule,
     MatSelectModule,
+    MatTooltipModule,
   ],
   templateUrl: './runs-dashboard-page.html',
   styleUrl: './runs-dashboard-page.scss',
 })
-export class RunsDashboardPage implements OnInit {
+export class RunsDashboardPage implements OnInit, OnDestroy {
   private readonly squadService = inject(SquadService);
   private readonly router = inject(Router);
+  private autoRefreshHandle?: number;
 
   readonly runs = signal<SquadRunListItem[]>([]);
   readonly isLoading = signal(false);
   readonly loadError = signal<string | null>(null);
   readonly searchTerm = signal('');
   readonly statusFilter = signal<'all' | SquadRunOverallStatus>('all');
+  readonly copiedRunId = signal<string | null>(null);
+  readonly autoRefreshEnabled = signal(false);
+  readonly lastUpdated = signal<Date | null>(null);
 
   readonly runningCount = computed(() => {
     return this.runs().filter((run) => run.overallStatus === 'RUNNING').length;
@@ -45,6 +51,10 @@ export class RunsDashboardPage implements OnInit {
 
   readonly failedCount = computed(() => {
     return this.runs().filter((run) => run.overallStatus === 'FAILED').length;
+  });
+
+  readonly cancelledCount = computed(() => {
+    return this.runs().filter((run) => run.overallStatus === 'CANCELLED').length;
   });
 
   readonly totalCount = computed(() => this.runs().length);
@@ -72,6 +82,10 @@ export class RunsDashboardPage implements OnInit {
 
   ngOnInit(): void {
     this.loadRuns();
+  }
+
+  ngOnDestroy(): void {
+    this.stopAutoRefresh();
   }
 
   refresh(): void {
@@ -110,6 +124,26 @@ export class RunsDashboardPage implements OnInit {
     return `${seconds}s`;
   }
 
+  formatTimestamp(timestamp: string | null | undefined): string {
+    if (!timestamp) {
+      return '—';
+    }
+
+    const parsed = new Date(timestamp);
+
+    if (Number.isNaN(parsed.getTime())) {
+      return '—';
+    }
+
+    return parsed.toLocaleString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+
   getStatusLabel(status: SquadRunOverallStatus | null | undefined): string {
     switch (status) {
       case 'RUNNING':
@@ -125,6 +159,50 @@ export class RunsDashboardPage implements OnInit {
     }
   }
 
+  copyRunId(squadRunId: string, event: Event): void {
+    event.stopPropagation();
+
+    void navigator.clipboard.writeText(squadRunId).then(() => {
+      this.copiedRunId.set(squadRunId);
+      window.setTimeout(() => {
+        if (this.copiedRunId() === squadRunId) {
+          this.copiedRunId.set(null);
+        }
+      }, 1500);
+    });
+  }
+
+  toggleAutoRefresh(): void {
+    if (this.autoRefreshEnabled()) {
+      this.stopAutoRefresh();
+      this.autoRefreshEnabled.set(false);
+    } else {
+      this.autoRefreshEnabled.set(true);
+      this.autoRefreshHandle = window.setInterval(() => {
+        this.loadRuns();
+      }, 5000);
+    }
+  }
+
+  formatLastUpdated(): string {
+    if (!this.lastUpdated()) {
+      return '—';
+    }
+
+    return this.lastUpdated()!.toLocaleTimeString(undefined, {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+  }
+
+  private stopAutoRefresh(): void {
+    if (this.autoRefreshHandle !== undefined) {
+      clearInterval(this.autoRefreshHandle);
+      this.autoRefreshHandle = undefined;
+    }
+  }
+
   private loadRuns(): void {
     this.isLoading.set(true);
     this.loadError.set(null);
@@ -132,6 +210,7 @@ export class RunsDashboardPage implements OnInit {
     this.squadService.getSquadRuns().subscribe({
       next: (runs) => {
         this.runs.set(runs);
+        this.lastUpdated.set(new Date());
         this.isLoading.set(false);
       },
       error: (error) => {

@@ -18,6 +18,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 @Slf4j
 @Service
@@ -60,7 +61,7 @@ public class SquadRunProviderService implements SquadRunProvider {
 
 	private void enrichWithStepExecutionData(String squadRunId, SquadExecutionStatus status) {
 		var stepExecutionDataMap = squadStepExecutionJpaStore.findBySquadRunId(squadRunId).stream()
-				.collect(java.util.stream.Collectors.toMap(data -> data.getStepId(), data -> data));
+				.collect(java.util.stream.Collectors.toMap(SquadStepExecutionData::getStepId, Function.identity()));
 
 		status.getSteps().forEach(step -> {
 			var executionData = stepExecutionDataMap.get(step.getStepId());
@@ -87,7 +88,7 @@ public class SquadRunProviderService implements SquadRunProvider {
 	private SquadRunSummary toSquadRunSummary(WorkflowExecutionSummary execution) {
 		Map<String, String> memo = execution.getMemo();
 		Long durationMs = null;
-		if (execution.getStartTime() != null && execution.getCloseTime() != null) {
+		if (execution.getCloseTime() != null) {
 			durationMs = Duration.between(execution.getStartTime(), execution.getCloseTime()).toMillis();
 		}
 

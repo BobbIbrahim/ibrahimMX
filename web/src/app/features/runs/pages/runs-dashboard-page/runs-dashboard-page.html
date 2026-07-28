@@ -2,7 +2,7 @@
   <app-page-header
     eyebrow="RUNS"
     title="Squad Runs"
-    description="Monitor running, completed, and failed squad executions across the platform."
+    description="Monitor running, completed, failed, and cancelled squad executions across the platform."
     actionLabel="Refresh"
     actionIcon="refresh"
     (actionClick)="refresh()"
@@ -25,6 +25,12 @@
       <span>Failed</span>
       <strong>{{ failedCount() }}</strong>
       <small>Ended with errors</small>
+    </article>
+
+    <article>
+      <span>Cancelled</span>
+      <strong>{{ cancelledCount() }}</strong>
+      <small>Stopped by a user</small>
     </article>
 
     <article>
@@ -111,6 +117,20 @@
     </section>
   }
 
+  <div class="runs-refresh-bar">
+    <button
+      type="button"
+      class="runs-autorefresh"
+      [class.runs-autorefresh--active]="autoRefreshEnabled()"
+      (click)="toggleAutoRefresh()"
+      [matTooltip]="autoRefreshEnabled() ? 'Auto-refresh on (every 5s)' : 'Auto-refresh off'"
+    >
+      <mat-icon>autorenew</mat-icon>
+      <span>Auto-refresh</span>
+    </button>
+    <span class="runs-last-updated">Updated {{ formatLastUpdated() }}</span>
+  </div>
+
   <p class="runs-result-count">
     Showing {{ filteredRuns().length }} of {{ totalCount() }} runs
   </p>
@@ -150,10 +170,27 @@
             </td>
             <td>{{ run.squadName }}</td>
             <td>
-              <code class="runs-table__run-id">{{ run.squadRunId }}</code>
+              <div class="runs-table__run-id-cell">
+                <code
+                  class="runs-table__run-id"
+                  [matTooltip]="run.squadRunId"
+                  matTooltipClass="runs-id-tooltip"
+                >
+                  {{ run.squadRunId }}
+                </code>
+                <button
+                  type="button"
+                  class="runs-copy-button"
+                  [attr.aria-label]="'Copy run id ' + run.squadRunId"
+                  [matTooltip]="copiedRunId() === run.squadRunId ? 'Copied' : 'Copy run id'"
+                  (click)="copyRunId(run.squadRunId, $event)"
+                >
+                  <mat-icon>{{ copiedRunId() === run.squadRunId ? 'check' : 'content_copy' }}</mat-icon>
+                </button>
+              </div>
             </td>
-            <td>{{ run.startedAt }}</td>
-            <td>{{ run.completedAt ?? '—' }}</td>
+            <td>{{ formatTimestamp(run.startedAt) }}</td>
+            <td>{{ formatTimestamp(run.completedAt) }}</td>
             <td>{{ formatDuration(run.durationMs) }}</td>
           </tr>
         }
