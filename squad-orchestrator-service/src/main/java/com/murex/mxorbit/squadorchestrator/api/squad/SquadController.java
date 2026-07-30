@@ -74,8 +74,9 @@ public class SquadController implements SquadApi {
 		log.debug("Received request to get all squad runs");
 		return ResponseEntity.ok(squadFacade.getSquadRuns().stream()
 				.map(run -> SquadRunListApiResponse.builder().squadId(run.getSquadId()).squadName(run.getSquadName())
-						.squadRunId(run.getSquadRunId()).startedAt(run.getStartedAt()).overallStatus(run.getOverallStatus())
-						.completedAt(run.getCompletedAt()).durationMs(run.getDurationMs()).build())
+						.squadRunId(run.getSquadRunId()).startedAt(run.getStartedAt())
+						.overallStatus(run.getOverallStatus()).completedAt(run.getCompletedAt())
+						.durationMs(run.getDurationMs()).build())
 				.toList());
 	}
 

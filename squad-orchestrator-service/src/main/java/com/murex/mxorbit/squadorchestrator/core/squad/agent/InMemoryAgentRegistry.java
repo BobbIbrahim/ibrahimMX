@@ -5,22 +5,33 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 public class InMemoryAgentRegistry implements AgentRegistry {
 
+	private static final String CHANGE_CLASSIFIER = "change-classifier";
+	private static final String TEST_SELECTOR = "test-selector";
+	private static final String DEPLOYMENT_PLANNER = "deployment-planner";
+
 	private final Map<String, AgentDefinition> agentsByKey = new LinkedHashMap<>();
 
-	public InMemoryAgentRegistry() {
-		register(AgentDefinition.builder().agentKey("code-sentinel").name("Code Sentinel")
-				.inputs(List.of("code", "requirements", "context")).outputs(List.of("message", "review", "summary")).build());
+	public InMemoryAgentRegistry(@Value("${agent-service.base-url}") String agentServiceBaseUrl) {
+		if (!StringUtils.hasText(agentServiceBaseUrl)) {
+			throw new IllegalArgumentException("agent-service.base-url must not be blank.");
+		}
 
-		register(AgentDefinition.builder().agentKey("test-weaver").name("Test Weaver")
-				.inputs(List.of("code", "requirements", "testContext")).outputs(List.of("message", "tests", "coverage")).build());
+		register(AgentDefinition.builder().agentKey(CHANGE_CLASSIFIER).name(CHANGE_CLASSIFIER)
+				.serviceUrl(agentServiceBaseUrl).inputs(List.of("change")).outputs(List.of("changeType")).build());
 
-		register(AgentDefinition.builder().agentKey("flow-architect").name("Flow Architect")
-				.inputs(List.of("requirement", "context", "constraints")).outputs(List.of("message", "plan", "steps")).build());
+		register(AgentDefinition.builder().agentKey(TEST_SELECTOR).name(TEST_SELECTOR).serviceUrl(agentServiceBaseUrl)
+				.inputs(List.of("change", "changeType")).outputs(List.of("test")).build());
+
+		register(AgentDefinition.builder().agentKey(DEPLOYMENT_PLANNER).name(DEPLOYMENT_PLANNER)
+				.serviceUrl(agentServiceBaseUrl).inputs(List.of("change", "changeType", "test"))
+				.outputs(List.of("nextAction")).build());
 	}
 
 	@Override
