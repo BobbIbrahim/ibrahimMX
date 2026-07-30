@@ -28,4 +28,8 @@ public class AgentDefinition {
 	@Builder.Default
 	@NonNull
 	private List<String> outputs = new ArrayList<>();
+
+	@Builder.Default
+	@NonNull
+	private String serviceUrl = "http://localhost:8000";
 }
