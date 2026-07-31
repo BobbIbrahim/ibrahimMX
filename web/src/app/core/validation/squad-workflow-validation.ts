@@ -215,6 +215,37 @@ export function validateSquadWorkflow(
     const seenTargetInputs = new Set<string>();
 
     for (const inputRef of step.inputRefs ?? []) {
+      // MANUAL input refs only need targetInput
+      if (inputRef.sourceType === 'MANUAL') {
+        if (!inputRef.targetInput || !inputRef.targetInput.trim()) {
+          validationErrors.push(stepLabel(step) + ' has an incomplete inputRef.');
+          continue;
+        }
+
+        if (!targetInputs.has(inputRef.targetInput)) {
+          validationErrors.push(
+            stepLabel(step) +
+              " inputRef target input '" +
+              inputRef.targetInput +
+              "' is not declared by agent '" +
+              (stepAgentKey ? agentByKey.get(stepAgentKey)?.name ?? stepAgentKey : 'unknown') +
+              "'.",
+          );
+          continue;
+        }
+
+        if (seenTargetInputs.has(inputRef.targetInput)) {
+          validationErrors.push(
+            stepLabel(step) + " has a duplicate inputRef target input '" + inputRef.targetInput + "'.",
+          );
+          continue;
+        }
+        seenTargetInputs.add(inputRef.targetInput);
+
+        continue;
+      }
+
+      // STEP_OUTPUT input refs need fromStepId, key, and targetInput
       if (
         !inputRef?.fromStepId ||
         !inputRef.key ||

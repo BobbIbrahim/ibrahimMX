@@ -80,6 +80,7 @@ describe('SquadBuilderPage', () => {
             updateSelectedStepInputRef: vi.fn(),
             updateSelectedStep: vi.fn(),
             addSelectedStepInputRef: vi.fn(),
+            addSelectedStepManualInputRef: vi.fn(),
             addStep: vi.fn(),
             deleteSelectedStep: vi.fn(),
             removeSelectedStepInputRef: vi.fn(),
@@ -186,6 +187,124 @@ describe('SquadBuilderPage', () => {
     ]);
 
     expect(component.canAddSelectedStepInputRef()).toBe(false);
+  });
+
+  it('identifies selected step as root when it has no ancestors', () => {
+    const component = createComponent();
+
+    selectedStepSignal.set({
+      id: 'step-1',
+      name: 'Step 1',
+      assignedAgentId: 'code-sentinel',
+      parameters: {},
+      position: { x: 0, y: 0 },
+      inputRefs: [],
+    });
+    getAncestorStepsSpy.mockReturnValue([]);
+
+    expect(component.isSelectedStepRoot()).toBe(true);
+  });
+
+  it('identifies selected step as non-root when it has ancestors', () => {
+    const component = createComponent();
+
+    selectedStepSignal.set({
+      id: 'step-2',
+      name: 'Step 2',
+      assignedAgentId: 'test-weaver',
+      parameters: {},
+      position: { x: 0, y: 0 },
+      inputRefs: [],
+    });
+    getAncestorStepsSpy.mockReturnValue([
+      {
+        id: 'step-1',
+        name: 'Step 1',
+        assignedAgentId: 'code-sentinel',
+        parameters: {},
+        position: { x: 0, y: 0 },
+        inputRefs: [],
+      },
+    ]);
+
+    expect(component.isSelectedStepRoot()).toBe(false);
+  });
+
+  it('enables adding manual input when step is root with agent and unmapped inputs', () => {
+    const component = createComponent();
+
+    selectedStepSignal.set({
+      id: 'step-1',
+      name: 'Step 1',
+      assignedAgentId: 'code-sentinel',
+      parameters: {},
+      position: { x: 0, y: 0 },
+      inputRefs: [],
+    });
+    getAncestorStepsSpy.mockReturnValue([]);
+
+    expect(component.canAddSelectedStepManualInputRef()).toBe(true);
+  });
+
+  it('disables adding manual input when step is not root', () => {
+    const component = createComponent();
+
+    selectedStepSignal.set({
+      id: 'step-2',
+      name: 'Step 2',
+      assignedAgentId: 'test-weaver',
+      parameters: {},
+      position: { x: 0, y: 0 },
+      inputRefs: [],
+    });
+    getAncestorStepsSpy.mockReturnValue([
+      {
+        id: 'step-1',
+        name: 'Step 1',
+        assignedAgentId: 'code-sentinel',
+        parameters: {},
+        position: { x: 0, y: 0 },
+        inputRefs: [],
+      },
+    ]);
+
+    expect(component.canAddSelectedStepManualInputRef()).toBe(false);
+  });
+
+  it('disables adding manual input when root step has no agent assigned', () => {
+    const component = createComponent();
+
+    selectedStepSignal.set({
+      id: 'step-1',
+      name: 'Step 1',
+      assignedAgentId: null,
+      parameters: {},
+      position: { x: 0, y: 0 },
+      inputRefs: [],
+    });
+    getAncestorStepsSpy.mockReturnValue([]);
+
+    expect(component.canAddSelectedStepManualInputRef()).toBe(false);
+  });
+
+  it('disables adding manual input when all agent inputs are already mapped', () => {
+    const component = createComponent();
+
+    selectedStepSignal.set({
+      id: 'step-1',
+      name: 'Step 1',
+      assignedAgentId: 'code-sentinel',
+      parameters: {},
+      position: { x: 0, y: 0 },
+      inputRefs: [
+        { targetInput: 'code', sourceType: 'MANUAL' },
+        { targetInput: 'requirements', sourceType: 'MANUAL' },
+        { targetInput: 'context', sourceType: 'MANUAL' },
+      ],
+    });
+    getAncestorStepsSpy.mockReturnValue([]);
+
+    expect(component.canAddSelectedStepManualInputRef()).toBe(false);
   });
 
   function createComponent(): SquadBuilderPage {

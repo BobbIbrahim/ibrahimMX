@@ -29,6 +29,23 @@
   margin-top: 0.8rem;
 }
 
+.step-error-banner {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--color-danger, red) 40%, var(--color-border));
+  border-radius: var(--ui-card-radius);
+  background: color-mix(in srgb, var(--color-danger, red) 8%, transparent);
+}
+
+.step-error-banner__message {
+  margin: 0;
+  color: var(--color-danger, red);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+
 .step-overview__field {
   display: grid;
   gap: 0.3rem;

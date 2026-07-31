@@ -119,6 +119,85 @@
     </div>
   </section>
 
+  @if (finalResult(); as result) {
+  <section class="final-result-card">
+    <div class="final-result-card__header">
+      <div class="final-result-card__title-group">
+        <span class="final-result-card__icon">✓</span>
+        <div>
+          <h2 class="final-result-card__title">Final Result</h2>
+          <p class="final-result-card__subtitle">Output produced by the terminal workflow step</p>
+        </div>
+      </div>
+    </div>
+
+    @if (orderedFinalResultFields().length === 0) {
+    <p class="final-result-card__empty">No output was produced.</p>
+    } @else {
+    <div class="final-result-card__content">
+      <!-- Change Summary + Change Type row -->
+      @if (finalResult()['change'] || finalResult()['changeType']; as hasSummaryOrType) {
+      <div class="final-result-card__summary-row">
+        @if (finalResult()['change']) {
+        <div class="final-result-card__summary-section">
+          <span class="final-result-card__field-label">Change Summary</span>
+          <div class="final-result-card__summary-value">
+            {{ formatFinalResultValue(finalResult()['change']) }}
+          </div>
+        </div>
+        }
+        @if (finalResult()['changeType']) {
+        <div class="final-result-card__type-badge-wrapper">
+          <span class="final-result-card__badge">{{ finalResult()['changeType'] }}</span>
+        </div>
+        }
+      </div>
+      }
+
+      <!-- Recommended Test -->
+      @if (finalResult()['test']) {
+      <div class="final-result-card__field">
+        <span class="final-result-card__field-label">Recommended Test</span>
+        <div class="final-result-card__field-value">
+          {{ formatFinalResultValue(finalResult()['test']) }}
+        </div>
+      </div>
+      }
+
+      <!-- Next Action -->
+      @if (finalResult()['nextAction']) {
+      <div class="final-result-card__field final-result-card__field--prominent">
+        <span class="final-result-card__field-label">Next Action</span>
+        <div class="final-result-card__field-value">
+          {{ formatFinalResultValue(finalResult()['nextAction']) }}
+        </div>
+      </div>
+      }
+
+      <!-- Unknown fields -->
+      @for (entry of orderedFinalResultFields(); track entry[0]) {
+      @if (!isKnownResultField(entry[0])) {
+      <div class="final-result-card__field final-result-card__field--unknown">
+        <span class="final-result-card__field-label">{{ getFieldLabel(entry[0]) }}</span>
+        <div class="final-result-card__field-value" [class.final-result-card__field-value--code]="isCodeLike(entry[1])">
+          {{ formatFinalResultValue(entry[1]) }}
+        </div>
+      </div>
+      }
+      }
+    </div>
+    }
+  </section>
+  }
+
+  @if (failureMessage(); as errorMessage) {
+  <section class="final-result-card final-result-card--error">
+    <h2 class="final-result-card__title">Run Failed</h2>
+    <p class="final-result-card__error">{{ errorMessage }}</p>
+  </section>
+  }
+
+
   <section
     class="live-run-layout"
     [class.live-run-layout--drawer-open]="selectedStepId() !== null"

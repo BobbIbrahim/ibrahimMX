@@ -7,6 +7,7 @@ import com.murex.mxorbit.squadorchestrator.core.squad.creator.request.CreateSqua
 import com.murex.mxorbit.squadorchestrator.core.squad.creator.request.SquadEdgeRequest;
 import com.murex.mxorbit.squadorchestrator.core.squad.creator.request.SquadStepRequest;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.StepInputRef;
+import com.murex.mxorbit.squadorchestrator.core.squad.model.StepInputRefSourceType;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -219,32 +220,83 @@ public class SquadInputRefValidator {
 
 	private void validateInputRefs(List<SquadStepRequest> steps, Map<String, SquadStepRequest> stepMap,
 			Map<String, Set<String>> reverseEdges) {
+		boolean isRoot = true;
 		for (SquadStepRequest step : steps) {
 			Set<String> seenRefs = new HashSet<>();
 			Set<String> seenTargetInputs = new HashSet<>();
 			Set<String> ancestors = computeAncestors(step.getId(), reverseEdges);
 			List<StepInputRef> inputRefs = step.getInputRefs();
+			boolean stepIsRoot = ancestors.isEmpty();
 
 			for (StepInputRef ref : inputRefs == null ? List.<StepInputRef>of() : inputRefs) {
-				validateInputRef(step, ref, stepMap, ancestors, seenRefs, seenTargetInputs);
+				validateInputRef(step, ref, stepMap, ancestors, seenRefs, seenTargetInputs, stepIsRoot);
 			}
 		}
 	}
 
 	private void validateInputRef(SquadStepRequest step, StepInputRef ref, Map<String, SquadStepRequest> stepMap,
-			Set<String> ancestors, Set<String> seenRefs, Set<String> seenTargetInputs) {
-		if (ref == null || ref.getFromStepId() == null || ref.getFromStepId().isBlank() || ref.getKey() == null
-				|| ref.getKey().isBlank() || ref.getTargetInput() == null || ref.getTargetInput().isBlank()) {
-			throw badRequest("Step " + describeStep(step) + " has an incomplete inputRef.");
+			Set<String> ancestors, Set<String> seenRefs, Set<String> seenTargetInputs, boolean stepIsRoot) {
+		if (ref == null) {
+			throw badRequest("Step " + describeStep(step) + " has a null inputRef.");
 		}
 
-		String fromStepId = ref.getFromStepId();
-		String outputKey = ref.getKey();
+		StepInputRefSourceType sourceType = ref.getSourceType();
+		if (sourceType == null) {
+			throw badRequest("Step " + describeStep(step) + " inputRef must have a sourceType.");
+		}
+
 		String targetInput = ref.getTargetInput();
-		String stepId = step.getId();
+		if (targetInput == null || targetInput.isBlank()) {
+			throw badRequest("Step " + describeStep(step) + " inputRef must have a targetInput.");
+		}
 
 		AgentDefinition targetAgentDefinition = validateCurrentStepAgent(step);
 		validateTargetInput(step, targetAgentDefinition, targetInput);
+
+		if (!seenTargetInputs.add(targetInput)) {
+			throw badRequest(
+					"Step " + describeStep(step) + " has a duplicate inputRef target input '" + targetInput + "'.");
+		}
+
+		if (sourceType == StepInputRefSourceType.MANUAL) {
+			validateManualInputRef(step, ref, stepIsRoot);
+		} else if (sourceType == StepInputRefSourceType.STEP_OUTPUT) {
+			validateStepOutputInputRef(step, ref, stepMap, ancestors, seenRefs);
+		} else {
+			throw badRequest("Step " + describeStep(step) + " inputRef has unknown sourceType: " + sourceType);
+		}
+	}
+
+	private void validateManualInputRef(SquadStepRequest step, StepInputRef ref, boolean stepIsRoot) {
+		if (!stepIsRoot) {
+			throw badRequest(
+					"Step " + describeStep(step) + " inputRef with sourceType MANUAL is only allowed on root steps.");
+		}
+
+		if (ref.getFromStepId() != null && !ref.getFromStepId().isBlank()) {
+			throw badRequest(
+					"Step " + describeStep(step) + " inputRef with sourceType MANUAL must not have fromStepId.");
+		}
+
+		if (ref.getKey() != null && !ref.getKey().isBlank()) {
+			throw badRequest("Step " + describeStep(step) + " inputRef with sourceType MANUAL must not have key.");
+		}
+	}
+
+	private void validateStepOutputInputRef(SquadStepRequest step, StepInputRef ref,
+			Map<String, SquadStepRequest> stepMap, Set<String> ancestors, Set<String> seenRefs) {
+		String fromStepId = ref.getFromStepId();
+		String outputKey = ref.getKey();
+		String stepId = step.getId();
+
+		if (fromStepId == null || fromStepId.isBlank()) {
+			throw badRequest(
+					"Step " + describeStep(step) + " inputRef with sourceType STEP_OUTPUT must have fromStepId.");
+		}
+
+		if (outputKey == null || outputKey.isBlank()) {
+			throw badRequest("Step " + describeStep(step) + " inputRef with sourceType STEP_OUTPUT must have key.");
+		}
 
 		if (!stepMap.containsKey(fromStepId)) {
 			throw badRequest("Step " + describeStep(step) + " references unknown source step "
@@ -264,11 +316,6 @@ public class SquadInputRefValidator {
 		if (!seenRefs.add(duplicateKey)) {
 			throw badRequest("Step " + describeStep(step) + " has a duplicate inputRef from "
 					+ describeStepLabel(fromStepId, stepMap) + " using output key '" + outputKey + "'.");
-		}
-
-		if (!seenTargetInputs.add(targetInput)) {
-			throw badRequest(
-					"Step " + describeStep(step) + " has a duplicate inputRef target input '" + targetInput + "'.");
 		}
 
 		validateInputRefOutput(step, fromStepId, outputKey, stepMap);

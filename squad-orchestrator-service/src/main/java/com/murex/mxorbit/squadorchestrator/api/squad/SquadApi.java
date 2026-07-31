@@ -1,6 +1,7 @@
 package com.murex.mxorbit.squadorchestrator.api.squad;
 
 import com.murex.mxorbit.squadorchestrator.api.squad.request.CreateSquadApiRequest;
+import com.murex.mxorbit.squadorchestrator.api.squad.request.StartSquadRunApiRequest;
 import com.murex.mxorbit.squadorchestrator.api.squad.response.SquadApiResponse;
 import com.murex.mxorbit.squadorchestrator.api.squad.response.SquadRunListApiResponse;
 import com.murex.mxorbit.squadorchestrator.api.squad.response.SquadRunApiResponse;
@@ -64,7 +65,8 @@ public interface SquadApi {
 	@ApiResponses(value = {@ApiResponse(responseCode = "202", description = "Squad execution started"),
 			@ApiResponse(responseCode = "404", description = "Squad not found"),
 			@ApiResponse(responseCode = "500", description = "Internal error")})
-	ResponseEntity<SquadRunApiResponse> startSquadRun(@PathVariable String squadId);
+	ResponseEntity<SquadRunApiResponse> startSquadRun(@PathVariable String squadId,
+			@RequestBody(required = false) StartSquadRunApiRequest request);
 
 	@GetMapping("/runs")
 	@Operation(summary = "Get all squad runs")

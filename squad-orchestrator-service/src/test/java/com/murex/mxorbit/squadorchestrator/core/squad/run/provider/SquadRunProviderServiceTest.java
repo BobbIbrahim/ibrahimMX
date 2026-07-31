@@ -3,12 +3,19 @@ package com.murex.mxorbit.squadorchestrator.core.squad.run.provider;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadStepExecutionData;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadStepExecutionStatus;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadStepStatus;
+import com.murex.mxorbit.squadorchestrator.core.squad.model.AiAgentStep;
+import com.murex.mxorbit.squadorchestrator.core.squad.model.Squad;
+import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadEdge;
+import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadStep;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SquadRunProviderServiceTest {
 
@@ -46,5 +53,38 @@ class SquadRunProviderServiceTest {
 
 		assertEquals(Map.of("requirements", "from-step-2"), finalStep.getInput());
 		assertEquals(Map.of("message", "final-result"), finalStep.getOutput());
+	}
+
+	@Test
+	void shouldIdentifyTerminalStepAsTheStepThatIsNotAnEdgeSource() {
+		Squad squad = squad(List.of(step("step-1"), step("step-2"), step("step-3")),
+				List.of(edge("step-1", "step-2"), edge("step-2", "step-3")));
+
+		Optional<String> terminalStepId = SquadRunProviderService.findTerminalStepId(squad);
+
+		assertTrue(terminalStepId.isPresent());
+		assertEquals("step-3", terminalStepId.get());
+	}
+
+	@Test
+	void shouldIdentifySingleStepAsTerminalWhenThereAreNoEdges() {
+		Squad squad = squad(List.of(step("step-1")), List.of());
+
+		assertEquals(Optional.of("step-1"), SquadRunProviderService.findTerminalStepId(squad));
+	}
+
+	private static Squad squad(List<SquadStep> steps, List<SquadEdge> edges) {
+		return Squad.builder().id("squad-1").name("Squad").steps(steps).edges(edges)
+				.createdAt(Instant.parse("2026-07-23T13:11:50Z")).updatedAt(Instant.parse("2026-07-23T13:11:50Z"))
+				.build();
+	}
+
+	private static SquadStep step(String id) {
+		return AiAgentStep.builder().id(id).name(id).agentKey("agent-key").build();
+	}
+
+	private static SquadEdge edge(String sourceStepId, String targetStepId) {
+		return SquadEdge.builder().id(sourceStepId + "->" + targetStepId).sourceStepId(sourceStepId)
+				.targetStepId(targetStepId).build();
 	}
 }

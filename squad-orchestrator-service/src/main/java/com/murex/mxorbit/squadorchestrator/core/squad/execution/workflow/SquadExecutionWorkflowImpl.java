@@ -17,6 +17,7 @@ import com.murex.mxorbit.squadorchestrator.core.squad.model.AiAgentStep;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.Squad;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadEdge;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadStep;
+import com.murex.mxorbit.squadorchestrator.core.squad.model.StepInputRef;
 import com.murex.mxorbit.squadorchestrator.core.workflow.client.WorkflowRunStatus;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
@@ -60,6 +61,8 @@ public class SquadExecutionWorkflowImpl implements SquadExecutionWorkflow {
 
 	private String squadId;
 	private String squadRunId;
+	private Map<String, Object> initialInput = new LinkedHashMap<>();
+	private Map<String, Set<String>> dependenciesByStepId = new LinkedHashMap<>();
 	private WorkflowRunStatus overallStatus = WorkflowRunStatus.RUNNING;
 	private boolean workflowFailed;
 	private String workflowFailureMessage;
@@ -69,6 +72,7 @@ public class SquadExecutionWorkflowImpl implements SquadExecutionWorkflow {
 	public SquadExecutionResult execute(SquadExecutionRequest request) {
 		squadId = request.getSquadId();
 		squadRunId = Workflow.getInfo().getWorkflowId();
+		initialInput = request.getInitialInput() == null ? Map.of() : request.getInitialInput();
 		GetSquadResult getSquadResult = getSquadActivity
 				.getSquad(GetSquadRequest.builder().squadId(request.getSquadId()).build());
 
@@ -82,7 +86,7 @@ public class SquadExecutionWorkflowImpl implements SquadExecutionWorkflow {
 					.status(SquadStepExecutionStatus.PENDING).build());
 		}
 
-		Map<String, Set<String>> dependenciesByStepId = buildDependenciesMap(squad.getEdges(), stepsById.keySet());
+		dependenciesByStepId = buildDependenciesMap(squad.getEdges(), stepsById.keySet());
 
 		while (finishedStepIds.size() < stepsById.size()) {
 			List<SquadStep> readySteps = findReadySteps(steps, dependenciesByStepId, startedStepIds, finishedStepIds);
@@ -119,12 +123,12 @@ public class SquadExecutionWorkflowImpl implements SquadExecutionWorkflow {
 
 	private void startStepExecution(SquadStep step) {
 		Map<String, Map<String, Object>> stepOutputsByStepId = buildStepOutputsByStepId();
-		Map<String, Object> stepInput = new LinkedHashMap<>();
-		stepInput.putAll(stepOutputsByStepId);
+		Map<String, Object> seedInput = isRootStep(step) ? initialInput : Map.of();
+		Map<String, Object> stepInput = resolveStepInput(step, stepOutputsByStepId, seedInput);
 		markStepRunning(step, stepInput);
 
 		Promise<SquadStepExecutionResult> stepPromise = Async
-				.function(() -> executeStep(squadId, step, stepOutputsByStepId));
+				.function(() -> executeStep(squadId, step, stepOutputsByStepId, seedInput));
 		stepPromise.handle((stepExecutionResult, throwable) -> {
 			if (throwable != null) {
 				markStepFailed(step, stepInput, throwable);
@@ -137,6 +141,10 @@ public class SquadExecutionWorkflowImpl implements SquadExecutionWorkflow {
 			finishedStepIds.add(step.getId());
 			return stepExecutionResult;
 		});
+	}
+
+	private boolean isRootStep(SquadStep step) {
+		return dependenciesByStepId.getOrDefault(step.getId(), Set.of()).isEmpty();
 	}
 
 	private Map<String, Set<String>> buildDependenciesMap(List<SquadEdge> edges, Set<String> stepIds) {
@@ -187,15 +195,38 @@ public class SquadExecutionWorkflowImpl implements SquadExecutionWorkflow {
 		return stepOutputsByStepId;
 	}
 
+	/**
+	 * Best-effort resolution of a step's input, mirroring the mapping performed by
+	 * {@code RunAiAgentActivityImpl}. Used so the RUNNING/FAILED status reflects
+	 * the actual resolved input attempted for the step, rather than the raw
+	 * upstream step outputs. The activity remains the authoritative resolver
+	 * (including validation) for a successful run.
+	 */
+	private Map<String, Object> resolveStepInput(SquadStep step, Map<String, Map<String, Object>> stepOutputsByStepId,
+			Map<String, Object> seedInput) {
+		List<StepInputRef> inputRefs = step.getInputRefs();
+		if (inputRefs == null || inputRefs.isEmpty()) {
+			return new LinkedHashMap<>(seedInput);
+		}
+
+		Map<String, Object> input = new LinkedHashMap<>();
+		for (StepInputRef inputRef : inputRefs) {
+			Map<String, Object> fromStepOutput = stepOutputsByStepId.get(inputRef.getFromStepId());
+			Object value = fromStepOutput == null ? null : fromStepOutput.get(inputRef.getKey());
+			input.put(inputRef.getTargetInput(), value);
+		}
+		return input;
+	}
+
 	private SquadStepExecutionResult executeStep(String squadId, SquadStep step,
-			Map<String, Map<String, Object>> stepOutputsByStepId) {
+			Map<String, Map<String, Object>> stepOutputsByStepId, Map<String, Object> seedInput) {
 		switch (step.getType()) {
 			case AI_AGENT :
 				AiAgentStep aiAgentStep = (AiAgentStep) step;
 				return runAiAgentActivity.runAiAgent(SquadStepExecutionRequest.builder().squadId(squadId)
 						.stepId(aiAgentStep.getId()).stepName(aiAgentStep.getName()).agentKey(aiAgentStep.getAgentKey())
 						.inputRefs(new ArrayList<>(aiAgentStep.getInputRefs())).stepOutputsByStepId(stepOutputsByStepId)
-						.build());
+						.seedInput(seedInput).build());
 			default :
 				throw ApplicationFailure.newNonRetryableFailure(
 						"Unsupported step type " + step.getType() + " for step " + step.getId(),

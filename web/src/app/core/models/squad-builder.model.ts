@@ -20,10 +20,13 @@ export interface SquadBuilderEdge {
   targetStepId: string;
 }
 
+export type SquadBuilderInputRefSourceType = 'MANUAL' | 'STEP_OUTPUT';
+
 export interface SquadBuilderInputRef {
   targetInput: string;
-  fromStepId: string;
-  key: string;
+  sourceType: SquadBuilderInputRefSourceType;
+  fromStepId?: string;
+  key?: string;
 }
 
 export interface SquadBuilderDraft {

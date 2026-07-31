@@ -59,6 +59,13 @@
     </article>
   </section>
 
+  @if (step().status === 'FAILED' && step().message) {
+  <section class="step-error-banner">
+    <span class="inspector-entry__label">Error</span>
+    <p class="step-error-banner__message">{{ step().message }}</p>
+  </section>
+  }
+
   <nav
     class="step-inspector__tabs"
     role="tablist"

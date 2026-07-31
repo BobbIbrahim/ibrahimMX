@@ -4,6 +4,7 @@ import com.murex.mxorbit.squadorchestrator.core.squad.agent.AgentExecutor;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadStepExecutionRequest;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadStepExecutionResult;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.StepInputRef;
+import com.murex.mxorbit.squadorchestrator.core.squad.model.StepInputRefSourceType;
 import io.temporal.failure.ApplicationFailure;
 import io.temporal.spring.boot.ActivityImpl;
 
@@ -47,11 +48,20 @@ public class RunAiAgentActivityImpl implements RunAiAgentActivity {
 	private Map<String, Object> resolveAgentInput(SquadStepExecutionRequest request) {
 		Map<String, Object> input = new LinkedHashMap<>();
 
+		Map<String, Object> seedInput = request.getSeedInput();
+		if (seedInput != null) {
+			input.putAll(seedInput);
+		}
+
 		if (request.getInputRefs() == null || request.getInputRefs().isEmpty()) {
 			return input;
 		}
 
 		for (StepInputRef inputRef : request.getInputRefs()) {
+			if (inputRef.getSourceType() == StepInputRefSourceType.MANUAL) {
+				continue;
+			}
+
 			String targetInput = inputRef.getTargetInput();
 			if (targetInput == null || targetInput.isBlank()) {
 				throw resolutionFailure(request.getStepId(), inputRef.getFromStepId(), inputRef.getKey(),

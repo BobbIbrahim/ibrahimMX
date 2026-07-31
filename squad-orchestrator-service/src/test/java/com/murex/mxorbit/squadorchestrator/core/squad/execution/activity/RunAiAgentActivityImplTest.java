@@ -52,6 +52,20 @@ class RunAiAgentActivityImplTest {
 	}
 
 	@Test
+	void shouldUseSeedInputForRootStepWithoutInputRefs() {
+		CapturingAgentExecutor executor = new CapturingAgentExecutor();
+		RunAiAgentActivityImpl activity = new RunAiAgentActivityImpl(executor);
+
+		SquadStepExecutionResult result = activity
+				.runAiAgent(SquadStepExecutionRequest.builder().squadId("squad-1").stepId("step-1").stepName("Step 1")
+						.agentKey("change-classifier").inputRefs(List.of()).stepOutputsByStepId(new LinkedHashMap<>())
+						.seedInput(Map.of("change", "Add retry logic to payment gateway client")).build());
+
+		assertEquals(Map.of("change", "Add retry logic to payment gateway client"), executor.lastInput);
+		assertEquals(Map.of("change", "Add retry logic to payment gateway client"), result.getInput());
+	}
+
+	@Test
 	void shouldPreserveMissingSourceOutputFailure() {
 		RunAiAgentActivityImpl activity = new RunAiAgentActivityImpl(new CapturingAgentExecutor());
 
@@ -92,6 +106,60 @@ class RunAiAgentActivityImplTest {
 						Map.of("step-1", Map.of("message", "value-1"), "step-2", Map.of("summary", "value-2")))));
 
 		assertTrue(exception.getMessage().contains("duplicate-target-input"));
+	}
+
+	@Test
+	void shouldSkipManualInputRefsAndUseSeedInput() {
+		CapturingAgentExecutor executor = new CapturingAgentExecutor();
+		RunAiAgentActivityImpl activity = new RunAiAgentActivityImpl(executor);
+
+		SquadStepExecutionResult result = activity.runAiAgent(
+				SquadStepExecutionRequest.builder()
+						.squadId("squad-1")
+						.stepId("step-1")
+						.stepName("Change Classifier")
+						.agentKey("change-classifier")
+						.inputRefs(List.of(
+								StepInputRef.builder()
+										.targetInput("change")
+										.sourceType(com.murex.mxorbit.squadorchestrator.core.squad.model.StepInputRefSourceType.MANUAL)
+										.build()))
+						.stepOutputsByStepId(new LinkedHashMap<>())
+						.seedInput(Map.of("change", "Add retry logic to payment gateway"))
+						.build());
+
+		// Verify that the manual input ref was skipped and only seedInput was used
+		assertEquals(Map.of("change", "Add retry logic to payment gateway"), executor.lastInput);
+		assertEquals(Map.of("change", "Add retry logic to payment gateway"), result.getInput());
+		assertEquals("COMPLETED", result.getStatus());
+	}
+
+	@Test
+	void shouldMergeSeedInputWithStepOutputRefs() {
+		CapturingAgentExecutor executor = new CapturingAgentExecutor();
+		RunAiAgentActivityImpl activity = new RunAiAgentActivityImpl(executor);
+
+		SquadStepExecutionResult result = activity.runAiAgent(
+				SquadStepExecutionRequest.builder()
+						.squadId("squad-1")
+						.stepId("step-2")
+						.stepName("Step 2")
+						.agentKey("test-weaver")
+						.inputRefs(List.of(
+								// MANUAL input ref should be skipped
+								StepInputRef.builder()
+										.targetInput("change")
+										.sourceType(com.murex.mxorbit.squadorchestrator.core.squad.model.StepInputRefSourceType.MANUAL)
+										.build(),
+								// STEP_OUTPUT ref should be processed
+								ref("step-1", "message", "requirements")))
+						.stepOutputsByStepId(Map.of("step-1", Map.of("message", "Step 1 output")))
+						.seedInput(Map.of("change", "Manual input value"))
+						.build());
+
+		// Verify seedInput is included and STEP_OUTPUT is resolved
+		assertEquals(Map.of("change", "Manual input value", "requirements", "Step 1 output"), executor.lastInput);
+		assertEquals("COMPLETED", result.getStatus());
 	}
 
 	private static SquadStepExecutionRequest request(StepInputRef inputRef, Map<String, Map<String, Object>> outputs) {

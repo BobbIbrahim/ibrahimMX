@@ -2,6 +2,7 @@ package com.murex.mxorbit.squadorchestrator.api.squad;
 
 import com.murex.mxorbit.squadorchestrator.api.squad.mapper.SquadApiMapper;
 import com.murex.mxorbit.squadorchestrator.api.squad.request.CreateSquadApiRequest;
+import com.murex.mxorbit.squadorchestrator.api.squad.request.StartSquadRunApiRequest;
 import com.murex.mxorbit.squadorchestrator.api.squad.response.SquadApiResponse;
 import com.murex.mxorbit.squadorchestrator.api.squad.response.SquadRunListApiResponse;
 import com.murex.mxorbit.squadorchestrator.api.squad.response.SquadRunApiResponse;
@@ -9,6 +10,7 @@ import com.murex.mxorbit.squadorchestrator.core.squad.facade.SquadFacade;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadExecutionStatus;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import lombok.RequiredArgsConstructor;
@@ -59,10 +61,14 @@ public class SquadController implements SquadApi {
 	}
 
 	@Override
-	public ResponseEntity<SquadRunApiResponse> startSquadRun(String squadId) {
+	public ResponseEntity<SquadRunApiResponse> startSquadRun(String squadId, StartSquadRunApiRequest request) {
 		log.debug("Received request to start squad run for squad id: {}", squadId);
 
-		return squadFacade.startSquadRun(squadId)
+		Map<String, Object> initialInput = request == null || request.getInput() == null
+				? Map.of()
+				: request.getInput();
+
+		return squadFacade.startSquadRun(squadId, initialInput)
 				.map(run -> SquadRunApiResponse.builder().squadId(run.getSquadId()).squadRunId(run.getSquadRunId())
 						.status(run.getStatus()).build())
 				.map(response -> ResponseEntity.status(HttpStatus.ACCEPTED).body(response))
