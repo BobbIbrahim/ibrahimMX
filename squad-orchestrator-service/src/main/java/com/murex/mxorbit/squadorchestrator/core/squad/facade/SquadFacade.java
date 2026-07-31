@@ -7,6 +7,7 @@ import com.murex.mxorbit.squadorchestrator.core.squad.run.model.SquadRunSummary;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadExecutionStatus;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface SquadFacade {
@@ -19,7 +20,7 @@ public interface SquadFacade {
 
 	Optional<Squad> updateSquad(String squadId, CreateSquadRequest request);
 
-	Optional<SquadRunStartResult> startSquadRun(String squadId);
+	Optional<SquadRunStartResult> startSquadRun(String squadId, Map<String, Object> initialInput);
 
 	List<SquadRunSummary> getSquadRuns();
 

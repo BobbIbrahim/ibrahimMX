@@ -107,8 +107,10 @@ export class SquadService {
     };
   }
 
-  startSquadRun(squadId: string): Observable<SquadRunStartResponse> {
-    return this.http.post<SquadRunStartResponse>(`${this.baseUrl}/squads/${squadId}/runs`, {});
+  startSquadRun(squadId: string, initialInput: Record<string, unknown> = {}): Observable<SquadRunStartResponse> {
+    return this.http.post<SquadRunStartResponse>(`${this.baseUrl}/squads/${squadId}/runs`, {
+      input: initialInput,
+    });
   }
 
   getSquadRuns(): Observable<SquadRunListItem[]> {

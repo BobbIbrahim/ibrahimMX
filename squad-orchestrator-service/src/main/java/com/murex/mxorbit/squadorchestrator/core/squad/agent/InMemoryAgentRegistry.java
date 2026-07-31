@@ -24,14 +24,15 @@ public class InMemoryAgentRegistry implements AgentRegistry {
 		}
 
 		register(AgentDefinition.builder().agentKey(CHANGE_CLASSIFIER).name(CHANGE_CLASSIFIER)
-				.serviceUrl(agentServiceBaseUrl).inputs(List.of("change")).outputs(List.of("changeType")).build());
+				.serviceUrl(agentServiceBaseUrl).inputs(List.of("change")).outputs(List.of("change", "changeType"))
+				.build());
 
 		register(AgentDefinition.builder().agentKey(TEST_SELECTOR).name(TEST_SELECTOR).serviceUrl(agentServiceBaseUrl)
-				.inputs(List.of("change", "changeType")).outputs(List.of("test")).build());
+				.inputs(List.of("change", "changeType")).outputs(List.of("change", "changeType", "test")).build());
 
 		register(AgentDefinition.builder().agentKey(DEPLOYMENT_PLANNER).name(DEPLOYMENT_PLANNER)
 				.serviceUrl(agentServiceBaseUrl).inputs(List.of("change", "changeType", "test"))
-				.outputs(List.of("nextAction")).build());
+				.outputs(List.of("change", "changeType", "test", "nextAction")).build());
 	}
 
 	@Override

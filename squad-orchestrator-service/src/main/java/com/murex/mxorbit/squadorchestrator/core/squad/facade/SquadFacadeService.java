@@ -13,6 +13,7 @@ import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadExecu
 import com.murex.mxorbit.squadorchestrator.core.squad.run.canceller.SquadRunCanceller;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import lombok.RequiredArgsConstructor;
@@ -50,8 +51,8 @@ public class SquadFacadeService implements SquadFacade {
 	}
 
 	@Override
-	public Optional<SquadRunStartResult> startSquadRun(String squadId) {
-		return squadExecutionStarter.startSquadRun(squadId);
+	public Optional<SquadRunStartResult> startSquadRun(String squadId, Map<String, Object> initialInput) {
+		return squadExecutionStarter.startSquadRun(squadId, initialInput);
 	}
 
 	@Override

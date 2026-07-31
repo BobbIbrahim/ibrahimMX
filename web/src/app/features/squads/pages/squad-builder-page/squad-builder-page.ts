@@ -124,12 +124,26 @@ export class SquadBuilderPage implements OnInit {
     return this.validationIssueCount() === 0;
   });
 
+  readonly isSelectedStepRoot = computed(() => {
+    return this.ancestorStepsForSelectedStep().length === 0;
+  });
+
   readonly canAddSelectedStepInputRef = computed(() => {
     const selectedStep = this.selectedStep();
 
     return (
       Boolean(selectedStep?.assignedAgentId) &&
       this.ancestorStepsForSelectedStep().length > 0 &&
+      this.unmappedAgentInputsForSelectedStep().length > 0
+    );
+  });
+
+  readonly canAddSelectedStepManualInputRef = computed(() => {
+    const selectedStep = this.selectedStep();
+
+    return (
+      Boolean(selectedStep?.assignedAgentId) &&
+      this.isSelectedStepRoot() &&
       this.unmappedAgentInputsForSelectedStep().length > 0
     );
   });
@@ -229,6 +243,10 @@ export class SquadBuilderPage implements OnInit {
 
   addSelectedStepInputRef(): void {
     this.squadBuilderState.addSelectedStepInputRef();
+  }
+
+  addSelectedStepManualInputRef(): void {
+    this.squadBuilderState.addSelectedStepManualInputRef();
   }
 
   updateSelectedStepInputRefTargetInput(index: number, targetInput: string): void {

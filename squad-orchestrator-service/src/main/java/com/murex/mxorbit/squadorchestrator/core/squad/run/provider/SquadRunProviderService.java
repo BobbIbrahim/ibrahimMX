@@ -4,11 +4,16 @@ import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadExecu
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadStepExecutionData;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadStepStatus;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.workflow.SquadExecutionWorkflow;
+import com.murex.mxorbit.squadorchestrator.core.squad.model.Squad;
+import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadEdge;
+import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadStep;
+import com.murex.mxorbit.squadorchestrator.core.squad.provider.SquadProvider;
 import com.murex.mxorbit.squadorchestrator.core.squad.run.SquadRunMemoKeys;
 import com.murex.mxorbit.squadorchestrator.core.squad.run.model.SquadRunSummary;
 import com.murex.mxorbit.squadorchestrator.infra.persistence.squad.execution.SquadStepExecutionJpaStore;
 import com.murex.mxorbit.squadorchestrator.core.workflow.client.TemporalClient;
 import com.murex.mxorbit.squadorchestrator.core.workflow.client.WorkflowExecutionSummary;
+import com.murex.mxorbit.squadorchestrator.core.workflow.client.WorkflowRunStatus;
 import io.temporal.client.WorkflowNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +23,9 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -29,6 +36,7 @@ public class SquadRunProviderService implements SquadRunProvider {
 
 	private final TemporalClient temporalClient;
 	private final SquadStepExecutionJpaStore squadStepExecutionJpaStore;
+	private final SquadProvider squadProvider;
 
 	@Override
 	public List<SquadRunSummary> getSquadRuns() {
@@ -47,6 +55,7 @@ public class SquadRunProviderService implements SquadRunProvider {
 		try {
 			SquadExecutionStatus status = workflow.getExecutionStatus();
 			enrichWithStepExecutionData(squadRunId, status);
+			populateFinalResult(status);
 			log.debug("Execution status snapshot before API return. squadRunId: {}, steps: {}", squadRunId, status
 					.getSteps().stream()
 					.map(step -> step.getStepId() + "=" + step.getStatus() + "(startedAt=" + step.getStartedAt()
@@ -57,6 +66,25 @@ public class SquadRunProviderService implements SquadRunProvider {
 			log.debug("Squad run not found. squadRunId: {}", squadRunId);
 			return Optional.empty();
 		}
+	}
+
+	private void populateFinalResult(SquadExecutionStatus status) {
+		if (status.getOverallStatus() != WorkflowRunStatus.COMPLETED) {
+			return;
+		}
+
+		squadProvider.getSquadById(status.getSquadId()).flatMap(SquadRunProviderService::findTerminalStepId)
+				.flatMap(terminalStepId -> status.getSteps().stream()
+						.filter(step -> step.getStepId().equals(terminalStepId)).findFirst())
+				.ifPresent(terminalStep -> status.setFinalResult(terminalStep.getOutput()));
+	}
+
+	static Optional<String> findTerminalStepId(Squad squad) {
+		Set<String> sourceStepIds = squad.getEdges().stream().map(SquadEdge::getSourceStepId)
+				.collect(Collectors.toSet());
+
+		return squad.getSteps().stream().map(SquadStep::getId).filter(stepId -> !sourceStepIds.contains(stepId))
+				.findFirst();
 	}
 
 	private void enrichWithStepExecutionData(String squadRunId, SquadExecutionStatus status) {

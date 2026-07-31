@@ -37,6 +37,7 @@ dependencies {
     runtimeOnly("org.postgresql:postgresql")
 
     testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("io.temporal:temporal-testing")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

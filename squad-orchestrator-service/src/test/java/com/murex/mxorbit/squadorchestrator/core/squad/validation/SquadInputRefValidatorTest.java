@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.murex.mxorbit.squadorchestrator.core.squad.agent.AgentDefinition;
 import com.murex.mxorbit.squadorchestrator.core.squad.agent.AgentRegistry;
+import com.murex.mxorbit.squadorchestrator.core.squad.agent.InMemoryAgentRegistry;
 import com.murex.mxorbit.squadorchestrator.core.squad.creator.request.AiAgentStepRequest;
 import com.murex.mxorbit.squadorchestrator.core.squad.creator.request.CreateSquadRequest;
 import com.murex.mxorbit.squadorchestrator.core.squad.creator.request.SquadEdgeRequest;
@@ -37,7 +38,7 @@ class SquadInputRefValidatorTest {
 	void shouldRejectBlankTargetInput() {
 		assertValidationFailure(workflow(step("step-1", "Step 1", "code-sentinel"),
 				step("step-2", "Step 2", "test-weaver", ref("step-1", "message", " ")), edge("step-1", "step-2")),
-				"Step 'Step 2' has an incomplete inputRef.");
+				"Step 'Step 2' inputRef must have a targetInput.");
 	}
 
 	@Test
@@ -75,7 +76,7 @@ class SquadInputRefValidatorTest {
 						step("step-2", "Step 2", "test-weaver", ref("step-1", "message", "requirements"),
 								ref("step-1", "message", "requirements")),
 						edge("step-1", "step-2")),
-				"Step 'Step 2' has a duplicate inputRef from Step 'Step 1' using output key 'message'.");
+				"Step 'Step 2' has a duplicate inputRef target input 'requirements'.");
 	}
 
 	@Test
@@ -91,7 +92,7 @@ class SquadInputRefValidatorTest {
 	void shouldRejectIncompleteInputRef() {
 		assertValidationFailure(workflow(step("step-1", "Step 1", "code-sentinel"),
 				step("step-2", "Step 2", "test-weaver", incompleteRef("step-1", "message")), edge("step-1", "step-2")),
-				"Step 'Step 2' has an incomplete inputRef.");
+				"Step 'Step 2' inputRef must have a targetInput.");
 	}
 
 	@Test
@@ -115,6 +116,33 @@ class SquadInputRefValidatorTest {
 				workflow(step("step-1", "Step 1", "code-sentinel"), step("step-2", "Step 2", "test-weaver"),
 						edge("step-1", "step-2"), edge("step-2", "step-1")),
 				"The workflow must contain exactly one root step.");
+	}
+
+	@Test
+	void shouldValidateChangeClassifierTestSelectorDeploymentPlannerSquad() {
+		SquadInputRefValidator validator = new SquadInputRefValidator(
+				new InMemoryAgentRegistry("http://localhost:8000"));
+
+		assertDoesNotThrow(() -> validator.validate(workflow(step("step-1", "New Step 1", "change-classifier"),
+				step("step-2", "New Step 2", "test-selector", ref("step-1", "change", "change"),
+						ref("step-1", "changeType", "changeType")),
+				step("step-3", "New Step 3", "deployment-planner", ref("step-2", "change", "change"),
+						ref("step-2", "changeType", "changeType"), ref("step-2", "test", "test")),
+				edge("step-1", "step-2"), edge("step-2", "step-3"))));
+	}
+
+	@Test
+	void shouldRejectGenuinelyUndeclaredOutputKeyForRealAgentRegistry() {
+		SquadInputRefValidator validator = new SquadInputRefValidator(
+				new InMemoryAgentRegistry("http://localhost:8000"));
+
+		ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+				() -> validator.validate(workflow(step("step-1", "New Step 1", "change-classifier"),
+						step("step-2", "New Step 2", "test-selector", ref("step-1", "nextAction", "change")),
+						edge("step-1", "step-2"))));
+
+		assertEquals("Step 'New Step 2' inputRef from Step 'New Step 1' references undeclared output key 'nextAction'.",
+				exception.getReason());
 	}
 
 	private void assertValidationFailure(CreateSquadRequest request, String expectedMessage) {

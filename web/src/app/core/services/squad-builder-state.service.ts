@@ -73,6 +73,7 @@ export class SquadBuilderStateService {
         parameters: {},
         inputRefs: (step.inputRefs ?? []).map((inputRef) => ({
           targetInput: inputRef.targetInput ?? '',
+          sourceType: inputRef.sourceType ?? 'STEP_OUTPUT',
           fromStepId: inputRef.fromStepId,
           key: inputRef.key,
         })),
@@ -232,11 +233,55 @@ export class SquadBuilderStateService {
         ...selectedStep.inputRefs,
         {
           targetInput: unmappedInputs[0],
+          sourceType: 'STEP_OUTPUT',
           fromStepId: ancestors[0].id,
           key: '',
         },
       ],
     });
+  }
+
+  addSelectedStepManualInputRef(): void {
+    const selectedStepId = this.selectedStepId();
+
+    if (!selectedStepId) {
+      return;
+    }
+
+    const draft = this.draft();
+    if (!draft) {
+      return;
+    }
+
+    const ancestors = this.getAncestorStepIds(selectedStepId);
+    if (ancestors.length > 0) {
+      return; // MANUAL inputs only for root steps
+    }
+
+    const selectedStep = this.selectedStep();
+    const unmappedInputs = this.getUnmappedAgentInputs(selectedStep);
+
+    if (!selectedStep || unmappedInputs.length === 0) {
+      return;
+    }
+
+    this.updateSelectedStep({
+      inputRefs: [
+        ...selectedStep.inputRefs,
+        {
+          targetInput: unmappedInputs[0],
+          sourceType: 'MANUAL',
+        },
+      ],
+    });
+  }
+
+  private getAncestorStepIds(stepId: string): string[] {
+    const draft = this.draft();
+    if (!draft) {
+      return [];
+    }
+    return this.computeAncestorStepIds(stepId, draft.edges);
   }
 
   updateSelectedStepInputRef(index: number, patch: Partial<SquadBuilderInputRef>): void {
@@ -267,6 +312,15 @@ export class SquadBuilderStateService {
       return;
     }
 
+    // MANUAL inputs don't need ancestor validation
+    if (updatedInputRef.sourceType === 'MANUAL') {
+      this.updateSelectedStep({
+        inputRefs: nextInputRefs,
+      });
+      return;
+    }
+
+    // STEP_OUTPUT inputs require ancestor validation
     const ancestorStepIds = new Set(this.computeAncestorStepIds(selectedStepId, this.edges()));
     if (!ancestorStepIds.has(updatedInputRef.fromStepId)) {
       return;
@@ -436,6 +490,7 @@ export class SquadBuilderStateService {
         agentKey: step.assignedAgentId ?? '',
         inputRefs: step.inputRefs.map((inputRef) => ({
           targetInput: inputRef.targetInput,
+          sourceType: inputRef.sourceType,
           fromStepId: inputRef.fromStepId,
           key: inputRef.key,
         })),
@@ -475,7 +530,12 @@ export class SquadBuilderStateService {
   private filterValidInputRefs(step: SquadBuilderStep, draft: SquadBuilderDraft): SquadBuilderInputRef[] {
     const ancestorStepIds = new Set(this.computeAncestorStepIds(step.id, draft.edges));
 
-    return step.inputRefs.filter((inputRef) => ancestorStepIds.has(inputRef.fromStepId));
+    return step.inputRefs.filter((inputRef) => {
+      if (inputRef.sourceType === 'MANUAL') {
+        return true; // MANUAL inputs are always valid
+      }
+      return ancestorStepIds.has(inputRef.fromStepId);
+    });
   }
 
   private filterInputRefsForAssignedAgent(step: SquadBuilderStep): SquadBuilderInputRef[] {

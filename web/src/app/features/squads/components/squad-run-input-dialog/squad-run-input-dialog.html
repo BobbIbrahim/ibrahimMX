@@ -1,0 +1,26 @@
+<section class="run-input-dialog">
+  <header class="run-input-dialog__header">
+    <h2>Provide starting input</h2>
+    <p>
+      "{{ data.stepName }}" runs <strong>{{ data.agentName }}</strong>, which requires the following
+      value{{ data.inputKeys.length > 1 ? 's' : '' }} to start the workflow.
+    </p>
+  </header>
+
+  <div class="run-input-dialog__fields">
+    @for (inputKey of data.inputKeys; track inputKey) {
+      <mat-form-field appearance="outline" class="run-input-dialog__field">
+        <mat-label>{{ inputKey }}</mat-label>
+        <input matInput [(ngModel)]="values[inputKey]" name="{{ inputKey }}" />
+      </mat-form-field>
+    }
+  </div>
+
+  <footer class="run-input-dialog__actions">
+    <button type="button" mat-stroked-button (click)="cancel()">Cancel</button>
+
+    <button type="button" mat-flat-button class="run-input-dialog__confirm" (click)="confirm()">
+      Start Run
+    </button>
+  </footer>
+</section>

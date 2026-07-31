@@ -198,6 +198,50 @@ describe('validateSquadWorkflow', () => {
       "Connection from Step 'Step 1' to Step 'Step 2' is duplicated.",
     );
   });
+
+  it('validates a root step with MANUAL input ref', () => {
+    const draft = workflow(
+      step('step-1', 'Step 1', 'code-sentinel', manualRef('code')),
+      step('step-2', 'Step 2', 'test-weaver', ref('step-1', 'message', 'requirements')),
+      edge('step-1', 'step-2'),
+    );
+
+    expect(validateSquadWorkflow(draft, agents)).toEqual([]);
+  });
+
+  it('rejects MANUAL inputRef with missing targetInput', () => {
+    const draft = workflow(
+      step('step-1', 'Step 1', 'code-sentinel', { sourceType: 'MANUAL', targetInput: '' } as SquadBuilderInputRef),
+      step('step-2', 'Step 2', 'test-weaver'),
+      edge('step-1', 'step-2'),
+    );
+
+    expect(validateSquadWorkflow(draft, agents)).toContain("Step 'Step 1' has an incomplete inputRef.");
+  });
+
+  it('rejects MANUAL inputRef with undeclared target input', () => {
+    const draft = workflow(
+      step('step-1', 'Step 1', 'code-sentinel', manualRef('unknown')),
+      step('step-2', 'Step 2', 'test-weaver'),
+      edge('step-1', 'step-2'),
+    );
+
+    expect(validateSquadWorkflow(draft, agents)).toContain(
+      "Step 'Step 1' inputRef target input 'unknown' is not declared by agent 'Code Sentinel'.",
+    );
+  });
+
+  it('rejects duplicate MANUAL target inputs', () => {
+    const draft = workflow(
+      step('step-1', 'Step 1', 'code-sentinel', manualRef('code'), manualRef('code')),
+      step('step-2', 'Step 2', 'test-weaver'),
+      edge('step-1', 'step-2'),
+    );
+
+    expect(validateSquadWorkflow(draft, agents)).toContain(
+      "Step 'Step 1' has a duplicate inputRef target input 'code'.",
+    );
+  });
 });
 
 function workflow(...items: Array<SquadBuilderStep | SquadBuilderEdge>): SquadBuilderDraft {
@@ -239,7 +283,11 @@ function edge(sourceStepId: string, targetStepId: string): SquadBuilderEdge {
 }
 
 function ref(fromStepId: string, key: string, targetInput: string): SquadBuilderInputRef {
-  return { fromStepId, key, targetInput };
+  return { sourceType: 'STEP_OUTPUT', fromStepId, key, targetInput };
+}
+
+function manualRef(targetInput: string): SquadBuilderInputRef {
+  return { sourceType: 'MANUAL', targetInput };
 }
 
 function legacyRef(fromStepId: string, key: string): SquadBuilderInputRef {

@@ -35,4 +35,6 @@ export interface SquadExecutionStatus {
   squadId: string;
   overallStatus: SquadRunOverallStatus;
   steps: SquadStepStatus[];
+  finalResult?: Record<string, unknown> | null;
+  finalResultFieldLabels?: Record<string, string> | null;
 }

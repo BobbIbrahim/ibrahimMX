@@ -258,15 +258,28 @@
               <div class="step-input-refs-header">
                 <label class="field-label">Inputs</label>
 
-                <button
-                  type="button"
-                  mat-stroked-button
-                  (click)="addSelectedStepInputRef()"
-                  [disabled]="!canAddSelectedStepInputRef()"
-                >
-                  <mat-icon>add</mat-icon>
-                  Add input
-                </button>
+                @if (isSelectedStepRoot()) {
+                  <button
+                    type="button"
+                    mat-stroked-button
+                    (click)="addSelectedStepManualInputRef()"
+                    [disabled]="!canAddSelectedStepManualInputRef()"
+                    title="Add a manual input for the root step"
+                  >
+                    <mat-icon>add</mat-icon>
+                    Add manual input
+                  </button>
+                } @else {
+                  <button
+                    type="button"
+                    mat-stroked-button
+                    (click)="addSelectedStepInputRef()"
+                    [disabled]="!canAddSelectedStepInputRef()"
+                  >
+                    <mat-icon>add</mat-icon>
+                    Add input
+                  </button>
+                }
               </div>
 
               @if (step.inputRefs.length > 0) {
@@ -303,49 +316,60 @@
                         </mat-select>
                       </mat-form-field>
 
-                      <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                        <mat-label>Source Step</mat-label>
+                      @if (inputRef.sourceType === 'MANUAL') {
+                        <div class="source-indicator">
+                          <span class="source-indicator__label">Source</span>
+                          <span class="source-indicator__value">Manual</span>
+                        </div>
+                      } @else {
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                          <mat-label>Source Step</mat-label>
 
-                        <mat-select
-                          panelClass="builder-select-panel"
-                          [ngModel]="inputRef.fromStepId"
-                          (ngModelChange)="updateSelectedStepInputRefSource($index, $event)"
-                        >
-                          @for (ancestorStep of ancestorStepsForSelectedStep(); track ancestorStep.id) {
-                            <mat-option [value]="ancestorStep.id">
-                              {{ ancestorStep.name }}
-                            </mat-option>
-                          }
-                        </mat-select>
-                      </mat-form-field>
+                          <mat-select
+                            panelClass="builder-select-panel"
+                            [ngModel]="inputRef.fromStepId"
+                            (ngModelChange)="updateSelectedStepInputRefSource($index, $event)"
+                          >
+                            @for (ancestorStep of ancestorStepsForSelectedStep(); track ancestorStep.id) {
+                              <mat-option [value]="ancestorStep.id">
+                                {{ ancestorStep.name }}
+                              </mat-option>
+                            }
+                          </mat-select>
+                        </mat-form-field>
 
-                      <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                        <mat-label>Output Key</mat-label>
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                          <mat-label>Output Key</mat-label>
 
-                        <mat-select
-                          panelClass="builder-select-panel"
-                          [ngModel]="inputRef.key"
-                          (ngModelChange)="updateSelectedStepInputRefKey($index, $event)"
-                          [disabled]="!inputRef.fromStepId"
-                        >
-                          @for (outputKey of getOutputKeysForSourceStepId(inputRef.fromStepId); track outputKey) {
-                            <mat-option [value]="outputKey">
-                              {{ outputKey }}
-                            </mat-option>
-                          }
-                        </mat-select>
-                      </mat-form-field>
+                          <mat-select
+                            panelClass="builder-select-panel"
+                            [ngModel]="inputRef.key"
+                            (ngModelChange)="updateSelectedStepInputRefKey($index, $event)"
+                            [disabled]="!inputRef.fromStepId"
+                          >
+                            @for (outputKey of getOutputKeysForSourceStepId(inputRef.fromStepId); track outputKey) {
+                              <mat-option [value]="outputKey">
+                                {{ outputKey }}
+                              </mat-option>
+                            }
+                          </mat-select>
+                        </mat-form-field>
+                      }
 
                     </div>
                   }
                 </div>
               } @else {
                 <p class="step-input-refs-empty">
-                  No input references configured. Add one to consume an ancestor step output.
+                  @if (isSelectedStepRoot()) {
+                    This root step requires a manual input to start the workflow. Add one above.
+                  } @else {
+                    No input references configured. Add one to consume an ancestor step output.
+                  }
                 </p>
               }
 
-              @if (ancestorStepsForSelectedStep().length === 0) {
+              @if (!isSelectedStepRoot() && ancestorStepsForSelectedStep().length === 0) {
                 <p class="step-input-refs-empty">
                   No ancestor steps are available yet. Create incoming edges to this step first.
                 </p>

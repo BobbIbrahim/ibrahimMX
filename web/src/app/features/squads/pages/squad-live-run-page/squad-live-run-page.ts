@@ -20,6 +20,10 @@ import {
   SquadStopConfirmDialogData,
 } from '../../components/squad-stop-confirm-dialog/squad-stop-confirm-dialog';
 import {
+  SquadRunInputDialog,
+  SquadRunInputDialogData,
+} from '../../components/squad-run-input-dialog/squad-run-input-dialog';
+import {
   SquadExecutionStatus,
   SquadRunStartResponse,
   SquadStepStatus,
@@ -154,6 +158,64 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
     return this.executionStatus()?.overallStatus === 'CANCELLED';
   });
 
+  readonly finalResult = computed<Record<string, unknown> | null>(() => {
+    const status = this.executionStatus();
+
+    if (!status || status.overallStatus !== 'COMPLETED') {
+      return null;
+    }
+
+    return status.finalResult ?? null;
+  });
+
+  readonly finalResultEntries = computed(() => {
+    const finalResult = this.finalResult();
+
+    if (!finalResult) {
+      return [];
+    }
+
+    return Object.entries(finalResult);
+  });
+
+  readonly orderedFinalResultFields = computed(() => {
+    const finalResult = this.finalResult();
+
+    if (!finalResult) {
+      return [];
+    }
+
+    const knownKeys = ['change', 'changeType', 'test', 'nextAction'];
+    const allKeys = Object.keys(finalResult);
+    const orderedFields: Array<[string, unknown]> = [];
+    const seenKeys = new Set<string>();
+
+    for (const key of knownKeys) {
+      if (key in finalResult) {
+        orderedFields.push([key, finalResult[key]]);
+        seenKeys.add(key);
+      }
+    }
+
+    for (const key of allKeys) {
+      if (!seenKeys.has(key)) {
+        orderedFields.push([key, finalResult[key]]);
+      }
+    }
+
+    return orderedFields;
+  });
+
+  readonly failureMessage = computed<string | null>(() => {
+    const status = this.executionStatus();
+
+    if (!status || status.overallStatus !== 'FAILED') {
+      return null;
+    }
+
+    return status.steps.find((step) => step.status === 'FAILED')?.message ?? null;
+  });
+
   readonly canStopWorkflow = computed(() => {
     return this.isWorkflowRunning() && !this.isStoppingWorkflow() && !!this.activeSquadRunId();
   });
@@ -222,18 +284,76 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
   }
 
   runWorkflow(): void {
+    this.prepareAndStartWorkflow();
+  }
+
+  private prepareAndStartWorkflow(): void {
     const squadId = this.squadId();
 
     if (!squadId) {
       return;
     }
 
+    const rootStepInputPrompt = this.buildRootStepInputPrompt();
+
+    if (!rootStepInputPrompt) {
+      this.startAndPollWorkflow(squadId, {});
+      return;
+    }
+
+    this.dialog
+      .open<SquadRunInputDialog, SquadRunInputDialogData, Record<string, string> | null>(SquadRunInputDialog, {
+        data: rootStepInputPrompt,
+      })
+      .afterClosed()
+      .subscribe((initialInput) => {
+        if (!initialInput) {
+          return;
+        }
+
+        this.startAndPollWorkflow(squadId, initialInput);
+      });
+  }
+
+  private buildRootStepInputPrompt(): SquadRunInputDialogData | null {
+    const squad = this.squad();
+
+    if (!squad) {
+      return null;
+    }
+
+    const targetStepIds = new Set(squad.edges.map((edge) => edge.targetStepId));
+    const rootStep = squad.steps.find((step) => !targetStepIds.has(step.id));
+
+    if (!rootStep) {
+      return null;
+    }
+
+    // Extract only the MANUAL input refs from the root step
+    const manualInputRefs = (rootStep.inputRefs ?? []).filter(
+      (ref: any) => ref.sourceType === 'MANUAL',
+    );
+
+    if (manualInputRefs.length === 0) {
+      return null;
+    }
+
+    const rootAgent = this.agentService.getAgentByKey(rootStep.agentKey);
+
+    return {
+      stepName: rootStep.name,
+      agentName: rootAgent?.name ?? '',
+      inputKeys: manualInputRefs.map((ref: any) => ref.targetInput),
+    };
+  }
+
+  private startAndPollWorkflow(squadId: string, initialInput: Record<string, string>): void {
     this.executionStatus.set(null);
     this.selectedStepId.set(null);
     this.followModeEnabled.set(true);
     this.executionEvents.set(['Starting workflow...']);
 
-    this.squadService.startSquadRun(squadId).subscribe({
+    this.squadService.startSquadRun(squadId, initialInput).subscribe({
       next: (response: SquadRunStartResponse) => {
         this.activeSquadRunId.set(response.squadRunId);
 
@@ -473,6 +593,38 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
 
     clearInterval(this.pollingHandle);
     this.pollingHandle = undefined;
+  }
+
+  formatFinalResultValue(value: unknown): string {
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    if (value === null || value === undefined) {
+      return '—';
+    }
+
+    return JSON.stringify(value);
+  }
+
+  getFieldLabel(key: string): string {
+    const executionStatus = this.executionStatus();
+    
+    // Use agent-provided label if available
+    if (executionStatus?.finalResultFieldLabels?.[key]) {
+      return executionStatus.finalResultFieldLabels[key];
+    }
+
+    // If no agent-provided label, return the key itself (or empty string)
+    return key;
+  }
+
+  isKnownResultField(key: string): boolean {
+    return ['change', 'changeType', 'test', 'nextAction'].includes(key);
+  }
+
+  isChangeTypeBadge(key: string): boolean {
+    return key === 'changeType';
   }
 
   private resolveAgentName(executionStep?: SquadStepStatus, squadStepAgentKey?: string): string {

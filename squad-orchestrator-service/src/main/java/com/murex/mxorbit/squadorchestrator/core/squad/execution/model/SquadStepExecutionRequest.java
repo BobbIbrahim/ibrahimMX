@@ -37,4 +37,8 @@ public class SquadStepExecutionRequest {
 	@Builder.Default
 	@NonNull
 	private Map<String, Map<String, Object>> stepOutputsByStepId = new LinkedHashMap<>();
+
+	@Builder.Default
+	@NonNull
+	private Map<String, Object> seedInput = new LinkedHashMap<>();
 }
