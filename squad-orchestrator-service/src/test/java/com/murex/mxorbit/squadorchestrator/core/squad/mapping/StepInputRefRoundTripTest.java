@@ -13,10 +13,10 @@ import com.murex.mxorbit.squadorchestrator.api.squad.response.AiAgentStepApiResp
 import com.murex.mxorbit.squadorchestrator.core.squad.creator.mapper.SquadCreatorMapper;
 import com.murex.mxorbit.squadorchestrator.core.squad.creator.request.AiAgentStepRequest;
 import com.murex.mxorbit.squadorchestrator.core.squad.creator.request.CreateSquadRequest;
-import com.murex.mxorbit.squadorchestrator.core.squad.store.request.CreateSquadStoreRequest;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.AiAgentStep;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadStep;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.StepInputRef;
+import com.murex.mxorbit.squadorchestrator.core.squad.store.request.CreateSquadStoreRequest;
 import com.murex.mxorbit.squadorchestrator.infra.persistence.squad.entity.SquadStepEntity;
 import com.murex.mxorbit.squadorchestrator.infra.persistence.squad.mapper.SquadPersistenceMapper;
 import java.util.List;

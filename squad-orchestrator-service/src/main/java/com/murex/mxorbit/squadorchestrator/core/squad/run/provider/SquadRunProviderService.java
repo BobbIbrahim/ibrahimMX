@@ -2,30 +2,35 @@ package com.murex.mxorbit.squadorchestrator.core.squad.run.provider;
 
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadExecutionStatus;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadStepExecutionData;
+import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadStepExecutionStatus;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadStepStatus;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.workflow.SquadExecutionWorkflow;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.Squad;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadEdge;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadStep;
 import com.murex.mxorbit.squadorchestrator.core.squad.provider.SquadProvider;
+import com.murex.mxorbit.squadorchestrator.core.squad.routing.SquadRoutingDecision;
 import com.murex.mxorbit.squadorchestrator.core.squad.run.SquadRunMemoKeys;
 import com.murex.mxorbit.squadorchestrator.core.squad.run.model.SquadRunSummary;
-import com.murex.mxorbit.squadorchestrator.infra.persistence.squad.execution.SquadStepExecutionJpaStore;
 import com.murex.mxorbit.squadorchestrator.core.workflow.client.TemporalClient;
 import com.murex.mxorbit.squadorchestrator.core.workflow.client.WorkflowExecutionSummary;
 import com.murex.mxorbit.squadorchestrator.core.workflow.client.WorkflowRunStatus;
+import com.murex.mxorbit.squadorchestrator.infra.persistence.squad.execution.SquadStepExecutionJpaStore;
+import com.murex.mxorbit.squadorchestrator.infra.persistence.squad.routing.SquadRoutingDecisionJpaStore;
 import io.temporal.client.WorkflowNotFoundException;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
@@ -35,7 +40,11 @@ public class SquadRunProviderService implements SquadRunProvider {
 	private static final String SQUAD_EXECUTION_WORKFLOW_TYPE = SquadExecutionWorkflow.class.getSimpleName();
 
 	private final TemporalClient temporalClient;
+
 	private final SquadStepExecutionJpaStore squadStepExecutionJpaStore;
+
+	private final SquadRoutingDecisionJpaStore squadRoutingDecisionJpaStore;
+
 	private final SquadProvider squadProvider;
 
 	@Override
@@ -55,16 +64,35 @@ public class SquadRunProviderService implements SquadRunProvider {
 		try {
 			SquadExecutionStatus status = workflow.getExecutionStatus();
 			enrichWithStepExecutionData(squadRunId, status);
+			enrichWithRoutingDecisions(squadRunId, status);
 			populateFinalResult(status);
-			log.debug("Execution status snapshot before API return. squadRunId: {}, steps: {}", squadRunId, status
-					.getSteps().stream()
-					.map(step -> step.getStepId() + "=" + step.getStatus() + "(startedAt=" + step.getStartedAt()
-							+ ", completedAt=" + step.getCompletedAt() + ", durationMs=" + step.getDurationMs() + ")")
-					.toList());
+
+			log.debug("Execution status snapshot before API return. squadRunId: {}, steps: {}, routingDecisions: {}",
+					squadRunId,
+					status.getSteps().stream()
+							.map(step -> step.getStepId() + "=" + step.getStatus() + "(startedAt=" + step.getStartedAt()
+									+ ", completedAt=" + step.getCompletedAt() + ", durationMs=" + step.getDurationMs()
+									+ ")")
+							.toList(),
+					status.getRoutingDecisions().size());
+
 			return Optional.of(status);
-		} catch (WorkflowNotFoundException e) {
+		} catch (WorkflowNotFoundException exception) {
 			log.debug("Squad run not found. squadRunId: {}", squadRunId);
 			return Optional.empty();
+		}
+	}
+
+	private void enrichWithRoutingDecisions(String squadRunId, SquadExecutionStatus status) {
+		List<SquadRoutingDecision> persistedDecisions = squadRoutingDecisionJpaStore.findBySquadRunId(squadRunId);
+
+		if (!persistedDecisions.isEmpty()) {
+			status.setRoutingDecisions(new ArrayList<>(persistedDecisions));
+			return;
+		}
+
+		if (status.getRoutingDecisions() == null) {
+			status.setRoutingDecisions(new ArrayList<>());
 		}
 	}
 
@@ -73,10 +101,33 @@ public class SquadRunProviderService implements SquadRunProvider {
 			return;
 		}
 
-		squadProvider.getSquadById(status.getSquadId()).flatMap(SquadRunProviderService::findTerminalStepId)
-				.flatMap(terminalStepId -> status.getSteps().stream()
-						.filter(step -> step.getStepId().equals(terminalStepId)).findFirst())
+		Optional<String> terminalStepId = findSelectedTerminalStepId(status);
+
+		if (terminalStepId.isEmpty()) {
+			terminalStepId = squadProvider.getSquadById(status.getSquadId())
+					.flatMap(SquadRunProviderService::findTerminalStepId);
+		}
+
+		terminalStepId
+				.flatMap(stepId -> status.getSteps().stream().filter(step -> step.getStepId().equals(stepId))
+						.filter(step -> step.getStatus() == SquadStepExecutionStatus.COMPLETED).findFirst())
 				.ifPresent(terminalStep -> status.setFinalResult(terminalStep.getOutput()));
+	}
+
+	static Optional<String> findSelectedTerminalStepId(SquadExecutionStatus status) {
+		List<SquadRoutingDecision> routingDecisions = status.getRoutingDecisions();
+
+		if (routingDecisions != null && !routingDecisions.isEmpty()) {
+			for (int index = routingDecisions.size() - 1; index >= 0; index--) {
+				String selectedTargetStepId = routingDecisions.get(index).getSelectedTargetStepId();
+				if (selectedTargetStepId != null && !selectedTargetStepId.isBlank()) {
+					return Optional.of(selectedTargetStepId);
+				}
+			}
+		}
+
+		return status.getSteps().stream().filter(step -> step.getStatus() == SquadStepExecutionStatus.COMPLETED)
+				.reduce((first, second) -> second).map(SquadStepStatus::getStepId);
 	}
 
 	static Optional<String> findTerminalStepId(Squad squad) {
@@ -89,7 +140,7 @@ public class SquadRunProviderService implements SquadRunProvider {
 
 	private void enrichWithStepExecutionData(String squadRunId, SquadExecutionStatus status) {
 		var stepExecutionDataMap = squadStepExecutionJpaStore.findBySquadRunId(squadRunId).stream()
-				.collect(java.util.stream.Collectors.toMap(SquadStepExecutionData::getStepId, Function.identity()));
+				.collect(Collectors.toMap(SquadStepExecutionData::getStepId, Function.identity()));
 
 		status.getSteps().forEach(step -> {
 			var executionData = stepExecutionDataMap.get(step.getStepId());
@@ -116,6 +167,7 @@ public class SquadRunProviderService implements SquadRunProvider {
 	private SquadRunSummary toSquadRunSummary(WorkflowExecutionSummary execution) {
 		Map<String, String> memo = execution.getMemo();
 		Long durationMs = null;
+
 		if (execution.getCloseTime() != null) {
 			durationMs = Duration.between(execution.getStartTime(), execution.getCloseTime()).toMillis();
 		}

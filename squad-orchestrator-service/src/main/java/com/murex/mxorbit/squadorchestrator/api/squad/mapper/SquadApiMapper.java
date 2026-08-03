@@ -44,6 +44,9 @@ public interface SquadApiMapper {
 		}
 	}
 
+	@Mapping(target = "routingType", source = "routingType", defaultValue = "ALWAYS")
+	@Mapping(target = "priority", source = "priority", defaultValue = "100")
+	@Mapping(target = "isDefault", source = "isDefault", defaultValue = "false")
 	SquadEdgeRequest toSquadEdgeRequest(SquadEdgeApiRequest request);
 
 	@Mapping(target = "steps", source = "steps")
@@ -68,6 +71,9 @@ public interface SquadApiMapper {
 		}
 	}
 
+	@Mapping(target = "routingType", source = "routingType", defaultValue = "ALWAYS")
+	@Mapping(target = "priority", source = "priority", defaultValue = "100")
+	@Mapping(target = "isDefault", source = "isDefault", defaultValue = "false")
 	SquadEdgeApiResponse toSquadEdgeApiResponse(SquadEdge edge);
 
 }

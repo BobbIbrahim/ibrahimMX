@@ -19,7 +19,7 @@
             type="button"
             mat-icon-button
             class="delete-squad-button"
-            aria-label="Delete squad"
+            [attr.aria-label]="'Delete squad ' + squad().name"
             (click)="deleteSquad($event)"
           >
             <mat-icon>delete</mat-icon>
@@ -31,34 +31,60 @@
     </div>
   </header>
 
-  <section class="squad-card__meta" aria-label="Squad metadata">
-    <div>
-      <span>Type</span>
-      <strong>{{ squad().type }}</strong>
-    </div>
-  </section>
+  <section class="squad-card__details" aria-label="Squad details">
+    <div
+      class="squad-type-badge"
+      [class.squad-type-badge--prompt]="squad().type === 'prompt-squad'"
+    >
+      <mat-icon>
+        {{ squad().type === 'hardcoded-flow' ? 'account_tree' : 'auto_awesome' }}
+      </mat-icon>
 
-  <section class="squad-card__metrics" aria-label="Squad metrics">
-    <div>
-      <span class="metric-value">{{ squad().metrics.steps }}</span>
-      <span class="metric-label">Steps</span>
-    </div>
-
-    <div>
-      <span class="metric-value">{{ squad().metrics.edges }}</span>
-      <span class="metric-label">Edges</span>
+      <span>
+        {{ squad().type === 'hardcoded-flow' ? 'Hardcoded Flow' : 'Prompt Squad' }}
+      </span>
     </div>
 
-    <div>
-      <span class="metric-value">{{ squad().metrics.members }}</span>
-      <span class="metric-label">Members</span>
-    </div>
+    <section class="squad-card__metrics" aria-label="Squad metrics">
+      <div class="squad-metric">
+        <mat-icon>format_list_numbered</mat-icon>
+
+        <div class="squad-metric__content">
+          <span class="metric-value">{{ squad().metrics.steps }}</span>
+          <span class="metric-label">Steps</span>
+        </div>
+      </div>
+
+      <div class="squad-metric">
+        <mat-icon>timeline</mat-icon>
+
+        <div class="squad-metric__content">
+          <span class="metric-value">{{ squad().metrics.edges }}</span>
+          <span class="metric-label">Edges</span>
+        </div>
+      </div>
+
+      <div class="squad-metric">
+        <mat-icon>group</mat-icon>
+
+        <div class="squad-metric__content">
+          <span class="metric-value">{{ squad().metrics.members }}</span>
+          <span class="metric-label">Members</span>
+        </div>
+      </div>
+    </section>
   </section>
 
   <footer class="squad-card__footer">
-    <button type="button" mat-stroked-button class="open-squad-button" (click)="openSquad()">
-      <mat-icon>open_in_new</mat-icon>
-      Open
+    <button
+      type="button"
+      mat-flat-button
+      class="open-squad-button"
+      [attr.aria-label]="'Open squad ' + squad().name"
+      (click)="openSquad()"
+    >
+      <span>Open Squad</span>
+      <mat-icon>arrow_forward</mat-icon>
     </button>
   </footer>
 </article>

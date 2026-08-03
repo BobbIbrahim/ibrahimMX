@@ -8,7 +8,10 @@
     (actionClick)="onCreateSquad()"
   />
 
-  <section class="squad-stats" aria-label="Squad statistics">
+  <section
+    class="squad-stats"
+    aria-label="Squad statistics"
+  >
     <article>
       <span>Total Squads</span>
       <strong>{{ squads().length }}</strong>
@@ -34,9 +37,16 @@
     </article>
   </section>
 
-  <section class="squad-toolbar" aria-label="Squad filters and sorting">
+  <section
+    class="squad-toolbar"
+    aria-label="Squad filters and sorting"
+  >
     <div class="squad-toolbar__top">
-      <mat-form-field appearance="outline" class="squad-search" subscriptSizing="dynamic">
+      <mat-form-field
+        appearance="outline"
+        class="squad-search"
+        subscriptSizing="dynamic"
+      >
         <mat-icon matPrefix>search</mat-icon>
 
         <input
@@ -44,30 +54,59 @@
           type="search"
           placeholder="Search by squad name, description, or type"
           [ngModel]="searchTerm()"
-          (ngModelChange)="searchTerm.set($event)"
+          (ngModelChange)="onSearchTermChange($event)"
         />
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="squad-sort" subscriptSizing="dynamic">
+      <mat-form-field
+        appearance="outline"
+        class="squad-sort"
+        subscriptSizing="dynamic"
+      >
         <mat-label>Sort by</mat-label>
 
-        <mat-select [ngModel]="sortOption()" (ngModelChange)="sortOption.set($event)">
-          <mat-option value="name-asc">Name A-Z</mat-option>
-          <mat-option value="name-desc">Name Z-A</mat-option>
-          <mat-option value="steps-desc">Most steps</mat-option>
-          <mat-option value="edges-desc">Most edges</mat-option>
-          <mat-option value="members-desc">Most members</mat-option>
+        <mat-select
+          [ngModel]="sortOption()"
+          (ngModelChange)="onSortOptionChange($event)"
+        >
+          <mat-option value="name-asc">
+            Name A-Z
+          </mat-option>
+
+          <mat-option value="name-desc">
+            Name Z-A
+          </mat-option>
+
+          <mat-option value="steps-desc">
+            Most steps
+          </mat-option>
+
+          <mat-option value="edges-desc">
+            Most edges
+          </mat-option>
+
+          <mat-option value="members-desc">
+            Most members
+          </mat-option>
         </mat-select>
       </mat-form-field>
     </div>
 
     <div class="squad-toolbar__bottom">
-      <div class="filter-pills" aria-label="Squad type filters">
+      <div
+        class="filter-pills"
+        aria-label="Squad type filters"
+      >
         <button
           type="button"
           class="filter-pill"
-          [class.filter-pill--active]="typeFilter() === 'all'"
-          (click)="typeFilter.set('all')"
+          [class.filter-pill--active]="
+            typeFilter() === 'all'
+          "
+          [attr.aria-pressed]="
+            typeFilter() === 'all'
+          "
+          (click)="onTypeFilterChange('all')"
         >
           All
         </button>
@@ -75,8 +114,15 @@
         <button
           type="button"
           class="filter-pill"
-          [class.filter-pill--active]="typeFilter() === 'hardcoded-flow'"
-          (click)="typeFilter.set('hardcoded-flow')"
+          [class.filter-pill--active]="
+            typeFilter() === 'hardcoded-flow'
+          "
+          [attr.aria-pressed]="
+            typeFilter() === 'hardcoded-flow'
+          "
+          (click)="
+            onTypeFilterChange('hardcoded-flow')
+          "
         >
           Hardcoded Flow
         </button>
@@ -84,14 +130,26 @@
         <button
           type="button"
           class="filter-pill"
-          [class.filter-pill--active]="typeFilter() === 'prompt-squad'"
-          (click)="typeFilter.set('prompt-squad')"
+          [class.filter-pill--active]="
+            typeFilter() === 'prompt-squad'
+          "
+          [attr.aria-pressed]="
+            typeFilter() === 'prompt-squad'
+          "
+          (click)="
+            onTypeFilterChange('prompt-squad')
+          "
         >
           Prompt Squad
         </button>
       </div>
 
-      <button type="button" mat-stroked-button class="clear-button" (click)="clearFilters()">
+      <button
+        type="button"
+        mat-stroked-button
+        class="clear-button"
+        (click)="clearFilters()"
+      >
         <mat-icon>restart_alt</mat-icon>
         Clear
       </button>
@@ -99,26 +157,337 @@
   </section>
 
   @if (loadSquadsError()) {
-    <section class="squad-feedback squad-feedback--error">
+    <section
+      class="squad-feedback squad-feedback--error"
+      role="alert"
+    >
       <mat-icon>error_outline</mat-icon>
       <span>{{ loadSquadsError() }}</span>
     </section>
   }
 
-  <p class="squad-result-count">
-    Showing {{ filteredSquads().length }} of {{ squads().length }} squads
-  </p>
+  <div class="squad-results-summary">
+    <p
+      class="squad-result-count"
+      aria-live="polite"
+    >
+      @if (filteredSquads().length > 0) {
+        Showing {{ resultRangeStart() }}–{{ resultRangeEnd() }}
+        of {{ filteredSquads().length }} matching squads
+      } @else {
+        Showing 0 of 0 matching squads
+      }
+
+      @if (filteredSquads().length !== squads().length) {
+        <span class="squad-result-count__total">
+          · {{ squads().length }} total
+        </span>
+      }
+    </p>
+
+    @if (filteredSquads().length > 0) {
+      <div class="squad-results-controls">
+        <div
+          class="view-switch"
+          role="group"
+          aria-label="Squad display view"
+        >
+          <button
+            type="button"
+            class="view-switch__button"
+            [class.view-switch__button--active]="
+              viewMode() === 'cards'
+            "
+            [attr.aria-pressed]="
+              viewMode() === 'cards'
+            "
+            (click)="onViewModeChange('cards')"
+          >
+            <mat-icon>grid_view</mat-icon>
+            <span>Cards</span>
+          </button>
+
+          <button
+            type="button"
+            class="view-switch__button"
+            [class.view-switch__button--active]="
+              viewMode() === 'list'
+            "
+            [attr.aria-pressed]="
+              viewMode() === 'list'
+            "
+            (click)="onViewModeChange('list')"
+          >
+            <mat-icon>view_list</mat-icon>
+            <span>List</span>
+          </button>
+        </div>
+
+        <div class="squad-page-size-control">
+          <label
+            class="squad-page-size-label"
+            for="squad-page-size-select"
+          >
+            Squads per page
+          </label>
+
+          <mat-select
+            id="squad-page-size-select"
+            class="squad-page-size-select"
+            aria-label="Number of squads displayed per page"
+            [ngModel]="pageSize()"
+            (ngModelChange)="onPageSizeChange($event)"
+          >
+            @for (option of pageSizeOptions;
+              track option) {
+              <mat-option [value]="option">
+                {{ option }}
+              </mat-option>
+            }
+          </mat-select>
+        </div>
+      </div>
+    }
+  </div>
 
   @if (filteredSquads().length > 0) {
-    <div class="squad-grid">
-      @for (squad of filteredSquads(); track squad.id) {
-        <app-squad-card
-          [squad]="squad"
-          (openClicked)="openSquad($event)"
-          (deleteClicked)="deleteSquad(squad.id)"
-        ></app-squad-card>
-      }
-    </div>
+    @if (viewMode() === 'cards') {
+      <div class="squad-grid">
+        @for (squad of paginatedSquads();
+          track squad.id) {
+          <app-squad-card
+            [squad]="squad"
+            (openClicked)="openSquad($event)"
+            (deleteClicked)="
+              deleteSquad(squad.id)
+            "
+          ></app-squad-card>
+        }
+      </div>
+    } @else {
+      <div class="squad-list-container">
+        <table class="squad-list">
+          <thead>
+          <tr>
+            <th>Squad</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Steps</th>
+            <th>Edges</th>
+            <th>Members</th>
+            <th class="squad-list__actions-heading">
+              Actions
+            </th>
+          </tr>
+          </thead>
+
+          <tbody>
+            @for (squad of paginatedSquads();
+              track squad.id) {
+              <tr
+                role="button"
+                tabindex="0"
+                [attr.aria-label]="
+                  'Open squad ' + squad.name
+                "
+                (click)="openSquad(squad.id)"
+                (keydown.enter)="openSquad(squad.id)"
+                (keydown.space)="
+                  openSquad(squad.id);
+                  $event.preventDefault()
+                "
+              >
+                <td>
+                  <div class="squad-list__identity">
+                    <div
+                      class="squad-list__icon"
+                      aria-hidden="true"
+                    >
+                      <mat-icon>
+                        {{
+                          squad.type ===
+                          'hardcoded-flow'
+                            ? 'account_tree'
+                            : 'auto_awesome'
+                        }}
+                      </mat-icon>
+                    </div>
+
+                    <div
+                      class="squad-list__identity-content"
+                    >
+                      <strong>{{ squad.name }}</strong>
+
+                      <span>
+                        {{ squad.description }}
+                      </span>
+                    </div>
+                  </div>
+                </td>
+
+                <td>
+                  <span
+                    class="squad-list__type"
+                    [class.squad-list__type--prompt]="
+                      squad.type === 'prompt-squad'
+                    "
+                  >
+                    <mat-icon>
+                      {{
+                        squad.type ===
+                        'hardcoded-flow'
+                          ? 'account_tree'
+                          : 'auto_awesome'
+                      }}
+                    </mat-icon>
+
+                    {{
+                      getSquadTypeLabel(squad.type)
+                    }}
+                  </span>
+                </td>
+
+                <td>
+                  <span
+                    class="squad-list__status"
+                    [class.squad-list__status--active]="
+                      squad.status === 'active'
+                    "
+                    [class.squad-list__status--draft]="
+                      squad.status === 'draft'
+                    "
+                    [class.squad-list__status--paused]="
+                      squad.status === 'paused'
+                    "
+                  >
+                    {{ squad.status }}
+                  </span>
+                </td>
+
+                <td>
+                  <span class="squad-list__metric">
+                    <mat-icon>
+                      format_list_numbered
+                    </mat-icon>
+
+                    {{ squad.metrics.steps }}
+                  </span>
+                </td>
+
+                <td>
+                  <span class="squad-list__metric">
+                    <mat-icon>timeline</mat-icon>
+                    {{ squad.metrics.edges }}
+                  </span>
+                </td>
+
+                <td>
+                  <span class="squad-list__metric">
+                    <mat-icon>group</mat-icon>
+                    {{ squad.metrics.members }}
+                  </span>
+                </td>
+
+                <td>
+                  <div class="squad-list__actions">
+                    <button
+                      type="button"
+                      mat-flat-button
+                      class="squad-list__open"
+                      [attr.aria-label]="
+                        'Open squad ' + squad.name
+                      "
+                      (click)="
+                        openSquadFromAction(
+                          squad.id,
+                          $event
+                        )
+                      "
+                    >
+                      <mat-icon>arrow_forward</mat-icon>
+                      Open
+                    </button>
+
+                    <button
+                      type="button"
+                      mat-icon-button
+                      class="squad-list__delete"
+                      [attr.aria-label]="
+                        'Delete squad ' + squad.name
+                      "
+                      (click)="
+                        deleteSquadFromAction(
+                          squad.id,
+                          $event
+                        )
+                      "
+                    >
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    @if (totalPages() > 1) {
+      <nav
+        class="squad-pagination"
+        aria-label="Squad list pagination"
+      >
+        <button
+          type="button"
+          class="pagination-button pagination-button--navigation"
+          [disabled]="!hasPreviousPage()"
+          aria-label="Go to previous squad page"
+          (click)="goToPreviousPage()"
+        >
+          <mat-icon>chevron_left</mat-icon>
+          <span>Previous</span>
+        </button>
+
+        <div
+          class="pagination-pages"
+          aria-label="Squad pages"
+        >
+          @for (page of visiblePageNumbers();
+            track page) {
+            <button
+              type="button"
+              class="pagination-button pagination-button--page"
+              [class.pagination-button--active]="
+                effectiveCurrentPage() === page
+              "
+              [attr.aria-current]="
+                effectiveCurrentPage() === page
+                  ? 'page'
+                  : null
+              "
+              [attr.aria-label]="
+                'Go to squad page ' + page
+              "
+              (click)="goToPage(page)"
+            >
+              {{ page }}
+            </button>
+          }
+        </div>
+
+        <button
+          type="button"
+          class="pagination-button pagination-button--navigation"
+          [disabled]="!hasNextPage()"
+          aria-label="Go to next squad page"
+          (click)="goToNextPage()"
+        >
+          <span>Next</span>
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </nav>
+    }
   } @else {
     <section class="squad-empty-state">
       <mat-icon>hub</mat-icon>
@@ -126,10 +495,15 @@
       <h2>No squads found</h2>
 
       <p>
-        Adjust the filters or create a new squad to start building an orchestration flow.
+        Adjust the filters or create a new squad to start
+        building an orchestration flow.
       </p>
 
-      <button type="button" mat-flat-button (click)="onCreateSquad()">
+      <button
+        type="button"
+        mat-flat-button
+        (click)="onCreateSquad()"
+      >
         <mat-icon>add</mat-icon>
         New Squad
       </button>

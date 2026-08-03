@@ -20,4 +20,15 @@ public class SquadEdge {
 
 	@NonNull
 	private String targetStepId;
+
+	@Builder.Default
+	private SquadEdgeRoutingType routingType = SquadEdgeRoutingType.ALWAYS;
+
+	private String condition;
+
+	@Builder.Default
+	private Integer priority = 100;
+
+	@Builder.Default
+	private Boolean isDefault = false;
 }

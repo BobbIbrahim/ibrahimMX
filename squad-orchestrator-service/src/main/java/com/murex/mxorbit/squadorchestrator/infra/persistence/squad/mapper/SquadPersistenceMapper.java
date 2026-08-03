@@ -58,6 +58,9 @@ public interface SquadPersistenceMapper {
 	}
 
 	@Mapping(target = "squad", ignore = true)
+	@Mapping(target = "routingType", source = "routingType", defaultValue = "ALWAYS")
+	@Mapping(target = "priority", source = "priority", defaultValue = "100")
+	@Mapping(target = "isDefault", source = "isDefault", defaultValue = "false")
 	SquadEdgeEntity toEdgeEntity(SquadEdge edge);
 
 	default SquadStep toStep(SquadStepEntity entity) {
@@ -73,5 +76,8 @@ public interface SquadPersistenceMapper {
 		};
 	}
 
+	@Mapping(target = "routingType", source = "routingType", defaultValue = "ALWAYS")
+	@Mapping(target = "priority", source = "priority", defaultValue = "100")
+	@Mapping(target = "isDefault", source = "isDefault", defaultValue = "false")
 	SquadEdge toEdge(SquadEdgeEntity entity);
 }

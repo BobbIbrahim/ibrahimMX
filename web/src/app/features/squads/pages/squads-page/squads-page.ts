@@ -17,10 +17,48 @@ import {
   SquadCreateDialogData,
   SquadCreateDialogResult,
 } from '../../components/squad-create-dialog/squad-create-dialog';
+import {
+  SquadDeleteConfirmDialog,
+  SquadDeleteConfirmDialogData,
+} from '../../components/squad-delete-confirm-dialog/squad-delete-confirm-dialog';
 
 type SquadTypeFilter = 'all' | 'hardcoded-flow' | 'prompt-squad';
 
 type SquadSortOption = 'name-asc' | 'name-desc' | 'steps-desc' | 'edges-desc' | 'members-desc';
+
+type SquadPageSize = 6 | 12 | 24;
+
+type SquadViewMode = 'cards' | 'list';
+
+const SQUAD_VIEW_MODE_STORAGE_KEY = 'mxorbit.squads.viewMode';
+
+function getInitialSquadViewMode(): SquadViewMode {
+  if (typeof window === 'undefined') {
+    return 'cards';
+  }
+
+  try {
+    const storedViewMode = window.localStorage.getItem(SQUAD_VIEW_MODE_STORAGE_KEY);
+
+    return storedViewMode === 'list' || storedViewMode === 'cards' ? storedViewMode : 'cards';
+  } catch (error) {
+    console.warn('Failed to read the persisted squad view mode:', error);
+
+    return 'cards';
+  }
+}
+
+function persistSquadViewMode(viewMode: SquadViewMode): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(SQUAD_VIEW_MODE_STORAGE_KEY, viewMode);
+  } catch (error) {
+    console.warn('Failed to persist the squad view mode:', error);
+  }
+}
 
 @Component({
   selector: 'app-squads-page',
@@ -52,6 +90,11 @@ export class SquadsPage implements OnInit {
   readonly searchTerm = signal('');
   readonly typeFilter = signal<SquadTypeFilter>('all');
   readonly sortOption = signal<SquadSortOption>('name-asc');
+  readonly viewMode = signal<SquadViewMode>(getInitialSquadViewMode());
+
+  readonly currentPage = signal(1);
+  readonly pageSize = signal<SquadPageSize>(6);
+  readonly pageSizeOptions: readonly SquadPageSize[] = [6, 12, 24];
 
   readonly hardcodedFlows = computed(() => {
     return this.squads().filter((squad) => squad.type === 'hardcoded-flow').length;
@@ -111,6 +154,63 @@ export class SquadsPage implements OnInit {
     });
   });
 
+  readonly totalPages = computed(() => {
+    const filteredSquadCount = this.filteredSquads().length;
+
+    if (filteredSquadCount === 0) {
+      return 0;
+    }
+
+    return Math.ceil(filteredSquadCount / this.pageSize());
+  });
+
+  readonly effectiveCurrentPage = computed(() => {
+    const availablePages = this.totalPages();
+
+    if (availablePages === 0) {
+      return 1;
+    }
+
+    return Math.min(Math.max(this.currentPage(), 1), availablePages);
+  });
+
+  readonly paginatedSquads = computed(() => {
+    const page = this.effectiveCurrentPage();
+    const selectedPageSize = this.pageSize();
+    const startIndex = (page - 1) * selectedPageSize;
+    const endIndex = startIndex + selectedPageSize;
+
+    return this.filteredSquads().slice(startIndex, endIndex);
+  });
+
+  readonly visiblePageNumbers = computed(() => {
+    return Array.from({ length: this.totalPages() }, (_, index) => index + 1);
+  });
+
+  readonly resultRangeStart = computed(() => {
+    if (this.filteredSquads().length === 0) {
+      return 0;
+    }
+
+    return (this.effectiveCurrentPage() - 1) * this.pageSize() + 1;
+  });
+
+  readonly resultRangeEnd = computed(() => {
+    if (this.filteredSquads().length === 0) {
+      return 0;
+    }
+
+    return Math.min(this.effectiveCurrentPage() * this.pageSize(), this.filteredSquads().length);
+  });
+
+  readonly hasPreviousPage = computed(() => {
+    return this.totalPages() > 0 && this.effectiveCurrentPage() > 1;
+  });
+
+  readonly hasNextPage = computed(() => {
+    return this.totalPages() > 0 && this.effectiveCurrentPage() < this.totalPages();
+  });
+
   ngOnInit(): void {
     this.loadSquads();
   }
@@ -159,14 +259,128 @@ export class SquadsPage implements OnInit {
     });
   }
 
+  openSquadFromAction(squadId: string, event: Event): void {
+    event.stopPropagation();
+    this.openSquad(squadId);
+  }
+
   deleteSquad(squadId: string): void {
-    this.squadService.deleteSquad(squadId);
+    const squad = this.squads().find((existingSquad) => existingSquad.id === squadId);
+
+    if (!squad) {
+      return;
+    }
+
+    const dialogRef = this.dialog.open<
+      SquadDeleteConfirmDialog,
+      SquadDeleteConfirmDialogData,
+      boolean
+    >(SquadDeleteConfirmDialog, {
+      data: {
+        squadName: squad.name,
+      },
+      width: '30rem',
+      maxWidth: '92vw',
+      autoFocus: false,
+      restoreFocus: true,
+      disableClose: true,
+      panelClass: 'squad-delete-confirm-dialog-panel',
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (!confirmed) {
+        return;
+      }
+
+      this.squadService.deleteSquad(squadId);
+      this.correctCurrentPage();
+    });
+  }
+
+  deleteSquadFromAction(squadId: string, event: Event): void {
+    event.stopPropagation();
+    this.deleteSquad(squadId);
+  }
+
+  onSearchTermChange(searchTerm: string): void {
+    this.searchTerm.set(searchTerm);
+    this.resetPagination();
+  }
+
+  onTypeFilterChange(typeFilter: SquadTypeFilter): void {
+    this.typeFilter.set(typeFilter);
+    this.resetPagination();
+  }
+
+  onSortOptionChange(sortOption: SquadSortOption): void {
+    this.sortOption.set(sortOption);
+    this.resetPagination();
+  }
+
+  onPageSizeChange(pageSize: SquadPageSize): void {
+    this.pageSize.set(pageSize);
+    this.resetPagination();
+  }
+
+  onViewModeChange(viewMode: SquadViewMode): void {
+    if (this.viewMode() === viewMode) {
+      return;
+    }
+
+    this.viewMode.set(viewMode);
+    persistSquadViewMode(viewMode);
+  }
+
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages()) {
+      return;
+    }
+
+    this.currentPage.set(page);
+  }
+
+  goToPreviousPage(): void {
+    if (!this.hasPreviousPage()) {
+      return;
+    }
+
+    this.currentPage.set(this.effectiveCurrentPage() - 1);
+  }
+
+  goToNextPage(): void {
+    if (!this.hasNextPage()) {
+      return;
+    }
+
+    this.currentPage.set(this.effectiveCurrentPage() + 1);
   }
 
   clearFilters(): void {
     this.searchTerm.set('');
     this.typeFilter.set('all');
     this.sortOption.set('name-asc');
+    this.resetPagination();
+  }
+
+  getSquadTypeLabel(type: 'hardcoded-flow' | 'prompt-squad'): string {
+    return type === 'hardcoded-flow' ? 'Hardcoded Flow' : 'Prompt Squad';
+  }
+
+  private resetPagination(): void {
+    this.currentPage.set(1);
+  }
+
+  private correctCurrentPage(): void {
+    const availablePages = this.totalPages();
+
+    if (availablePages === 0) {
+      this.currentPage.set(1);
+      return;
+    }
+
+    if (this.currentPage() > availablePages) {
+      this.currentPage.set(availablePages);
+    }
   }
 
   private loadSquads(): void {
