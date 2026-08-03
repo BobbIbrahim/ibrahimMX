@@ -18,20 +18,23 @@ import com.murex.mxorbit.squadorchestrator.core.squad.model.Squad;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadEdge;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadStep;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.StepInputRef;
+import com.murex.mxorbit.squadorchestrator.core.squad.routing.SquadRoutingConditionEvaluator;
+import com.murex.mxorbit.squadorchestrator.core.squad.routing.SquadRoutingDecisionException;
+import com.murex.mxorbit.squadorchestrator.core.squad.routing.SquadRoutingDecisionService;
+import com.murex.mxorbit.squadorchestrator.core.squad.execution.activity.SaveSquadRoutingDecisionActivity;
+import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SaveSquadRoutingDecisionRequest;
+import com.murex.mxorbit.squadorchestrator.core.squad.routing.SquadRoutingDecision;
 import com.murex.mxorbit.squadorchestrator.core.workflow.client.WorkflowRunStatus;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
 import io.temporal.failure.ApplicationFailure;
 import io.temporal.spring.boot.WorkflowImpl;
-import io.temporal.workflow.Async;
 import io.temporal.workflow.Workflow;
-import io.temporal.workflow.Promise;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -53,20 +56,26 @@ public class SquadExecutionWorkflowImpl implements SquadExecutionWorkflow {
 	private final SaveSquadStepExecutionActivity saveSquadStepExecutionActivity = Workflow
 			.newActivityStub(SaveSquadStepExecutionActivity.class, buildActivityOptions());
 
+	private final SaveSquadRoutingDecisionActivity saveSquadRoutingDecisionActivity = Workflow
+			.newActivityStub(SaveSquadRoutingDecisionActivity.class, buildActivityOptions());
+
+	/**
+	 * Temporal workflows are instantiated by the Temporal worker runtime, not
+	 * Spring, so routing must be created locally in a deterministic way.
+	 */
+	private final SquadRoutingDecisionService routingDecisionService = new SquadRoutingDecisionService(
+			new SquadRoutingConditionEvaluator());
+
 	private final Map<String, SquadStep> stepsById = new LinkedHashMap<>();
 	private final Map<String, SquadStepStatus> stepStatusesById = new LinkedHashMap<>();
-	private final Set<String> startedStepIds = new LinkedHashSet<>();
-	private final Set<String> finishedStepIds = new LinkedHashSet<>();
 	private final Map<String, SquadStepExecutionResult> resultsByStepId = new LinkedHashMap<>();
+	private final Map<String, List<SquadEdge>> outgoingEdgesBySourceStepId = new LinkedHashMap<>();
+	private final List<SquadRoutingDecision> routingDecisions = new ArrayList<>();
 
 	private String squadId;
 	private String squadRunId;
 	private Map<String, Object> initialInput = new LinkedHashMap<>();
-	private Map<String, Set<String>> dependenciesByStepId = new LinkedHashMap<>();
 	private WorkflowRunStatus overallStatus = WorkflowRunStatus.RUNNING;
-	private boolean workflowFailed;
-	private String workflowFailureMessage;
-	private String workflowFailureType;
 
 	@Override
 	public SquadExecutionResult execute(SquadExecutionRequest request) {
@@ -80,34 +89,48 @@ public class SquadExecutionWorkflowImpl implements SquadExecutionWorkflow {
 		squadId = squad.getId();
 
 		List<SquadStep> steps = squad.getSteps();
+		if (steps == null || steps.isEmpty()) {
+			throw ApplicationFailure.newNonRetryableFailure("Squad " + squad.getId() + " has no steps.",
+					"SQUAD_GRAPH_INVALID");
+		}
+
 		for (SquadStep step : steps) {
 			stepsById.put(step.getId(), step);
 			stepStatusesById.put(step.getId(), SquadStepStatus.builder().stepId(step.getId()).stepName(step.getName())
 					.status(SquadStepExecutionStatus.PENDING).build());
 		}
 
-		dependenciesByStepId = buildDependenciesMap(squad.getEdges(), stepsById.keySet());
+		buildOutgoingEdgesBySource(squad.getEdges() == null ? List.of() : squad.getEdges(), stepsById.keySet());
+		String currentStepId = findSingleRootStepId(steps, squad.getEdges() == null ? List.of() : squad.getEdges());
+		Set<String> visitedStepIds = new LinkedHashSet<>();
 
-		while (finishedStepIds.size() < stepsById.size()) {
-			List<SquadStep> readySteps = findReadySteps(steps, dependenciesByStepId, startedStepIds, finishedStepIds);
+		try {
+			while (true) {
+				if (!visitedStepIds.add(currentStepId)) {
+					throw ApplicationFailure.newNonRetryableFailure(
+							"Detected a cycle while traversing selected route at step '" + currentStepId + "'.",
+							"SQUAD_GRAPH_INVALID");
+				}
 
-			if (readySteps.isEmpty() && startedStepIds.size() == finishedStepIds.size()) {
-				throw ApplicationFailure.newNonRetryableFailure("No executable steps remain for squad " + squad.getId()
-						+ ". The graph may contain a cycle or invalid dependencies.", "SQUAD_GRAPH_INVALID");
+				SquadStep currentStep = stepsById.get(currentStepId);
+				SquadStepExecutionResult currentResult = executeSelectedStep(currentStep);
+
+				List<SquadEdge> outgoingEdges = outgoingEdgesBySourceStepId.getOrDefault(currentStepId, List.of());
+				if (outgoingEdges.isEmpty()) {
+					markPendingStepsSkipped("Step \"" + currentStep.getName() + "\" was not followed by any route.");
+					break;
+				}
+
+				SquadRoutingDecision routingDecision = decideOutgoingEdgeOrFail(currentStepId,
+						currentResult.getOutput(), outgoingEdges);
+
+				SquadEdge selectedEdge = routingDecision.getSelectedEdge();
+				markUnreachablePendingStepsAfterSelection(selectedEdge.getTargetStepId());
+				currentStepId = selectedEdge.getTargetStepId();
 			}
-
-			for (SquadStep readyStep : readySteps) {
-				startedStepIds.add(readyStep.getId());
-				startStepExecution(readyStep);
-			}
-
-			int finishedCountBeforeWait = finishedStepIds.size();
-			Workflow.await(() -> finishedStepIds.size() > finishedCountBeforeWait || workflowFailed);
-
-			if (workflowFailed) {
-				overallStatus = WorkflowRunStatus.FAILED;
-				throw ApplicationFailure.newNonRetryableFailure(workflowFailureMessage, workflowFailureType);
-			}
+		} catch (ApplicationFailure failure) {
+			overallStatus = WorkflowRunStatus.FAILED;
+			throw failure;
 		}
 
 		overallStatus = WorkflowRunStatus.COMPLETED;
@@ -118,39 +141,55 @@ public class SquadExecutionWorkflowImpl implements SquadExecutionWorkflow {
 	@Override
 	public SquadExecutionStatus getExecutionStatus() {
 		return SquadExecutionStatus.builder().squadId(squadId).overallStatus(overallStatus)
-				.steps(buildStepStatusesSnapshot()).build();
+				.steps(buildStepStatusesSnapshot()).routingDecisions(new ArrayList<>(routingDecisions)).build();
 	}
 
-	private void startStepExecution(SquadStep step) {
+	private SquadStepExecutionResult executeSelectedStep(SquadStep step) {
 		Map<String, Map<String, Object>> stepOutputsByStepId = buildStepOutputsByStepId();
-		Map<String, Object> seedInput = isRootStep(step) ? initialInput : Map.of();
+		Map<String, Object> seedInput = isRootStep(step.getId()) ? initialInput : Map.of();
 		Map<String, Object> stepInput = resolveStepInput(step, stepOutputsByStepId, seedInput);
 		markStepRunning(step, stepInput);
 
-		Promise<SquadStepExecutionResult> stepPromise = Async
-				.function(() -> executeStep(squadId, step, stepOutputsByStepId, seedInput));
-		stepPromise.handle((stepExecutionResult, throwable) -> {
-			if (throwable != null) {
-				markStepFailed(step, stepInput, throwable);
-				return null;
-			}
-
+		try {
+			SquadStepExecutionResult stepExecutionResult = executeStep(squadId, step, stepOutputsByStepId, seedInput);
 			resultsByStepId.put(step.getId(), stepExecutionResult);
 			markStepCompleted(step, stepExecutionResult.getInput(), stepExecutionResult);
 			persistStepExecution(step, stepExecutionResult.getInput(), stepExecutionResult);
-			finishedStepIds.add(step.getId());
 			return stepExecutionResult;
-		});
+		} catch (Throwable throwable) {
+			markStepFailed(step, stepInput, throwable);
+			throw ApplicationFailure.newNonRetryableFailure(
+					"Step \"" + step.getName() + "\" failed: " + extractFailureMessage(throwable), "SQUAD_STEP_FAILED");
+		}
 	}
 
-	private boolean isRootStep(SquadStep step) {
-		return dependenciesByStepId.getOrDefault(step.getId(), Set.of()).isEmpty();
+	private SquadRoutingDecision decideOutgoingEdgeOrFail(String sourceStepId, Map<String, Object> sourceOutput,
+			List<SquadEdge> outgoingEdges) {
+		try {
+			SquadRoutingDecision decision = routingDecisionService.decide(sourceStepId, sourceOutput, outgoingEdges);
+
+			recordRoutingDecision(decision);
+			return decision;
+		} catch (SquadRoutingDecisionException exception) {
+			if (exception.getDecision() != null) {
+				recordRoutingDecision(exception.getDecision());
+			}
+
+			throw ApplicationFailure.newNonRetryableFailure(exception.getMessage(), "SQUAD_ROUTING_DECISION_FAILED");
+		}
 	}
 
-	private Map<String, Set<String>> buildDependenciesMap(List<SquadEdge> edges, Set<String> stepIds) {
-		Map<String, Set<String>> dependenciesByStepId = new HashMap<>();
+	private void recordRoutingDecision(SquadRoutingDecision decision) {
+		int decisionSequence = routingDecisions.size();
+		routingDecisions.add(decision);
+
+		saveSquadRoutingDecisionActivity.saveSquadRoutingDecision(SaveSquadRoutingDecisionRequest.builder()
+				.squadRunId(squadRunId).squadId(squadId).decisionSequence(decisionSequence).decision(decision).build());
+	}
+
+	private void buildOutgoingEdgesBySource(List<SquadEdge> edges, Set<String> stepIds) {
 		for (String stepId : stepIds) {
-			dependenciesByStepId.put(stepId, new LinkedHashSet<>());
+			outgoingEdgesBySourceStepId.put(stepId, new ArrayList<>());
 		}
 
 		for (SquadEdge edge : edges) {
@@ -162,28 +201,85 @@ public class SquadExecutionWorkflowImpl implements SquadExecutionWorkflow {
 								"SQUAD_GRAPH_INVALID");
 			}
 
-			dependenciesByStepId.get(edge.getTargetStepId()).add(edge.getSourceStepId());
+			outgoingEdgesBySourceStepId.get(edge.getSourceStepId()).add(edge);
 		}
-
-		return dependenciesByStepId;
 	}
 
-	private List<SquadStep> findReadySteps(List<SquadStep> steps, Map<String, Set<String>> dependenciesByStepId,
-			Set<String> startedStepIds, Set<String> finishedStepIds) {
-		List<SquadStep> readySteps = new ArrayList<>();
+	private String findSingleRootStepId(List<SquadStep> steps, List<SquadEdge> edges) {
+		Set<String> targetStepIds = new LinkedHashSet<>();
+		for (SquadEdge edge : edges) {
+			targetStepIds.add(edge.getTargetStepId());
+		}
 
+		List<String> rootStepIds = new ArrayList<>();
 		for (SquadStep step : steps) {
-			if (startedStepIds.contains(step.getId())) {
+			if (!targetStepIds.contains(step.getId())) {
+				rootStepIds.add(step.getId());
+			}
+		}
+
+		if (rootStepIds.size() != 1) {
+			throw ApplicationFailure.newNonRetryableFailure(
+					"Squad " + squadId + " must have exactly one root step but found " + rootStepIds.size() + ".",
+					"SQUAD_GRAPH_INVALID");
+		}
+
+		return rootStepIds.get(0);
+	}
+
+	private boolean isRootStep(String stepId) {
+		for (List<SquadEdge> outgoingEdges : outgoingEdgesBySourceStepId.values()) {
+			for (SquadEdge edge : outgoingEdges) {
+				if (stepId.equals(edge.getTargetStepId())) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	private void markUnreachablePendingStepsAfterSelection(String selectedTargetStepId) {
+		Set<String> reachableStepIds = computeReachableStepIds(selectedTargetStepId);
+		for (SquadStep step : stepsById.values()) {
+			SquadStepStatus stepStatus = stepStatusesById.get(step.getId());
+			if (stepStatus != null && stepStatus.getStatus() == SquadStepExecutionStatus.PENDING
+					&& !reachableStepIds.contains(step.getId())) {
+				markStepSkipped(step, "Step \"" + step.getName() + "\" is not on the selected route.");
+			}
+		}
+	}
+
+	private Set<String> computeReachableStepIds(String startStepId) {
+		Set<String> reachableStepIds = new LinkedHashSet<>();
+		ArrayDeque<String> queue = new ArrayDeque<>();
+		queue.add(startStepId);
+
+		while (!queue.isEmpty()) {
+			String stepId = queue.removeFirst();
+			if (!reachableStepIds.add(stepId)) {
 				continue;
 			}
 
-			Set<String> dependencies = dependenciesByStepId.getOrDefault(step.getId(), new HashSet<>());
-			if (finishedStepIds.containsAll(dependencies)) {
-				readySteps.add(step);
+			List<SquadEdge> outgoingEdges = outgoingEdgesBySourceStepId.getOrDefault(stepId, List.of());
+			for (SquadEdge edge : outgoingEdges) {
+				queue.addLast(edge.getTargetStepId());
 			}
 		}
 
-		return readySteps;
+		return reachableStepIds;
+	}
+
+	private void markPendingStepsSkipped(String reason) {
+		for (SquadStep step : stepsById.values()) {
+			SquadStepStatus stepStatus = stepStatusesById.get(step.getId());
+			if (stepStatus != null && stepStatus.getStatus() == SquadStepExecutionStatus.PENDING) {
+				markStepSkipped(step, reason);
+			}
+		}
+	}
+
+	private void markStepSkipped(SquadStep step, String message) {
+		updateStepStatus(step, SquadStepExecutionStatus.SKIPPED, message, null, null);
 	}
 
 	private Map<String, Map<String, Object>> buildStepOutputsByStepId() {
@@ -225,8 +321,10 @@ public class SquadExecutionWorkflowImpl implements SquadExecutionWorkflow {
 				AiAgentStep aiAgentStep = (AiAgentStep) step;
 				return runAiAgentActivity.runAiAgent(SquadStepExecutionRequest.builder().squadId(squadId)
 						.stepId(aiAgentStep.getId()).stepName(aiAgentStep.getName()).agentKey(aiAgentStep.getAgentKey())
-						.inputRefs(new ArrayList<>(aiAgentStep.getInputRefs())).stepOutputsByStepId(stepOutputsByStepId)
-						.seedInput(seedInput).build());
+						.inputRefs(aiAgentStep.getInputRefs() == null
+								? List.of()
+								: new ArrayList<>(aiAgentStep.getInputRefs()))
+						.stepOutputsByStepId(stepOutputsByStepId).seedInput(seedInput).build());
 			default :
 				throw ApplicationFailure.newNonRetryableFailure(
 						"Unsupported step type " + step.getType() + " for step " + step.getId(),
@@ -266,10 +364,6 @@ public class SquadExecutionWorkflowImpl implements SquadExecutionWorkflow {
 		resultsByStepId.put(step.getId(), failedResult);
 		updateStepStatus(step, SquadStepExecutionStatus.FAILED, workflowMessage, input, output);
 		persistStepExecution(step, input, failedResult);
-		finishedStepIds.add(step.getId());
-		workflowFailed = true;
-		workflowFailureMessage = workflowMessage;
-		workflowFailureType = "SQUAD_STEP_FAILED";
 	}
 
 	private String extractFailureMessage(Throwable throwable) {

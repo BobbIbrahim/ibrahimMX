@@ -16,7 +16,8 @@ final class SquadStepStatusTimingUpdater {
 			stepStatus.setStartedAt(now);
 		}
 
-		if (status == SquadStepExecutionStatus.COMPLETED || status == SquadStepExecutionStatus.FAILED) {
+		if (status == SquadStepExecutionStatus.COMPLETED || status == SquadStepExecutionStatus.FAILED
+				|| status == SquadStepExecutionStatus.SKIPPED) {
 			stepStatus.setCompletedAt(now);
 
 			if (stepStatus.getStartedAt() != null) {

@@ -1,9 +1,13 @@
 package com.murex.mxorbit.squadorchestrator.core.squad.execution.model;
 
+import com.murex.mxorbit.squadorchestrator.core.squad.routing.SquadRoutingDecision;
 import com.murex.mxorbit.squadorchestrator.core.workflow.client.WorkflowRunStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,6 +28,11 @@ public class SquadExecutionStatus {
 
 	@NonNull
 	private List<SquadStepStatus> steps;
+
+	@Builder.Default
+	@NonNull
+	@Schema(description = "Ordered routing decisions made during squad execution.")
+	private List<SquadRoutingDecision> routingDecisions = new ArrayList<>();
 
 	@Schema(description = "Output of the terminal step, populated once the squad run has COMPLETED.")
 	private Map<String, Object> finalResult;

@@ -6,8 +6,10 @@ import com.murex.mxorbit.squadorchestrator.core.squad.creator.request.AiAgentSte
 import com.murex.mxorbit.squadorchestrator.core.squad.creator.request.CreateSquadRequest;
 import com.murex.mxorbit.squadorchestrator.core.squad.creator.request.SquadEdgeRequest;
 import com.murex.mxorbit.squadorchestrator.core.squad.creator.request.SquadStepRequest;
+import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadEdgeRoutingType;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.StepInputRef;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.StepInputRefSourceType;
+import com.murex.mxorbit.squadorchestrator.core.squad.routing.SquadRoutingConditionEvaluator;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -31,6 +33,8 @@ public class SquadInputRefValidator {
 
 	private final AgentRegistry agentRegistry;
 
+	private final SquadRoutingConditionEvaluator routingConditionEvaluator;
+
 	public void validate(CreateSquadRequest request) {
 		List<SquadStepRequest> steps = request.getSteps() == null ? List.of() : request.getSteps();
 		List<SquadEdgeRequest> edges = request.getEdges() == null ? List.of() : request.getEdges();
@@ -42,6 +46,7 @@ public class SquadInputRefValidator {
 		Map<String, SquadStepRequest> stepMap = validateSteps(steps);
 		WorkflowGraph graph = validateEdges(edges, stepMap);
 
+		validateEdgeRouting(edges);
 		validateRootsAndTerminals(graph);
 		validateConnectedGraph(graph);
 		validateAcyclicGraph(graph);
@@ -127,6 +132,96 @@ public class SquadInputRefValidator {
 		}
 
 		return new WorkflowGraph(stepMap, outgoingEdges, incomingEdges, undirectedEdges, reverseEdges);
+	}
+
+	private void validateEdgeRouting(List<SquadEdgeRequest> edges) {
+		Map<String, List<SquadEdgeRequest>> edgesBySourceStepId = new LinkedHashMap<>();
+
+		for (SquadEdgeRequest edge : edges) {
+			validateEdgeRoutingProperties(edge);
+			edgesBySourceStepId.computeIfAbsent(edge.getSourceStepId(), key -> new ArrayList<>()).add(edge);
+		}
+
+		for (Map.Entry<String, List<SquadEdgeRequest>> entry : edgesBySourceStepId.entrySet()) {
+			validateOutgoingEdgeRouting(entry.getKey(), entry.getValue());
+		}
+	}
+
+	private void validateEdgeRoutingProperties(SquadEdgeRequest edge) {
+		SquadEdgeRoutingType routingType = edge.getRoutingType();
+		if (routingType == null) {
+			throw badRequest("Connection from step '" + edge.getSourceStepId() + "' to step '" + edge.getTargetStepId()
+					+ "' must have a routing type.");
+		}
+
+		Integer priority = edge.getPriority();
+		if (priority == null) {
+			throw badRequest("Connection from step '" + edge.getSourceStepId() + "' to step '" + edge.getTargetStepId()
+					+ "' must have a priority.");
+		}
+
+		if (priority < 0) {
+			throw badRequest("Connection from step '" + edge.getSourceStepId() + "' to step '" + edge.getTargetStepId()
+					+ "' must have a nonnegative priority.");
+		}
+
+		boolean hasCondition = edge.getCondition() != null && !edge.getCondition().isBlank();
+		boolean isDefault = Boolean.TRUE.equals(edge.getIsDefault());
+
+		if (routingType == SquadEdgeRoutingType.WHEN) {
+			if (!hasCondition) {
+				throw badRequest("Connection from step '" + edge.getSourceStepId() + "' to step '"
+						+ edge.getTargetStepId() + "' uses routing type WHEN but has no condition.");
+			}
+
+			validateRoutingCondition(edge);
+		}
+
+		if (routingType == SquadEdgeRoutingType.ALWAYS && hasCondition) {
+			throw badRequest("Connection from step '" + edge.getSourceStepId() + "' to step '" + edge.getTargetStepId()
+					+ "' uses routing type ALWAYS and must not define a condition.");
+		}
+
+		if (isDefault && routingType != SquadEdgeRoutingType.ALWAYS) {
+			throw badRequest("Connection from step '" + edge.getSourceStepId() + "' to step '" + edge.getTargetStepId()
+					+ "' is a default edge and must use routing type ALWAYS.");
+		}
+	}
+
+	private void validateRoutingCondition(SquadEdgeRequest edge) {
+		try {
+			routingConditionEvaluator.validate(edge.getCondition());
+		} catch (IllegalArgumentException exception) {
+			throw badRequest("Connection from step '" + edge.getSourceStepId() + "' to step '" + edge.getTargetStepId()
+					+ "' has an invalid routing condition: " + exception.getMessage());
+		}
+	}
+
+	private void validateOutgoingEdgeRouting(String sourceStepId, List<SquadEdgeRequest> outgoingEdges) {
+		long defaultEdgeCount = outgoingEdges.stream().filter(edge -> Boolean.TRUE.equals(edge.getIsDefault())).count();
+
+		if (defaultEdgeCount > 1) {
+			throw badRequest("Source step '" + sourceStepId + "' has more than one default outgoing edge.");
+		}
+
+		if (outgoingEdges.size() > 1) {
+			boolean hasNonDefaultAlwaysEdge = outgoingEdges.stream()
+					.anyMatch(edge -> edge.getRoutingType() == SquadEdgeRoutingType.ALWAYS
+							&& !Boolean.TRUE.equals(edge.getIsDefault()));
+
+			if (hasNonDefaultAlwaysEdge) {
+				throw badRequest("Source step '" + sourceStepId
+						+ "' has a non-default ALWAYS edge together with other outgoing edges.");
+			}
+		}
+
+		Set<Integer> whenPriorities = new HashSet<>();
+		for (SquadEdgeRequest edge : outgoingEdges) {
+			if (edge.getRoutingType() == SquadEdgeRoutingType.WHEN && !whenPriorities.add(edge.getPriority())) {
+				throw badRequest("Source step '" + sourceStepId + "' has more than one WHEN edge with priority "
+						+ edge.getPriority() + ".");
+			}
+		}
 	}
 
 	private void validateRootsAndTerminals(WorkflowGraph graph) {

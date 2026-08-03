@@ -7,6 +7,10 @@ import com.murex.mxorbit.squadorchestrator.core.squad.model.AiAgentStep;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.Squad;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadEdge;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadStep;
+import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadExecutionStatus;
+import com.murex.mxorbit.squadorchestrator.core.squad.routing.SquadRoutingDecision;
+import com.murex.mxorbit.squadorchestrator.core.squad.routing.SquadRoutingDecisionOutcome;
+import com.murex.mxorbit.squadorchestrator.core.workflow.client.WorkflowRunStatus;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -87,4 +91,40 @@ class SquadRunProviderServiceTest {
 		return SquadEdge.builder().id(sourceStepId + "->" + targetStepId).sourceStepId(sourceStepId)
 				.targetStepId(targetStepId).build();
 	}
+
+	@Test
+	void shouldIdentifySelectedTerminalStepFromLastRoutingDecision() {
+		SquadRoutingDecision firstDecision = SquadRoutingDecision.builder().sourceStepId("step-1")
+				.selectedEdgeId("edge-1").selectedTargetStepId("step-2")
+				.outcome(SquadRoutingDecisionOutcome.CONDITIONAL_MATCH).reason("Matched").build();
+
+		SquadRoutingDecision secondDecision = SquadRoutingDecision.builder().sourceStepId("step-2")
+				.selectedEdgeId("edge-2").selectedTargetStepId("step-final")
+				.outcome(SquadRoutingDecisionOutcome.LEGACY_ALWAYS).reason("Selected").build();
+
+		SquadExecutionStatus status = SquadExecutionStatus.builder().squadId("squad-1")
+				.overallStatus(WorkflowRunStatus.COMPLETED).steps(List.of())
+				.routingDecisions(List.of(firstDecision, secondDecision)).build();
+
+		assertEquals(Optional.of("step-final"), SquadRunProviderService.findSelectedTerminalStepId(status));
+	}
+
+	@Test
+	void shouldFallBackToLastCompletedStepWhenRoutingDecisionsAreEmpty() {
+		SquadStepStatus firstStep = SquadStepStatus.builder().stepId("step-1").stepName("Step 1")
+				.status(SquadStepExecutionStatus.COMPLETED).build();
+
+		SquadStepStatus terminalStep = SquadStepStatus.builder().stepId("step-selected-terminal")
+				.stepName("Selected terminal").status(SquadStepExecutionStatus.COMPLETED).build();
+
+		SquadStepStatus skippedStep = SquadStepStatus.builder().stepId("step-skipped").stepName("Skipped")
+				.status(SquadStepExecutionStatus.SKIPPED).build();
+
+		SquadExecutionStatus status = SquadExecutionStatus.builder().squadId("squad-1")
+				.overallStatus(WorkflowRunStatus.COMPLETED).steps(List.of(firstStep, terminalStep, skippedStep))
+				.routingDecisions(List.of()).build();
+
+		assertEquals(Optional.of("step-selected-terminal"), SquadRunProviderService.findSelectedTerminalStepId(status));
+	}
+
 }

@@ -61,6 +61,16 @@ class SquadStepStatusTimingUpdaterTest {
 		assertEquals(3000L, stepStatus.getDurationMs());
 	}
 
+	@Test
+	void shouldPopulateCompletedAtWhenStepIsSkipped() {
+		Instant skippedAt = Instant.parse("2026-07-23T10:00:03Z");
+		SquadStepStatus stepStatus = baseStepStatus();
+
+		SquadStepStatusTimingUpdater.updateTiming(stepStatus, SquadStepExecutionStatus.SKIPPED, skippedAt);
+
+		assertEquals(skippedAt, stepStatus.getCompletedAt());
+	}
+
 	private SquadStepStatus baseStepStatus() {
 		return SquadStepStatus.builder().stepId("step-1").stepName("Step 1").status(SquadStepExecutionStatus.PENDING)
 				.build();

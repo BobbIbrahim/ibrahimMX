@@ -1,4 +1,4 @@
-package com.murex.mxorbit.squadorchestrator.core.squad.creator.request;
+package com.murex.mxorbit.squadorchestrator.core.squad.routing;
 
 import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadEdgeRoutingType;
 import lombok.AllArgsConstructor;
@@ -11,22 +11,28 @@ import lombok.NonNull;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SquadEdgeRequest {
+public class SquadRoutingEdgeEvaluation {
 
 	@NonNull
-	private String sourceStepId;
+	private String edgeId;
 
 	@NonNull
 	private String targetStepId;
 
-	@Builder.Default
-	private SquadEdgeRoutingType routingType = SquadEdgeRoutingType.ALWAYS;
+	@NonNull
+	private SquadEdgeRoutingType routingType;
 
 	private String condition;
 
-	@Builder.Default
-	private Integer priority = 100;
+	@NonNull
+	private Integer priority;
 
 	@Builder.Default
 	private Boolean isDefault = false;
+
+	@Builder.Default
+	private Boolean matched = false;
+
+	@NonNull
+	private String reason;
 }

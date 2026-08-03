@@ -9,40 +9,74 @@
   />
 
   <section class="runs-stats" aria-label="Squad run statistics">
-    <article>
+    <button
+      type="button"
+      class="runs-stat-card runs-stat-card--running"
+      [class.runs-stat-card--selected]="statusFilter() === 'RUNNING'"
+      [attr.aria-pressed]="statusFilter() === 'RUNNING'"
+      (click)="onStatusFilterChange('RUNNING')"
+    >
       <span>Running</span>
       <strong>{{ runningCount() }}</strong>
       <small>Currently in progress</small>
-    </article>
+    </button>
 
-    <article>
+    <button
+      type="button"
+      class="runs-stat-card runs-stat-card--completed"
+      [class.runs-stat-card--selected]="statusFilter() === 'COMPLETED'"
+      [attr.aria-pressed]="statusFilter() === 'COMPLETED'"
+      (click)="onStatusFilterChange('COMPLETED')"
+    >
       <span>Completed</span>
       <strong>{{ completedCount() }}</strong>
       <small>Finished successfully</small>
-    </article>
+    </button>
 
-    <article>
+    <button
+      type="button"
+      class="runs-stat-card runs-stat-card--failed"
+      [class.runs-stat-card--selected]="statusFilter() === 'FAILED'"
+      [attr.aria-pressed]="statusFilter() === 'FAILED'"
+      (click)="onStatusFilterChange('FAILED')"
+    >
       <span>Failed</span>
       <strong>{{ failedCount() }}</strong>
       <small>Ended with errors</small>
-    </article>
+    </button>
 
-    <article>
+    <button
+      type="button"
+      class="runs-stat-card runs-stat-card--cancelled"
+      [class.runs-stat-card--selected]="statusFilter() === 'CANCELLED'"
+      [attr.aria-pressed]="statusFilter() === 'CANCELLED'"
+      (click)="onStatusFilterChange('CANCELLED')"
+    >
       <span>Cancelled</span>
       <strong>{{ cancelledCount() }}</strong>
       <small>Stopped by a user</small>
-    </article>
+    </button>
 
-    <article>
+    <button
+      type="button"
+      class="runs-stat-card runs-stat-card--total"
+      [class.runs-stat-card--selected]="statusFilter() === 'all'"
+      [attr.aria-pressed]="statusFilter() === 'all'"
+      (click)="onStatusFilterChange('all')"
+    >
       <span>Total</span>
       <strong>{{ totalCount() }}</strong>
       <small>Across all squad runs</small>
-    </article>
+    </button>
   </section>
 
   <section class="runs-toolbar" aria-label="Squad run filters">
     <div class="runs-toolbar__top">
-      <mat-form-field appearance="outline" class="runs-search" subscriptSizing="dynamic">
+      <mat-form-field
+        appearance="outline"
+        class="runs-search"
+        subscriptSizing="dynamic"
+      >
         <mat-icon matPrefix>search</mat-icon>
 
         <input
@@ -50,7 +84,7 @@
           type="search"
           placeholder="Search by squad name or run id"
           [ngModel]="searchTerm()"
-          (ngModelChange)="searchTerm.set($event)"
+          (ngModelChange)="onSearchTermChange($event)"
         />
       </mat-form-field>
     </div>
@@ -61,115 +95,414 @@
           type="button"
           class="filter-pill"
           [class.filter-pill--active]="statusFilter() === 'all'"
-          (click)="statusFilter.set('all')"
+          [attr.aria-pressed]="statusFilter() === 'all'"
+          (click)="onStatusFilterChange('all')"
         >
-          All
+          <span>All</span>
+          <span class="filter-pill__count">
+            {{ totalCount() }}
+          </span>
         </button>
 
         <button
           type="button"
           class="filter-pill"
           [class.filter-pill--active]="statusFilter() === 'RUNNING'"
-          (click)="statusFilter.set('RUNNING')"
+          [attr.aria-pressed]="statusFilter() === 'RUNNING'"
+          (click)="onStatusFilterChange('RUNNING')"
         >
-          Running
+          <span>Running</span>
+          <span class="filter-pill__count">
+            {{ runningCount() }}
+          </span>
         </button>
 
         <button
           type="button"
           class="filter-pill"
           [class.filter-pill--active]="statusFilter() === 'COMPLETED'"
-          (click)="statusFilter.set('COMPLETED')"
+          [attr.aria-pressed]="statusFilter() === 'COMPLETED'"
+          (click)="onStatusFilterChange('COMPLETED')"
         >
-          Completed
+          <span>Completed</span>
+          <span class="filter-pill__count">
+            {{ completedCount() }}
+          </span>
         </button>
 
         <button
           type="button"
           class="filter-pill"
           [class.filter-pill--active]="statusFilter() === 'FAILED'"
-          (click)="statusFilter.set('FAILED')"
+          [attr.aria-pressed]="statusFilter() === 'FAILED'"
+          (click)="onStatusFilterChange('FAILED')"
         >
-          Failed
+          <span>Failed</span>
+          <span class="filter-pill__count">
+            {{ failedCount() }}
+          </span>
         </button>
 
         <button
           type="button"
           class="filter-pill"
           [class.filter-pill--active]="statusFilter() === 'CANCELLED'"
-          (click)="statusFilter.set('CANCELLED')"
+          [attr.aria-pressed]="statusFilter() === 'CANCELLED'"
+          (click)="onStatusFilterChange('CANCELLED')"
         >
-          Cancelled
+          <span>Cancelled</span>
+          <span class="filter-pill__count">
+            {{ cancelledCount() }}
+          </span>
         </button>
       </div>
 
-      <button type="button" mat-stroked-button class="clear-button" (click)="clearFilters()">
+      <button
+        type="button"
+        mat-stroked-button
+        class="clear-button"
+        [disabled]="!hasActiveFilters()"
+        (click)="clearFilters()"
+      >
         <mat-icon>restart_alt</mat-icon>
         Clear
       </button>
     </div>
   </section>
 
-  @if (loadError()) {
-    <section class="squad-feedback squad-feedback--error">
-      <mat-icon>error_outline</mat-icon>
-      <span>{{ loadError() }}</span>
-    </section>
-  }
-
   <div class="runs-refresh-bar">
     <button
       type="button"
       class="runs-autorefresh"
       [class.runs-autorefresh--active]="autoRefreshEnabled()"
+      [disabled]="isLoading()"
+      [attr.aria-pressed]="autoRefreshEnabled()"
+      [matTooltip]="
+        autoRefreshEnabled()
+          ? 'Auto-refresh on. Runs refresh every 5 seconds.'
+          : 'Auto-refresh off'
+      "
       (click)="toggleAutoRefresh()"
-      [matTooltip]="autoRefreshEnabled() ? 'Auto-refresh on (every 5s)' : 'Auto-refresh off'"
     >
-      <mat-icon>autorenew</mat-icon>
-      <span>Auto-refresh</span>
+      <mat-icon [class.runs-refresh-icon--loading]="isLoading()">
+        autorenew
+      </mat-icon>
+
+      <span>
+        Auto-refresh:
+        {{ autoRefreshEnabled() ? 'On' : 'Off' }}
+      </span>
+
+      @if (autoRefreshEnabled()) {
+        <span class="runs-autorefresh__interval">
+          Every 5s
+        </span>
+      }
     </button>
-    <span class="runs-last-updated">Updated {{ formatLastUpdated() }}</span>
+
+    <div class="runs-last-updated" aria-live="polite">
+      @if (isLoading() && totalCount() > 0) {
+        <span class="runs-refresh-status">
+          <mat-icon class="runs-refresh-icon--loading">
+            refresh
+          </mat-icon>
+          Refreshing
+        </span>
+      } @else {
+        <span>
+          Last updated: {{ formatLastUpdated() }}
+        </span>
+      }
+    </div>
   </div>
 
-  <p class="runs-result-count">
-    Showing {{ filteredRuns().length }} of {{ totalCount() }} runs
-  </p>
+  @if (loadError()) {
+    <section
+      class="runs-feedback runs-feedback--error"
+      role="alert"
+    >
+      <div class="runs-feedback__message">
+        <mat-icon>error_outline</mat-icon>
+        <span>{{ loadError() }}</span>
+      </div>
 
-  @if (filteredRuns().length > 0) {
-    <table class="runs-table">
-      <thead>
-        <tr>
-          <th>Status</th>
-          <th>Squad</th>
-          <th>Run ID</th>
-          <th>Started</th>
-          <th>Ended</th>
-          <th>Duration</th>
-        </tr>
-      </thead>
+      <button
+        type="button"
+        mat-stroked-button
+        class="runs-feedback__retry"
+        [disabled]="isLoading()"
+        (click)="retryLoadRuns()"
+      >
+        <mat-icon>refresh</mat-icon>
+        Retry
+      </button>
+    </section>
+  }
 
-      <tbody>
-        @for (run of filteredRuns(); track run.squadRunId) {
-          <tr
-            role="button"
-            tabindex="0"
-            (click)="openRun(run)"
-            (keydown.enter)="openRun(run)"
+  @if (isLoading() && totalCount() === 0 && !loadError()) {
+    <section class="runs-state" aria-live="polite">
+      <div class="runs-state__icon runs-state__icon--loading">
+        <mat-icon>autorenew</mat-icon>
+      </div>
+
+      <h2>Loading squad runs</h2>
+
+      <p>
+        Retrieving the latest squad executions from the backend.
+      </p>
+    </section>
+  } @else if (!loadError()) {
+    <div class="runs-results-summary">
+      <p class="runs-result-count" aria-live="polite">
+        @if (filteredRuns().length > 0) {
+          Showing {{ resultRangeStart() }}–{{ resultRangeEnd() }}
+          of {{ filteredRuns().length }} matching runs
+        } @else {
+          Showing 0 of 0 matching runs
+        }
+
+        @if (filteredRuns().length !== totalCount()) {
+          <span class="runs-result-count__total">
+            · {{ totalCount() }} total
+          </span>
+        }
+      </p>
+
+      @if (filteredRuns().length > 0) {
+        <div
+          class="filter-pills"
+          role="group"
+          aria-label="Run display view"
+        >
+          <button
+            type="button"
+            class="filter-pill"
+            [class.filter-pill--active]="viewMode() === 'list'"
+            [attr.aria-pressed]="viewMode() === 'list'"
+            (click)="onViewModeChange('list')"
           >
-            <td>
+            <mat-icon>view_list</mat-icon>
+            <span>List</span>
+          </button>
+
+          <button
+            type="button"
+            class="filter-pill"
+            [class.filter-pill--active]="viewMode() === 'cards'"
+            [attr.aria-pressed]="viewMode() === 'cards'"
+            (click)="onViewModeChange('cards')"
+          >
+            <mat-icon>grid_view</mat-icon>
+            <span>Cards</span>
+          </button>
+
+          <div class="runs-page-size-control">
+            <label
+              class="runs-page-size-label"
+              for="runs-page-size-select"
+            >
+              Runs per page
+            </label>
+
+            <mat-select
+              id="runs-page-size-select"
+              class="runs-page-size-select"
+              aria-label="Number of squad runs displayed per page"
+              [ngModel]="pageSize()"
+              (ngModelChange)="onPageSizeChange($event)"
+            >
+              @for (option of pageSizeOptions;
+                track option) {
+                <mat-option [value]="option">
+                  {{ option }}
+                </mat-option>
+              }
+            </mat-select>
+          </div>
+        </div>
+      }
+    </div>
+
+    @if (filteredRuns().length > 0) {
+      @if (viewMode() === 'list') {
+        <div
+          class="runs-table-container"
+          [class.runs-table-container--refreshing]="isLoading()"
+        >
+          <table class="runs-table">
+            <thead>
+            <tr>
+              <th>Status</th>
+              <th>Squad</th>
+              <th>Run ID</th>
+              <th>Started</th>
+              <th>Ended</th>
+              <th>Duration</th>
+            </tr>
+            </thead>
+
+            <tbody>
+              @for (run of paginatedRuns();
+                track run.squadRunId) {
+                <tr
+                  role="button"
+                  tabindex="0"
+                  [attr.aria-label]="
+                    'Open run ' +
+                    run.squadRunId +
+                    ' for ' +
+                    run.squadName
+                  "
+                  (click)="openRun(run)"
+                  (keydown.enter)="openRun(run)"
+                  (keydown.space)="
+                    openRun(run);
+                    $event.preventDefault()
+                  "
+                >
+                  <td>
+                    <span
+                      class="runs-status"
+                      [class.runs-status--running]="
+                        run.overallStatus === 'RUNNING'
+                      "
+                      [class.runs-status--completed]="
+                        run.overallStatus === 'COMPLETED'
+                      "
+                      [class.runs-status--failed]="
+                        run.overallStatus === 'FAILED'
+                      "
+                      [class.runs-status--cancelled]="
+                        run.overallStatus === 'CANCELLED'
+                      "
+                      [class.runs-status--unknown]="
+                        !run.overallStatus
+                      "
+                    >
+                      {{ getStatusLabel(run.overallStatus) }}
+                    </span>
+                  </td>
+
+                  <td>{{ run.squadName }}</td>
+
+                  <td>
+                    <div class="runs-table__run-id-cell">
+                      <code
+                        class="runs-table__run-id"
+                        [matTooltip]="run.squadRunId"
+                        matTooltipClass="runs-id-tooltip"
+                      >
+                        {{ run.squadRunId }}
+                      </code>
+
+                      <button
+                        type="button"
+                        class="runs-copy-button"
+                        [attr.aria-label]="
+                          'Copy run id ' + run.squadRunId
+                        "
+                        [matTooltip]="
+                          copiedRunId() === run.squadRunId
+                            ? 'Copied'
+                            : 'Copy run id'
+                        "
+                        (click)="
+                          copyRunId(
+                            run.squadRunId,
+                            $event
+                          )
+                        "
+                      >
+                        <mat-icon>
+                          {{
+                            copiedRunId() === run.squadRunId
+                              ? 'check'
+                              : 'content_copy'
+                          }}
+                        </mat-icon>
+                      </button>
+                    </div>
+                  </td>
+
+                  <td>
+                    {{ formatTimestamp(run.startedAt) }}
+                  </td>
+
+                  <td>
+                    {{ formatTimestamp(run.completedAt) }}
+                  </td>
+
+                  <td>
+                    {{ formatDuration(run.durationMs) }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <section
+          class="runs-stats"
+          aria-label="Squad run cards"
+          [class.runs-table-container--refreshing]="isLoading()"
+        >
+          @for (run of paginatedRuns();
+            track run.squadRunId) {
+            <article
+              class="runs-stat-card"
+              role="button"
+              tabindex="0"
+              [class.runs-stat-card--running]="
+                run.overallStatus === 'RUNNING'
+              "
+              [class.runs-stat-card--completed]="
+                run.overallStatus === 'COMPLETED'
+              "
+              [class.runs-stat-card--failed]="
+                run.overallStatus === 'FAILED'
+              "
+              [class.runs-stat-card--cancelled]="
+                run.overallStatus === 'CANCELLED'
+              "
+              [class.runs-stat-card--total]="
+                !run.overallStatus
+              "
+              [attr.aria-label]="
+                'Open run ' +
+                run.squadRunId +
+                ' for ' +
+                run.squadName
+              "
+              (click)="openRun(run)"
+              (keydown.enter)="openRun(run)"
+              (keydown.space)="
+                openRun(run);
+                $event.preventDefault()
+              "
+            >
               <span
                 class="runs-status"
-                [class.runs-status--running]="run.overallStatus === 'RUNNING'"
-                [class.runs-status--completed]="run.overallStatus === 'COMPLETED'"
-                [class.runs-status--failed]="run.overallStatus === 'FAILED'"
-                [class.runs-status--cancelled]="run.overallStatus === 'CANCELLED'"
-                [class.runs-status--unknown]="!run.overallStatus"
+                [class.runs-status--running]="
+                  run.overallStatus === 'RUNNING'
+                "
+                [class.runs-status--completed]="
+                  run.overallStatus === 'COMPLETED'
+                "
+                [class.runs-status--failed]="
+                  run.overallStatus === 'FAILED'
+                "
+                [class.runs-status--cancelled]="
+                  run.overallStatus === 'CANCELLED'
+                "
+                [class.runs-status--unknown]="
+                  !run.overallStatus
+                "
               >
                 {{ getStatusLabel(run.overallStatus) }}
               </span>
-            </td>
-            <td>{{ run.squadName }}</td>
-            <td>
+
+              <strong>{{ run.squadName }}</strong>
+
               <div class="runs-table__run-id-cell">
                 <code
                   class="runs-table__run-id"
@@ -178,29 +511,178 @@
                 >
                   {{ run.squadRunId }}
                 </code>
+
                 <button
                   type="button"
                   class="runs-copy-button"
-                  [attr.aria-label]="'Copy run id ' + run.squadRunId"
-                  [matTooltip]="copiedRunId() === run.squadRunId ? 'Copied' : 'Copy run id'"
-                  (click)="copyRunId(run.squadRunId, $event)"
+                  [attr.aria-label]="
+                    'Copy run id ' + run.squadRunId
+                  "
+                  [matTooltip]="
+                    copiedRunId() === run.squadRunId
+                      ? 'Copied'
+                      : 'Copy run id'
+                  "
+                  (click)="
+                    copyRunId(
+                      run.squadRunId,
+                      $event
+                    )
+                  "
                 >
-                  <mat-icon>{{ copiedRunId() === run.squadRunId ? 'check' : 'content_copy' }}</mat-icon>
+                  <mat-icon>
+                    {{
+                      copiedRunId() === run.squadRunId
+                        ? 'check'
+                        : 'content_copy'
+                    }}
+                  </mat-icon>
                 </button>
               </div>
-            </td>
-            <td>{{ formatTimestamp(run.startedAt) }}</td>
-            <td>{{ formatTimestamp(run.completedAt) }}</td>
-            <td>{{ formatDuration(run.durationMs) }}</td>
-          </tr>
-        }
-      </tbody>
-    </table>
-  } @else {
-    <section class="squad-empty-state">
-      <mat-icon>monitor_heart</mat-icon>
 
-      <h2>No squad runs found.</h2>
-    </section>
+              <small>
+                Started:
+                {{ formatTimestamp(run.startedAt) }}
+              </small>
+
+              <small>
+                Ended:
+                {{ formatTimestamp(run.completedAt) }}
+              </small>
+
+              <small>
+                Duration:
+                {{ formatDuration(run.durationMs) }}
+              </small>
+
+              <button
+                type="button"
+                mat-flat-button
+                class="runs-state__primary-action"
+                [attr.aria-label]="
+                  'Open run ' + run.squadRunId
+                "
+                (click)="
+                  openRunFromAction(run, $event)
+                "
+              >
+                <mat-icon>arrow_forward</mat-icon>
+                Open Run
+              </button>
+            </article>
+          }
+        </section>
+      }
+
+      @if (totalPages() > 0) {
+        <nav
+          class="runs-pagination"
+          aria-label="Squad run pagination"
+        >
+          <button
+            type="button"
+            class="runs-pagination-button runs-pagination-button--navigation"
+            [disabled]="!hasPreviousPage()"
+            aria-label="Go to previous runs page"
+            (click)="goToPreviousPage()"
+          >
+            <mat-icon>chevron_left</mat-icon>
+            <span>Previous</span>
+          </button>
+
+          <div
+            class="runs-pagination-pages"
+            aria-label="Run pages"
+          >
+            @for (pageItem of visiblePageItems();
+              track $index) {
+              @if (isPageNumber(pageItem)) {
+                <button
+                  type="button"
+                  class="runs-pagination-button runs-pagination-button--page"
+                  [class.runs-pagination-button--active]="
+                    effectiveCurrentPage() === pageItem
+                  "
+                  [attr.aria-current]="
+                    effectiveCurrentPage() === pageItem
+                      ? 'page'
+                      : null
+                  "
+                  [attr.aria-label]="
+                    'Go to runs page ' + pageItem
+                  "
+                  (click)="goToPage(pageItem)"
+                >
+                  {{ pageItem }}
+                </button>
+              } @else {
+                <span
+                  class="runs-pagination-ellipsis"
+                  aria-hidden="true"
+                >
+                  …
+                </span>
+              }
+            }
+          </div>
+
+          <button
+            type="button"
+            class="runs-pagination-button runs-pagination-button--navigation"
+            [disabled]="!hasNextPage()"
+            aria-label="Go to next runs page"
+            (click)="goToNextPage()"
+          >
+            <span>Next</span>
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+        </nav>
+      }
+    } @else if (totalCount() === 0) {
+      <section class="runs-state">
+        <div class="runs-state__icon">
+          <mat-icon>monitor_heart</mat-icon>
+        </div>
+
+        <h2>No squad runs yet</h2>
+
+        <p>
+          Run a squad to start tracking execution status,
+          timestamps, and duration here.
+        </p>
+
+        <button
+          type="button"
+          mat-flat-button
+          class="runs-state__primary-action"
+          (click)="viewSquads()"
+        >
+          <mat-icon>hub</mat-icon>
+          View Squads
+        </button>
+      </section>
+    } @else {
+      <section class="runs-state">
+        <div class="runs-state__icon">
+          <mat-icon>search_off</mat-icon>
+        </div>
+
+        <h2>No matching runs</h2>
+
+        <p>
+          No squad runs match the current search and status filters.
+        </p>
+
+        <button
+          type="button"
+          mat-stroked-button
+          class="runs-state__secondary-action"
+          (click)="clearFilters()"
+        >
+          <mat-icon>restart_alt</mat-icon>
+          Clear Filters
+        </button>
+      </section>
+    }
   }
 </section>
