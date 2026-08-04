@@ -37,6 +37,17 @@
 
         <button
           type="button"
+          mat-stroked-button
+          (click)="addConditional()"
+          [disabled]="!canAddConditional()"
+          [title]="canAddConditional() ? 'Add a routing conditional after the selected step' : 'Select an executable step first'"
+        >
+          <mat-icon>account_tree</mat-icon>
+          Add Conditional
+        </button>
+
+        <button
+          type="button"
           mat-flat-button
           class="save-button"
           [disabled]="!canSave()"
@@ -98,14 +109,20 @@
           </div>
         </div>
 
-        <app-rete-squad-flow-editor
+         <app-rete-squad-flow-editor
           [steps]="steps()"
           [edges]="edges()"
           [agentNamesById]="agentNamesById()"
+          [conditionals]="conditionals()"
+          [selectedStepId]="selectedStepId()"
+          [selectedConditionalId]="selectedConditionalId()"
           (stepSelected)="selectStep($event)"
+          (conditionalSelected)="selectConditional($event)"
           (connectionCreated)="handleReteConnectionCreated($event)"
           (connectionRemoved)="handleReteConnectionRemoved($event)"
           (nodePositionChanged)="handleReteNodePositionChanged($event)"
+          (conditionalPositionChanged)="handleReteConditionalPositionChanged($event)"
+          (conditionalRouteRequested)="handleConditionalRouteRequested($event)"
         ></app-rete-squad-flow-editor>
       </main>
 
@@ -396,6 +413,348 @@
               </div>
             </section>
           }
+
+        } @else if (selectedConditional(); as conditional) {
+
+          <div class="side-panel-header">
+            <div>
+              <span class="side-panel__eyebrow">CONDITIONAL ROUTING</span>
+              <h2>{{ conditional.name }}</h2>
+            </div>
+
+            <button
+              type="button"
+              mat-icon-button
+              class="delete-conditional-button"
+              aria-label="Delete selected conditional"
+              (click)="deleteConditional()"
+            >
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+
+          <div class="conditional-form">
+            <div class="field-group">
+              <label class="field-label" for="conditional-name">Conditional name</label>
+
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <input
+                  id="conditional-name"
+                  matInput
+                  [ngModel]="conditional.name"
+                  (ngModelChange)="updateSelectedConditionalName($event)"
+                  placeholder="Routing Decision"
+                />
+              </mat-form-field>
+            </div>
+
+            @if (selectedConditionalSourceStep(); as sourceStep) {
+              <div class="conditional-info">
+                <div class="info-row">
+                  <label>Source Step</label>
+                  <strong>{{ sourceStep.name }}</strong>
+                </div>
+
+                @if (getConditionalSourceAgent(); as agentName) {
+                  <div class="info-row">
+                    <label>Source Agent</label>
+                    <strong>{{ agentName }}</strong>
+                  </div>
+                }
+
+                @if (getConditionalSourceOutputs().length > 0) {
+                  <div class="info-section">
+                    <label>Available Outputs</label>
+                    <div class="output-chips">
+                      @for (output of getConditionalSourceOutputs(); track output) {
+                        <span class="agent-output-chip">
+                          {{ output }}
+                        </span>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+
+            <div class="routes-section">
+              <div class="routes-header">
+                <label>Routes ({{ selectedConditionalRoutes().length }})</label>
+              </div>
+
+              @if (selectedConditionalRoutes().length > 0) {
+                <div class="routes-list">
+                  @for (route of selectedConditionalRoutes(); track route.id) {
+                    <div class="route-card">
+                      <div class="route-card__header">
+                        <div class="route-target">
+                          <span class="route-label">To</span>
+                          <strong>{{ getRouteTargetName(route.targetStepId) }}</strong>
+                        </div>
+
+                        @if (route.isDefault) {
+                          <span class="route-badge route-badge--default">DEFAULT</span>
+                        } @else if (route.routingType === 'WHEN') {
+                          <span class="route-badge route-badge--when">WHEN</span>
+                        } @else {
+                          <span class="route-badge route-badge--always">ALWAYS</span>
+                        }
+
+                        <div class="route-card__actions">
+                          <button
+                            type="button"
+                            mat-icon-button
+                            class="route-action-button"
+                            aria-label="Edit route"
+                            (click)="editRoute(route.id)"
+                            title="Edit route"
+                          >
+                            <mat-icon>edit</mat-icon>
+                          </button>
+
+                          <button
+                            type="button"
+                            mat-icon-button
+                            class="route-action-button route-action-button--delete"
+                            aria-label="Delete route"
+                            (click)="deleteRoute(route.id)"
+                            title="Delete route"
+                          >
+                            <mat-icon>delete</mat-icon>
+                          </button>
+                        </div>
+                      </div>
+
+                      @if (route.routingType === 'WHEN' && route.condition) {
+                        <div class="route-condition">
+                          <span class="route-label">Condition</span>
+                          <code>{{ route.condition }}</code>
+                        </div>
+                      }
+
+                      <div class="route-priority">
+                        <span class="route-label">Priority</span>
+                        <strong>{{ route.priority }}</strong>
+                      </div>
+
+                      @if (!route.isDefault && selectedConditionalRoutes().some((r) => r.isDefault)) {
+                        <div class="route-replace-default">
+                          <button
+                            type="button"
+                            mat-stroked-button
+                            (click)="replaceDefaultRoute(route.id)"
+                          >
+                            Replace as Default
+                          </button>
+                        </div>
+                      }
+
+                      @if (deleteRouteConfirmId() === route.id) {
+                        <div class="route-delete-confirm">
+                          <p>Are you sure you want to delete this route?</p>
+                          <div class="confirm-actions">
+                            <button
+                              type="button"
+                              mat-stroked-button
+                              (click)="cancelDeleteRoute()"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              mat-flat-button
+                              color="warn"
+                              (click)="confirmDeleteRoute()"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="routes-empty">
+                  <mat-icon>link_off</mat-icon>
+                  <p>No routes configured. Connect target steps on the canvas.</p>
+                </div>
+              }
+            </div>
+
+            <div class="conditional-actions">
+              <button
+                type="button"
+                mat-stroked-button
+                (click)="addConditionalRoute()"
+              >
+                <mat-icon>add</mat-icon>
+                Add Route
+              </button>
+            </div>
+
+            @if (addRouteFormVisible()) {
+              <div class="add-route-form">
+                <div class="form-section">
+                  <h3>@if (editingEdgeId()) {Edit Route} @else {Add New Route}</h3>
+
+                  <div class="field-group">
+                    <label class="field-label" for="add-route-target">Target Step *</label>
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                      <mat-select
+                        id="add-route-target"
+                        panelClass="builder-select-panel"
+                        [ngModel]="addRouteFormState().targetStepId"
+                        (ngModelChange)="updateAddRouteFormField('targetStepId', $event)"
+                      >
+                        <mat-optgroup label="Available Steps">
+                          @for (step of addRouteAvailableTargetSteps(); track step.id) {
+                            <mat-option [value]="step.id">
+                              {{ step.name }}
+                            </mat-option>
+                          }
+                        </mat-optgroup>
+                      </mat-select>
+                    </mat-form-field>
+                  </div>
+
+                  <div class="field-group">
+                    <label class="field-label" for="add-route-default">Default Route</label>
+                    <mat-checkbox
+                      id="add-route-default"
+                      [ngModel]="addRouteFormState().isDefault"
+                      (ngModelChange)="updateAddRouteFormField('isDefault', $event)"
+                      [disabled]="addRouteHasExistingDefault()"
+                      [title]="addRouteHasExistingDefault() ? 'A default route already exists for this conditional' : ''"
+                    >
+                      This is the default route
+                    </mat-checkbox>
+                  </div>
+
+                  @if (!addRouteFormState().isDefault) {
+                    <div class="field-group">
+                      <label class="field-label" for="add-route-output">Output Field *</label>
+                      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                        <mat-select
+                          id="add-route-output"
+                          panelClass="builder-select-panel"
+                          [ngModel]="addRouteFormState().outputField"
+                          (ngModelChange)="updateAddRouteFormField('outputField', $event)"
+                        >
+                          @for (output of addRouteSourceOutputs(); track output) {
+                            <mat-option [value]="output">
+                              {{ output }}
+                            </mat-option>
+                          }
+                        </mat-select>
+                      </mat-form-field>
+                    </div>
+
+                    <div class="field-group">
+                      <label class="field-label" for="add-route-operator">Operator *</label>
+                      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                        <mat-select
+                          id="add-route-operator"
+                          panelClass="builder-select-panel"
+                          [ngModel]="addRouteFormState().operator"
+                          (ngModelChange)="updateAddRouteFormField('operator', $event)"
+                        >
+                          <mat-option value="equals">equals</mat-option>
+                          <mat-option value="notEquals">notEquals</mat-option>
+                          <mat-option value="contains">contains</mat-option>
+                          <mat-option value="in">in (comma-separated)</mat-option>
+                        </mat-select>
+                      </mat-form-field>
+                    </div>
+
+                    <div class="field-group">
+                      <label class="field-label" for="add-route-value">Expected Value *</label>
+                      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                        <input
+                          id="add-route-value"
+                          matInput
+                          [ngModel]="addRouteFormState().expectedValue"
+                          (ngModelChange)="updateAddRouteFormField('expectedValue', $event)"
+                          [placeholder]="getAddRouteExpectedValuePlaceholder()"
+                        />
+                      </mat-form-field>
+                    </div>
+
+                    <div class="field-group">
+                      <label class="field-label" for="add-route-priority">Priority *</label>
+                      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                        <input
+                          id="add-route-priority"
+                          matInput
+                          type="number"
+                          [ngModel]="addRouteFormState().priority"
+                          (ngModelChange)="updateAddRouteFormField('priority', $event)"
+                          placeholder="0"
+                          min="0"
+                        />
+                      </mat-form-field>
+                    </div>
+                  }
+
+                  @if (addRouteConditionPreview()) {
+                    <div class="condition-preview">
+                      <label class="field-label">Condition Preview</label>
+                      <code>{{ addRouteConditionPreview() }}</code>
+                    </div>
+                  }
+
+                  @if (addRouteValidationMessage(); as validationMessage) {
+                    <p class="step-input-refs-empty" role="alert">
+                      {{ validationMessage }}
+                    </p>
+                  }
+
+                  <div class="form-actions">
+                    <button
+                      type="button"
+                      mat-stroked-button
+                      (click)="cancelAddRoute()"
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="button"
+                      mat-flat-button
+                      color="primary"
+                      (click)="submitAddRoute()"
+                      [disabled]="!addRouteFormValid()"
+                    >
+                      @if (editingEdgeId()) {Update Route} @else {Save Route}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+
+           @if (deleteConditionalConfirmVisible()) {
+             <div class="delete-conditional-confirm">
+               <p>Are you sure you want to delete this conditional and all its routes?</p>
+               <div class="confirm-actions">
+                 <button
+                   type="button"
+                   mat-stroked-button
+                   (click)="cancelDeleteConditional()"
+                 >
+                   Cancel
+                 </button>
+                 <button
+                   type="button"
+                   mat-flat-button
+                   color="warn"
+                   (click)="confirmDeleteConditional()"
+                 >
+                   Delete
+                 </button>
+               </div>
+             </div>
+           }
+          </div>
 
         } @else {
 

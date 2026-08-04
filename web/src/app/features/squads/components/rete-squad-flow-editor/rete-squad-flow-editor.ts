@@ -19,6 +19,7 @@ import { ConnectionPlugin, Presets as ConnectionPresets } from 'rete-connection-
 import { getDOMSocketPosition } from 'rete-render-utils';
 import { AngularArea2D, AngularPlugin, Presets as AngularPresets } from 'rete-angular-plugin/21';
 
+import { SquadBuilderConditional } from '../../../../core/models/squad-builder.model';
 import { SquadExecutionStatus } from '../../../../core/models/squad-run.model';
 
 type StepExecutionState = SquadExecutionStatus['steps'][number]['status'];
@@ -57,6 +58,14 @@ interface ReteNodePositionChangedEvent {
   };
 }
 
+interface ReteConditionalPositionChangedEvent {
+  conditionalId: string;
+  position: {
+    x: number;
+    y: number;
+  };
+}
+
 type ReteNode = ClassicPreset.Node;
 
 type ReteConnection = ClassicPreset.Connection<ReteNode, ReteNode>;
@@ -77,6 +86,7 @@ interface AreaWithConnectionViews {
 
 const NODE_WIDTH = 210;
 const NODE_HEIGHT = 92;
+const CONDITION_NODE_SIZE = 150;
 
 @Component({
   selector: 'app-rete-squad-flow-editor',
@@ -93,11 +103,19 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
   @Input() followModeEnabled = true;
   @Input() interactionLocked = false;
   @Input() selectedStepId: string | null = null;
+  @Input() conditionals: SquadBuilderConditional[] = [];
+  @Input() selectedConditionalId: string | null = null;
 
   @Output() stepSelected = new EventEmitter<string>();
   @Output() connectionCreated = new EventEmitter<ReteConnectionCreatedEvent>();
   @Output() connectionRemoved = new EventEmitter<ReteConnectionRemovedEvent>();
   @Output() nodePositionChanged = new EventEmitter<ReteNodePositionChangedEvent>();
+  @Output() conditionalSelected = new EventEmitter<string>();
+  @Output() conditionalPositionChanged = new EventEmitter<ReteConditionalPositionChangedEvent>();
+  @Output() conditionalRouteRequested = new EventEmitter<{
+    conditionalId: string;
+    targetStepId: string;
+  }>();
 
   @ViewChild('reteContainer', { static: true })
   private readonly reteContainer!: ElementRef<HTMLElement>;
@@ -117,7 +135,12 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
 
   private readonly nodeByStepId = new Map<string, ReteNode>();
   private readonly stepIdByNodeId = new Map<string, string>();
+  private readonly nodeByConditionalId = new Map<string, ReteNode>();
+  private readonly conditionalIdByNodeId = new Map<string, string>();
   private readonly connectionIdByEdgeKey = new Map<string, string>();
+  private readonly ownershipConnectionIdByConditionalId = new Map<string, string>();
+  private readonly conditionalIdByOwnershipConnectionId = new Map<string, string>();
+  private readonly conditionalRouteConnectionIds = new Map<string, string>();
   private readonly ignoredConnectionRemovalIds = new Set<string>();
   private readonly nodeStatusByStepId = new Map<string, StepExecutionState>();
   private readonly edgeAnimationStateByEdgeKey = new Map<string, EdgeAnimationState>();
@@ -184,7 +207,7 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
       this.applyInteractionLockMode();
     }
 
-    if (changes['selectedStepId']) {
+    if (changes['selectedStepId'] || changes['selectedConditionalId']) {
       requestAnimationFrame(() => {
         this.applyNodeStatuses();
       });
@@ -194,7 +217,7 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
       return;
     }
 
-    if (changes['steps'] || changes['edges'] || changes['agentNamesById']) {
+    if (changes['steps'] || changes['edges'] || changes['agentNamesById'] || changes['conditionals']) {
       await this.syncGraphFromInputs();
       this.scheduleFollowToActiveNode();
     }
@@ -231,7 +254,12 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
 
     this.nodeByStepId.clear();
     this.stepIdByNodeId.clear();
+    this.nodeByConditionalId.clear();
+    this.conditionalIdByNodeId.clear();
     this.connectionIdByEdgeKey.clear();
+    this.ownershipConnectionIdByConditionalId.clear();
+    this.conditionalIdByOwnershipConnectionId.clear();
+    this.conditionalRouteConnectionIds.clear();
     this.ignoredConnectionRemovalIds.clear();
   }
 
@@ -280,33 +308,98 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
         const connectionData = context.data as ReteSchemes['Connection'];
 
         const sourceStepId = this.stepIdByNodeId.get(connectionData.source);
+        const sourceConditionalId = this.conditionalIdByNodeId.get(connectionData.source);
         const targetStepId = this.stepIdByNodeId.get(connectionData.target);
+        const targetConditionalId = this.conditionalIdByNodeId.get(connectionData.target);
 
-        if (!sourceStepId || !targetStepId) {
-          return context;
+        // Step -> Conditional (ownership link, auto-generated, ignore manual attempts)
+        if (sourceStepId && targetConditionalId) {
+          const targetConditional = this.conditionals.find((c) => c.id === targetConditionalId);
+          if (targetConditional?.sourceStepId === sourceStepId) {
+            // This is the ownership connection, ignore it
+            this.ignoredConnectionRemovalIds.add(connectionData.id);
+            void this.editor?.removeConnection(connectionData.id);
+            return context;
+          } else {
+            // Manual step->conditional connection, reject it
+            this.ignoredConnectionRemovalIds.add(connectionData.id);
+            void this.editor?.removeConnection(connectionData.id);
+            return context;
+          }
         }
 
-        const edgeKey = this.buildEdgeKey(sourceStepId, targetStepId);
-        const existingConnectionId = this.connectionIdByEdgeKey.get(edgeKey);
+        // Conditional -> Step (allow to emit event, then remove)
+        if (sourceConditionalId && targetStepId) {
+          // Resolve the conditional
+          const sourceConditional = this.conditionals.find(
+            (c) => c.id === sourceConditionalId,
+          );
 
-        if (existingConnectionId && existingConnectionId !== connectionData.id) {
+          if (sourceConditional) {
+            // Reject self-routing
+            if (sourceConditional.sourceStepId === targetStepId) {
+              this.ignoredConnectionRemovalIds.add(connectionData.id);
+              void this.editor?.removeConnection(connectionData.id);
+              return context;
+            }
+
+            // Reject if target is already used by a persisted route from this conditional's source
+            const targetAlreadyUsed = this.edges.some(
+              (e) =>
+                e.sourceStepId === sourceConditional.sourceStepId &&
+                e.targetStepId === targetStepId,
+            );
+
+            if (targetAlreadyUsed) {
+              this.ignoredConnectionRemovalIds.add(connectionData.id);
+              void this.editor?.removeConnection(connectionData.id);
+              return context;
+            }
+
+            // Emit the conditional route request event
+            this.conditionalRouteRequested.emit({
+              conditionalId: sourceConditionalId,
+              targetStepId: targetStepId,
+            });
+          }
+
+          // Remove the temporary user-created connection
           this.ignoredConnectionRemovalIds.add(connectionData.id);
           void this.editor?.removeConnection(connectionData.id);
-
           return context;
         }
 
-        this.connectionIdByEdgeKey.set(edgeKey, connectionData.id);
+        // Conditional -> Conditional (reject)
+        if (sourceConditionalId && targetConditionalId) {
+          this.ignoredConnectionRemovalIds.add(connectionData.id);
+          void this.editor?.removeConnection(connectionData.id);
+          return context;
+        }
 
-        this.connectionCreated.emit({
-          sourceStepId,
-          targetStepId,
-        });
+        // Step -> Step (regular connection)
+        if (sourceStepId && targetStepId) {
+          const edgeKey = this.buildEdgeKey(sourceStepId, targetStepId);
+          const existingConnectionId = this.connectionIdByEdgeKey.get(edgeKey);
 
-        requestAnimationFrame(() => {
-          this.applyConnectionArrows();
-          this.applyConnectionAnimationStates();
-        });
+          if (existingConnectionId && existingConnectionId !== connectionData.id) {
+            this.ignoredConnectionRemovalIds.add(connectionData.id);
+            void this.editor?.removeConnection(connectionData.id);
+
+            return context;
+          }
+
+          this.connectionIdByEdgeKey.set(edgeKey, connectionData.id);
+
+          this.connectionCreated.emit({
+            sourceStepId,
+            targetStepId,
+          });
+
+          requestAnimationFrame(() => {
+            this.applyConnectionArrows();
+            this.applyConnectionAnimationStates();
+          });
+        }
       }
 
       if (context.type === 'connectionremoved' && !this.isSyncingFromAngularState) {
@@ -323,20 +416,47 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
         }
 
         const sourceStepId = this.stepIdByNodeId.get(connectionData.source);
+        const sourceConditionalId = this.conditionalIdByNodeId.get(connectionData.source);
         const targetStepId = this.stepIdByNodeId.get(connectionData.target);
+        const targetConditionalId = this.conditionalIdByNodeId.get(connectionData.target);
 
-        if (!sourceStepId || !targetStepId) {
+        // Conditional -> Step (route connection deletion, translates to edge deletion)
+        if (sourceConditionalId && targetStepId) {
+          const sourceConditional = this.conditionals.find((c) => c.id === sourceConditionalId);
+          if (!sourceConditional) {
+            return context;
+          }
+
+          const edgeKey = this.buildEdgeKey(sourceConditional.sourceStepId, targetStepId);
+          const routeKey = `${sourceConditionalId}->${targetStepId}`;
+
+          this.connectionIdByEdgeKey.delete(edgeKey);
+          this.conditionalRouteConnectionIds.delete(routeKey);
+
+          this.connectionRemoved.emit({
+            sourceStepId: sourceConditional.sourceStepId,
+            targetStepId,
+          });
+
           return context;
         }
 
-        const edgeKey = this.buildEdgeKey(sourceStepId, targetStepId);
+        // Step -> Conditional (ownership link, should never be manually deleted)
+        if (sourceStepId && targetConditionalId) {
+          return context;
+        }
 
-        this.connectionIdByEdgeKey.delete(edgeKey);
+        // Step -> Step (regular connection)
+        if (sourceStepId && targetStepId) {
+          const edgeKey = this.buildEdgeKey(sourceStepId, targetStepId);
 
-        this.connectionRemoved.emit({
-          sourceStepId,
-          targetStepId,
-        });
+          this.connectionIdByEdgeKey.delete(edgeKey);
+
+          this.connectionRemoved.emit({
+            sourceStepId,
+            targetStepId,
+          });
+        }
       }
 
       return context;
@@ -356,9 +476,12 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
         }
 
         const stepId = this.stepIdByNodeId.get(nodeData.id);
+        const conditionalId = this.conditionalIdByNodeId.get(nodeData.id);
 
         if (stepId) {
           this.stepSelected.emit(stepId);
+        } else if (conditionalId) {
+          this.conditionalSelected.emit(conditionalId);
         }
       }
 
@@ -377,30 +500,63 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
           }
 
           const stepId = this.stepIdByNodeId.get(nodeData.id);
-          const step = this.steps.find((candidate) => candidate.id === stepId);
+          const conditionalId = this.conditionalIdByNodeId.get(nodeData.id);
 
-          if (!step || !this.area) {
+          if (stepId) {
+            const step = this.steps.find((candidate) => candidate.id === stepId);
+
+            if (!step || !this.area) {
+              return context;
+            }
+
+            const currentX = nodeData.position?.x ?? 0;
+            const currentY = nodeData.position?.y ?? 0;
+            const deltaX = Math.abs(currentX - step.position.x);
+            const deltaY = Math.abs(currentY - step.position.y);
+
+            if (deltaX < 0.5 && deltaY < 0.5) {
+              return context;
+            }
+
+            this.isSyncingFromAngularState = true;
+            void this.area
+              .translate(nodeData.id, {
+                x: step.position.x,
+                y: step.position.y,
+              })
+              .finally(() => {
+                this.isSyncingFromAngularState = false;
+              });
+
+            return context;
+          } else if (conditionalId) {
+            const conditional = this.conditionals.find((candidate) => candidate.id === conditionalId);
+
+            if (!conditional || !this.area) {
+              return context;
+            }
+
+            const currentX = nodeData.position?.x ?? 0;
+            const currentY = nodeData.position?.y ?? 0;
+            const deltaX = Math.abs(currentX - conditional.position.x);
+            const deltaY = Math.abs(currentY - conditional.position.y);
+
+            if (deltaX < 0.5 && deltaY < 0.5) {
+              return context;
+            }
+
+            this.isSyncingFromAngularState = true;
+            void this.area
+              .translate(nodeData.id, {
+                x: conditional.position.x,
+                y: conditional.position.y,
+              })
+              .finally(() => {
+                this.isSyncingFromAngularState = false;
+              });
+
             return context;
           }
-
-          const currentX = nodeData.position?.x ?? 0;
-          const currentY = nodeData.position?.y ?? 0;
-          const deltaX = Math.abs(currentX - step.position.x);
-          const deltaY = Math.abs(currentY - step.position.y);
-
-          if (deltaX < 0.5 && deltaY < 0.5) {
-            return context;
-          }
-
-          this.isSyncingFromAngularState = true;
-          void this.area
-            .translate(nodeData.id, {
-              x: step.position.x,
-              y: step.position.y,
-            })
-            .finally(() => {
-              this.isSyncingFromAngularState = false;
-            });
 
           return context;
         }
@@ -418,10 +574,19 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
         }
 
         const stepId = this.stepIdByNodeId.get(nodeData.id);
+        const conditionalId = this.conditionalIdByNodeId.get(nodeData.id);
 
         if (stepId) {
           this.nodePositionChanged.emit({
             stepId,
+            position: {
+              x: nodeData.position.x,
+              y: nodeData.position.y,
+            },
+          });
+        } else if (conditionalId) {
+          this.conditionalPositionChanged.emit({
+            conditionalId,
             position: {
               x: nodeData.position.x,
               y: nodeData.position.y,
@@ -480,11 +645,17 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
     try {
       await this.removeDeletedConnections();
       await this.removeDeletedNodes();
+      await this.removeDeletedConditionals();
       await this.addOrUpdateNodes();
+      await this.addOrUpdateConditionals();
       await this.addMissingConnections();
       this.updateEdgeAnimationStates();
       this.applyNodeStatuses();
       this.applyConnectionAnimationStates();
+
+      requestAnimationFrame(() => {
+        this.applyNodeClasses();
+      });
     } finally {
       this.isSyncingFromAngularState = false;
     }
@@ -590,15 +761,60 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
     }
   }
 
+  private async addOrUpdateConditionals(): Promise<void> {
+    if (!this.editor || !this.area) {
+      return;
+    }
+
+    for (const conditional of this.conditionals) {
+      const existingNode = this.nodeByConditionalId.get(conditional.id);
+
+      if (existingNode) {
+        existingNode.label = conditional.name || 'Conditional';
+        this.applyConditionalLayout(existingNode);
+
+        await this.area.update('node', existingNode.id);
+
+        continue;
+      }
+
+      const node = new ClassicPreset.Node(conditional.name || 'Conditional');
+
+      this.applyConditionalLayout(node);
+
+      node.addInput('previous', new ClassicPreset.Input(this.socket, 'In', true));
+      node.addOutput('next', new ClassicPreset.Output(this.socket, 'Out', true));
+
+      await this.editor.addNode(node);
+
+      await this.area.translate(node.id, {
+        x: conditional.position.x,
+        y: conditional.position.y,
+      });
+
+      this.nodeByConditionalId.set(conditional.id, node);
+      this.conditionalIdByNodeId.set(node.id, conditional.id);
+    }
+  }
+
   private async addMissingConnections(): Promise<void> {
     if (!this.editor) {
       return;
     }
 
+    // Add regular step-to-step connections (only if source doesn't own a conditional)
     for (const edge of this.edges) {
       const edgeKey = this.buildEdgeKey(edge.sourceStepId, edge.targetStepId);
 
       if (this.connectionIdByEdgeKey.has(edgeKey)) {
+        continue;
+      }
+
+      // Skip if this edge's source owns a conditional - it will be rendered as conditional->target instead
+      const sourceOwnsConditional = this.conditionals.some(
+        (c) => c.sourceStepId === edge.sourceStepId,
+      );
+      if (sourceOwnsConditional) {
         continue;
       }
 
@@ -619,6 +835,76 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
       });
 
       this.connectionIdByEdgeKey.set(edgeKey, connection.id);
+    }
+
+    // Add visual ownership connections (step owns conditional)
+    for (const conditional of this.conditionals) {
+      if (this.ownershipConnectionIdByConditionalId.has(conditional.id)) {
+        continue;
+      }
+
+      const sourceNode = this.nodeByStepId.get(conditional.sourceStepId);
+      const conditionalNode = this.nodeByConditionalId.get(conditional.id);
+
+      if (!sourceNode || !conditionalNode) {
+        continue;
+      }
+
+      const connection = new ClassicPreset.Connection(
+        sourceNode,
+        'next',
+        conditionalNode,
+        'previous',
+      );
+
+      await this.editor.addConnection(connection);
+
+      this.ownershipConnectionIdByConditionalId.set(conditional.id, connection.id);
+      this.conditionalIdByOwnershipConnectionId.set(connection.id, conditional.id);
+
+      this.ignoredConnectionRemovalIds.add(connection.id);
+    }
+
+    // Add visual route connections (conditional -> target step for each edge with source owning conditional)
+    for (const edge of this.edges) {
+      const sourceConditional = this.conditionals.find(
+        (c) => c.sourceStepId === edge.sourceStepId,
+      );
+
+      if (!sourceConditional) {
+        continue;
+      }
+
+      const routeKey = `${sourceConditional.id}->${edge.targetStepId}`;
+
+      if (this.conditionalRouteConnectionIds.has(routeKey)) {
+        continue;
+      }
+
+      const conditionalNode = this.nodeByConditionalId.get(sourceConditional.id);
+      const targetNode = this.nodeByStepId.get(edge.targetStepId);
+
+      if (!conditionalNode || !targetNode) {
+        continue;
+      }
+
+      const connection = new ClassicPreset.Connection(
+        conditionalNode,
+        'next',
+        targetNode,
+        'previous',
+      );
+
+      await this.editor.addConnection(connection);
+
+      requestAnimationFrame(() => {
+        this.applyConnectionArrows();
+        this.applyConnectionAnimationStates();
+      });
+
+      this.conditionalRouteConnectionIds.set(routeKey, connection.id);
+
+      this.ignoredConnectionRemovalIds.add(connection.id);
     }
   }
 
@@ -641,6 +927,25 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
     }
   }
 
+  private async removeDeletedConditionals(): Promise<void> {
+    if (!this.editor) {
+      return;
+    }
+
+    const currentConditionalIds = new Set(this.conditionals.map((conditional) => conditional.id));
+
+    for (const [conditionalId, node] of this.nodeByConditionalId.entries()) {
+      if (currentConditionalIds.has(conditionalId)) {
+        continue;
+      }
+
+      await this.editor.removeNode(node.id);
+
+      this.nodeByConditionalId.delete(conditionalId);
+      this.conditionalIdByNodeId.delete(node.id);
+    }
+  }
+
   private async removeDeletedConnections(): Promise<void> {
     if (!this.editor) {
       return;
@@ -650,6 +955,7 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
       this.edges.map((edge) => this.buildEdgeKey(edge.sourceStepId, edge.targetStepId)),
     );
 
+    // Remove deleted step-to-step connections
     for (const [edgeKey, connectionId] of this.connectionIdByEdgeKey.entries()) {
       if (currentEdgeKeys.has(edgeKey)) {
         continue;
@@ -658,6 +964,49 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
       await this.editor.removeConnection(connectionId);
 
       this.connectionIdByEdgeKey.delete(edgeKey);
+    }
+
+    // Remove deleted ownership connections
+    const currentConditionalIds = new Set(this.conditionals.map((c) => c.id));
+    for (const [conditionalId, connectionId] of this.ownershipConnectionIdByConditionalId.entries()) {
+      if (currentConditionalIds.has(conditionalId)) {
+        continue;
+      }
+
+      await this.editor.removeConnection(connectionId);
+
+      this.ownershipConnectionIdByConditionalId.delete(conditionalId);
+      this.conditionalIdByOwnershipConnectionId.delete(connectionId);
+      this.ignoredConnectionRemovalIds.delete(connectionId);
+    }
+
+    // Remove deleted route connections
+    const routeKeysToRemove: string[] = [];
+    for (const [routeKey] of this.conditionalRouteConnectionIds.entries()) {
+      const [conditionalId, targetStepId] = routeKey.split('->');
+      const conditional = this.conditionals.find((c) => c.id === conditionalId);
+
+      if (!conditional) {
+        routeKeysToRemove.push(routeKey);
+        continue;
+      }
+
+      const edge = this.edges.find(
+        (e) => e.sourceStepId === conditional.sourceStepId && e.targetStepId === targetStepId,
+      );
+
+      if (!edge) {
+        routeKeysToRemove.push(routeKey);
+      }
+    }
+
+    for (const routeKey of routeKeysToRemove) {
+      const connectionId = this.conditionalRouteConnectionIds.get(routeKey);
+      if (connectionId) {
+        await this.editor.removeConnection(connectionId);
+      }
+      this.conditionalRouteConnectionIds.delete(routeKey);
+      this.ignoredConnectionRemovalIds.delete(connectionId || '');
     }
   }
 
@@ -669,6 +1018,16 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
 
     sizedNode.width = NODE_WIDTH;
     sizedNode.height = NODE_HEIGHT;
+  }
+
+  private applyConditionalLayout(node: ReteNode): void {
+    const sizedNode = node as ReteNode & {
+      width?: number;
+      height?: number;
+    };
+
+    sizedNode.width = CONDITION_NODE_SIZE;
+    sizedNode.height = CONDITION_NODE_SIZE;
   }
 
   private updateGridPosition(x: number, y: number): void {
@@ -825,7 +1184,48 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
       return;
     }
 
+    // Apply animation to step-to-step connections
     for (const [edgeKey, connectionId] of this.connectionIdByEdgeKey.entries()) {
+      const animationState = this.edgeAnimationStateByEdgeKey.get(edgeKey);
+
+      if (!animationState || animationState === 'pending') {
+        continue;
+      }
+
+      const connectionElement = this.findConnectionElement(connectionId);
+
+      if (!connectionElement) {
+        continue;
+      }
+
+      const connectionClass =
+        animationState === 'running' ? 'edge-status--running' : 'edge-status--completed';
+      const pathClass =
+        animationState === 'running' ? 'edge-path--running' : 'edge-path--completed';
+
+      connectionElement.classList.add(connectionClass);
+
+      const paths = connectionElement.querySelectorAll<SVGPathElement>('path');
+
+      paths.forEach((path) => {
+        if (path.closest('marker')) {
+          return;
+        }
+
+        path.classList.add(pathClass);
+      });
+    }
+
+    // Apply animation to route connections (conditional -> target step)
+    for (const [routeKey, connectionId] of this.conditionalRouteConnectionIds.entries()) {
+      const [conditionalId, targetStepId] = routeKey.split('->');
+      const conditional = this.conditionals.find((c) => c.id === conditionalId);
+
+      if (!conditional) {
+        continue;
+      }
+
+      const edgeKey = this.buildEdgeKey(conditional.sourceStepId, targetStepId);
       const animationState = this.edgeAnimationStateByEdgeKey.get(edgeKey);
 
       if (!animationState || animationState === 'pending') {
@@ -1033,29 +1433,32 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
   private applyNodeStatuses(): void {
     const container = this.reteContainer.nativeElement;
 
-    const nodeElements = container.querySelectorAll<HTMLElement>('[data-testid="node"]');
+    if (!this.area) {
+      return;
+    }
 
-    nodeElements.forEach((nodeElement) => {
+    for (const nodeView of this.area.nodeViews.values()) {
+      const nodeElement = nodeView.element;
+
       nodeElement.classList.remove(
         'node-running',
         'node-completed',
         'node-failed',
         'node-cancelled',
         'node-selected-runtime',
+        'node-selected-conditional',
       );
-    });
+    }
 
-    let index = 0;
+    for (const [stepId, node] of this.nodeByStepId.entries()) {
+      const nodeView = this.area.nodeViews.get(node.id);
 
-    for (const step of this.steps) {
-      const nodeElement = nodeElements[index];
-
-      if (!nodeElement) {
-        index++;
+      if (!nodeView) {
         continue;
       }
 
-      const status = this.nodeStatusByStepId.get(step.id);
+      const nodeElement = nodeView.element;
+      const status = this.nodeStatusByStepId.get(stepId);
 
       if (status === 'RUNNING') {
         if (this.workflowCancelled) {
@@ -1077,11 +1480,53 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
         nodeElement.classList.add('node-cancelled');
       }
 
-      if (step.id === this.selectedStepId) {
+      if (stepId === this.selectedStepId) {
         nodeElement.classList.add('node-selected-runtime');
       }
+    }
 
-      index++;
+    for (const [conditionalId, node] of this.nodeByConditionalId.entries()) {
+      const nodeView = this.area.nodeViews.get(node.id);
+
+      if (!nodeView) {
+        continue;
+      }
+
+      const nodeElement = nodeView.element;
+
+      if (conditionalId === this.selectedConditionalId) {
+        nodeElement.classList.add('node-selected-conditional');
+      }
+    }
+  }
+
+  private applyNodeClasses(): void {
+    if (!this.area) {
+      return;
+    }
+
+    for (const [stepId, node] of this.nodeByStepId.entries()) {
+      const nodeView = this.area.nodeViews.get(node.id);
+
+      if (!nodeView) {
+        continue;
+      }
+
+      const nodeElement = nodeView.element;
+      nodeElement.classList.remove('rete-conditional-node');
+      nodeElement.classList.add('rete-step-node');
+    }
+
+    for (const [conditionalId, node] of this.nodeByConditionalId.entries()) {
+      const nodeView = this.area.nodeViews.get(node.id);
+
+      if (!nodeView) {
+        continue;
+      }
+
+      const nodeElement = nodeView.element;
+      nodeElement.classList.remove('rete-step-node');
+      nodeElement.classList.add('rete-conditional-node');
     }
   }
 
