@@ -1,331 +1,52 @@
 package com.murex.mxorbit.squadorchestrator.core.squad.validation;
 
+import static com.murex.mxorbit.squadorchestrator.core.squad.validation.SquadValidationErrors.badRequest;
+import static com.murex.mxorbit.squadorchestrator.core.squad.validation.SquadValidationErrors.describeStep;
+import static com.murex.mxorbit.squadorchestrator.core.squad.validation.SquadValidationErrors.describeStepLabel;
+
 import com.murex.mxorbit.squadorchestrator.core.squad.agent.AgentDefinition;
 import com.murex.mxorbit.squadorchestrator.core.squad.agent.AgentRegistry;
 import com.murex.mxorbit.squadorchestrator.core.squad.creator.request.AiAgentStepRequest;
-import com.murex.mxorbit.squadorchestrator.core.squad.creator.request.CreateSquadRequest;
-import com.murex.mxorbit.squadorchestrator.core.squad.creator.request.SquadEdgeRequest;
 import com.murex.mxorbit.squadorchestrator.core.squad.creator.request.SquadStepRequest;
-import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadEdgeRoutingType;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.StepInputRef;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.StepInputRefSourceType;
-import com.murex.mxorbit.squadorchestrator.core.squad.routing.SquadRoutingConditionEvaluator;
+import com.murex.mxorbit.squadorchestrator.core.squad.validation.SquadTopologyValidator.SquadTopology;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
 public class SquadInputRefValidator {
 
+	private static final String NULL_BYTE_SEPARATOR = "\u0000";
+
 	private final AgentRegistry agentRegistry;
 
-	private final SquadRoutingConditionEvaluator routingConditionEvaluator;
-
-	public void validate(CreateSquadRequest request) {
-		List<SquadStepRequest> steps = request.getSteps() == null ? List.of() : request.getSteps();
-		List<SquadEdgeRequest> edges = request.getEdges() == null ? List.of() : request.getEdges();
-
-		if (steps.size() < 2) {
-			throw badRequest("A workflow must contain at least two steps.");
-		}
-
-		Map<String, SquadStepRequest> stepMap = validateSteps(steps);
-		WorkflowGraph graph = validateEdges(edges, stepMap);
-
-		validateEdgeRouting(edges);
-		validateRootsAndTerminals(graph);
-		validateConnectedGraph(graph);
-		validateAcyclicGraph(graph);
-		validateInputRefs(steps, stepMap, graph.reverseEdges());
-	}
-
-	private Map<String, SquadStepRequest> validateSteps(List<SquadStepRequest> steps) {
-		Map<String, SquadStepRequest> stepMap = new LinkedHashMap<>();
+	public void validate(List<SquadStepRequest> steps, SquadTopology topology) {
 		for (SquadStepRequest step : steps) {
-			if (step == null) {
-				throw badRequest("The workflow contains an invalid step.");
-			}
-
-			String stepId = step.getId();
-			if (stepId == null || stepId.isBlank()) {
-				throw badRequest("A workflow step must have a nonblank id.");
-			}
-
-			if (step.getName() == null || step.getName().isBlank()) {
-				throw badRequest("Step " + describeStep(step) + " must have a nonblank name.");
-			}
-
-			String agentKey = resolveAgentKey(step);
-			if (agentKey == null || agentKey.isBlank()) {
-				throw badRequest("Step " + describeStep(step) + " must have an assigned agent.");
-			}
-
-			if (agentRegistry.findByKey(agentKey).isEmpty()) {
-				throw badRequest("Step " + describeStep(step) + " references unknown agent '" + agentKey + "'.");
-			}
-
-			SquadStepRequest previous = stepMap.put(stepId, step);
-			if (previous != null) {
-				throw badRequest("The workflow contains duplicate step id '" + stepId + "'.");
-			}
-		}
-
-		return stepMap;
-	}
-
-	private WorkflowGraph validateEdges(List<SquadEdgeRequest> edges, Map<String, SquadStepRequest> stepMap) {
-		Map<String, Set<String>> outgoingEdges = new HashMap<>();
-		Map<String, Set<String>> incomingEdges = new HashMap<>();
-		Map<String, Set<String>> undirectedEdges = new HashMap<>();
-		Map<String, Set<String>> reverseEdges = new HashMap<>();
-		Set<String> uniqueEdgeKeys = new HashSet<>();
-
-		for (SquadEdgeRequest edge : edges) {
-			if (edge == null) {
-				throw badRequest("The workflow contains an invalid edge.");
-			}
-
-			String sourceStepId = edge.getSourceStepId();
-			String targetStepId = edge.getTargetStepId();
-
-			if (!stepMap.containsKey(sourceStepId)) {
-				throw badRequest("Connection from " + describeStepLabel(sourceStepId, stepMap)
-						+ " references an unknown source step.");
-			}
-
-			if (!stepMap.containsKey(targetStepId)) {
-				throw badRequest("Connection to " + describeStepLabel(targetStepId, stepMap)
-						+ " references an unknown target step.");
-			}
-
-			if (sourceStepId.equals(targetStepId)) {
-				String stepLabel = describeStepLabel(sourceStepId, stepMap);
-				throw badRequest(
-						"Connection from " + stepLabel + " to " + stepLabel + " must connect two different steps.");
-			}
-
-			String edgeKey = sourceStepId + "\u0000" + targetStepId;
-			if (!uniqueEdgeKeys.add(edgeKey)) {
-				throw badRequest("Connection from " + describeStepLabel(sourceStepId, stepMap) + " to "
-						+ describeStepLabel(targetStepId, stepMap) + " is duplicated.");
-			}
-
-			outgoingEdges.computeIfAbsent(sourceStepId, key -> new LinkedHashSet<>()).add(targetStepId);
-			incomingEdges.computeIfAbsent(targetStepId, key -> new LinkedHashSet<>()).add(sourceStepId);
-			undirectedEdges.computeIfAbsent(sourceStepId, key -> new LinkedHashSet<>()).add(targetStepId);
-			undirectedEdges.computeIfAbsent(targetStepId, key -> new LinkedHashSet<>()).add(sourceStepId);
-			reverseEdges.computeIfAbsent(targetStepId, key -> new LinkedHashSet<>()).add(sourceStepId);
-		}
-
-		return new WorkflowGraph(stepMap, outgoingEdges, incomingEdges, undirectedEdges, reverseEdges);
-	}
-
-	private void validateEdgeRouting(List<SquadEdgeRequest> edges) {
-		Map<String, List<SquadEdgeRequest>> edgesBySourceStepId = new LinkedHashMap<>();
-
-		for (SquadEdgeRequest edge : edges) {
-			validateEdgeRoutingProperties(edge);
-			edgesBySourceStepId.computeIfAbsent(edge.getSourceStepId(), key -> new ArrayList<>()).add(edge);
-		}
-
-		for (Map.Entry<String, List<SquadEdgeRequest>> entry : edgesBySourceStepId.entrySet()) {
-			validateOutgoingEdgeRouting(entry.getKey(), entry.getValue());
+			validateStepInputRefs(step, topology);
 		}
 	}
 
-	private void validateEdgeRoutingProperties(SquadEdgeRequest edge) {
-		SquadEdgeRoutingType routingType = edge.getRoutingType();
-		if (routingType == null) {
-			throw badRequest("Connection from step '" + edge.getSourceStepId() + "' to step '" + edge.getTargetStepId()
-					+ "' must have a routing type.");
+	private void validateStepInputRefs(SquadStepRequest step, SquadTopology topology) {
+		List<StepInputRef> inputRefs = step.getInputRefs();
+		if (inputRefs == null || inputRefs.isEmpty()) {
+			return;
 		}
 
-		Integer priority = edge.getPriority();
-		if (priority == null) {
-			throw badRequest("Connection from step '" + edge.getSourceStepId() + "' to step '" + edge.getTargetStepId()
-					+ "' must have a priority.");
-		}
+		Set<String> ancestors = topology.ancestorsOf(step.getId());
+		Set<String> seenRefs = new HashSet<>();
+		Set<String> seenTargetInputs = new HashSet<>();
 
-		if (priority < 0) {
-			throw badRequest("Connection from step '" + edge.getSourceStepId() + "' to step '" + edge.getTargetStepId()
-					+ "' must have a nonnegative priority.");
-		}
-
-		boolean hasCondition = edge.getCondition() != null && !edge.getCondition().isBlank();
-		boolean isDefault = Boolean.TRUE.equals(edge.getIsDefault());
-
-		if (routingType == SquadEdgeRoutingType.WHEN) {
-			if (!hasCondition) {
-				throw badRequest("Connection from step '" + edge.getSourceStepId() + "' to step '"
-						+ edge.getTargetStepId() + "' uses routing type WHEN but has no condition.");
-			}
-
-			validateRoutingCondition(edge);
-		}
-
-		if (routingType == SquadEdgeRoutingType.ALWAYS && hasCondition) {
-			throw badRequest("Connection from step '" + edge.getSourceStepId() + "' to step '" + edge.getTargetStepId()
-					+ "' uses routing type ALWAYS and must not define a condition.");
-		}
-
-		if (isDefault && routingType != SquadEdgeRoutingType.ALWAYS) {
-			throw badRequest("Connection from step '" + edge.getSourceStepId() + "' to step '" + edge.getTargetStepId()
-					+ "' is a default edge and must use routing type ALWAYS.");
-		}
-	}
-
-	private void validateRoutingCondition(SquadEdgeRequest edge) {
-		try {
-			routingConditionEvaluator.validate(edge.getCondition());
-		} catch (IllegalArgumentException exception) {
-			throw badRequest("Connection from step '" + edge.getSourceStepId() + "' to step '" + edge.getTargetStepId()
-					+ "' has an invalid routing condition: " + exception.getMessage());
-		}
-	}
-
-	private void validateOutgoingEdgeRouting(String sourceStepId, List<SquadEdgeRequest> outgoingEdges) {
-		long defaultEdgeCount = outgoingEdges.stream().filter(edge -> Boolean.TRUE.equals(edge.getIsDefault())).count();
-
-		if (defaultEdgeCount > 1) {
-			throw badRequest("Source step '" + sourceStepId + "' has more than one default outgoing edge.");
-		}
-
-		if (outgoingEdges.size() > 1) {
-			boolean hasNonDefaultAlwaysEdge = outgoingEdges.stream()
-					.anyMatch(edge -> edge.getRoutingType() == SquadEdgeRoutingType.ALWAYS
-							&& !Boolean.TRUE.equals(edge.getIsDefault()));
-
-			if (hasNonDefaultAlwaysEdge) {
-				throw badRequest("Source step '" + sourceStepId
-						+ "' has a non-default ALWAYS edge together with other outgoing edges.");
-			}
-		}
-
-		Set<Integer> whenPriorities = new HashSet<>();
-		for (SquadEdgeRequest edge : outgoingEdges) {
-			if (edge.getRoutingType() == SquadEdgeRoutingType.WHEN && !whenPriorities.add(edge.getPriority())) {
-				throw badRequest("Source step '" + sourceStepId + "' has more than one WHEN edge with priority "
-						+ edge.getPriority() + ".");
-			}
-		}
-	}
-
-	private void validateRootsAndTerminals(WorkflowGraph graph) {
-		List<String> roots = new ArrayList<>();
-		List<String> terminals = new ArrayList<>();
-
-		for (String stepId : graph.stepMap().keySet()) {
-			if (graph.incomingEdges().getOrDefault(stepId, Set.of()).isEmpty()) {
-				roots.add(stepId);
-			}
-			if (graph.outgoingEdges().getOrDefault(stepId, Set.of()).isEmpty()) {
-				terminals.add(stepId);
-			}
-		}
-
-		if (roots.size() != 1) {
-			throw badRequest("The workflow must contain exactly one root step.");
-		}
-
-		String rootStepId = roots.get(0);
-		if (graph.outgoingEdges().getOrDefault(rootStepId, Set.of()).isEmpty()) {
-			throw badRequest("The workflow must contain exactly one root step.");
-		}
-
-		if (terminals.size() != 1) {
-			throw badRequest("The workflow must contain exactly one terminal step.");
-		}
-
-		String terminalStepId = terminals.get(0);
-		if (graph.incomingEdges().getOrDefault(terminalStepId, Set.of()).isEmpty()) {
-			throw badRequest("The workflow must contain exactly one terminal step.");
-		}
-	}
-
-	private void validateConnectedGraph(WorkflowGraph graph) {
-		String startStepId = graph.stepMap().keySet().iterator().next();
-		Set<String> visited = new HashSet<>();
-		Deque<String> queue = new ArrayDeque<>();
-		queue.add(startStepId);
-		visited.add(startStepId);
-
-		while (!queue.isEmpty()) {
-			String currentStepId = queue.removeFirst();
-			for (String neighborStepId : graph.undirectedEdges().getOrDefault(currentStepId, Set.of())) {
-				if (visited.add(neighborStepId)) {
-					queue.addLast(neighborStepId);
-				}
-			}
-		}
-
-		if (visited.size() != graph.stepMap().size()) {
-			for (String stepId : graph.stepMap().keySet()) {
-				if (!visited.contains(stepId)) {
-					throw badRequest(
-							describeStepLabel(stepId, graph.stepMap()) + " is disconnected from the workflow.");
-				}
-			}
-		}
-	}
-
-	private void validateAcyclicGraph(WorkflowGraph graph) {
-		Map<String, Integer> incomingCounts = new HashMap<>();
-		Deque<String> readySteps = new ArrayDeque<>();
-
-		for (String stepId : graph.stepMap().keySet()) {
-			int incomingCount = graph.incomingEdges().getOrDefault(stepId, Set.of()).size();
-			incomingCounts.put(stepId, incomingCount);
-			if (incomingCount == 0) {
-				readySteps.add(stepId);
-			}
-		}
-
-		int visitedCount = 0;
-		while (!readySteps.isEmpty()) {
-			String currentStepId = readySteps.removeFirst();
-			visitedCount++;
-
-			for (String targetStepId : graph.outgoingEdges().getOrDefault(currentStepId, Set.of())) {
-				int nextIncomingCount = incomingCounts.get(targetStepId) - 1;
-				incomingCounts.put(targetStepId, nextIncomingCount);
-				if (nextIncomingCount == 0) {
-					readySteps.addLast(targetStepId);
-				}
-			}
-		}
-
-		if (visitedCount != graph.stepMap().size()) {
-			throw badRequest("The workflow contains a directed cycle.");
-		}
-	}
-
-	private void validateInputRefs(List<SquadStepRequest> steps, Map<String, SquadStepRequest> stepMap,
-			Map<String, Set<String>> reverseEdges) {
-		boolean isRoot = true;
-		for (SquadStepRequest step : steps) {
-			Set<String> seenRefs = new HashSet<>();
-			Set<String> seenTargetInputs = new HashSet<>();
-			Set<String> ancestors = computeAncestors(step.getId(), reverseEdges);
-			List<StepInputRef> inputRefs = step.getInputRefs();
-			boolean stepIsRoot = ancestors.isEmpty();
-
-			for (StepInputRef ref : inputRefs == null ? List.<StepInputRef>of() : inputRefs) {
-				validateInputRef(step, ref, stepMap, ancestors, seenRefs, seenTargetInputs, stepIsRoot);
-			}
+		for (StepInputRef inputRef : inputRefs) {
+			validateInputRef(step, inputRef, topology.stepMap(), ancestors, seenRefs, seenTargetInputs,
+					ancestors.isEmpty());
 		}
 	}
 
@@ -345,20 +66,22 @@ public class SquadInputRefValidator {
 			throw badRequest("Step " + describeStep(step) + " inputRef must have a targetInput.");
 		}
 
-		AgentDefinition targetAgentDefinition = validateCurrentStepAgent(step);
-		validateTargetInput(step, targetAgentDefinition, targetInput);
+		validateTargetInput(step, requireAgentDefinition(step), targetInput);
 
 		if (!seenTargetInputs.add(targetInput)) {
 			throw badRequest(
 					"Step " + describeStep(step) + " has a duplicate inputRef target input '" + targetInput + "'.");
 		}
 
-		if (sourceType == StepInputRefSourceType.MANUAL) {
-			validateManualInputRef(step, ref, stepIsRoot);
-		} else if (sourceType == StepInputRefSourceType.STEP_OUTPUT) {
-			validateStepOutputInputRef(step, ref, stepMap, ancestors, seenRefs);
-		} else {
-			throw badRequest("Step " + describeStep(step) + " inputRef has unknown sourceType: " + sourceType);
+		switch (sourceType) {
+			case MANUAL :
+				validateManualInputRef(step, ref, stepIsRoot);
+				break;
+			case STEP_OUTPUT :
+				validateStepOutputInputRef(step, ref, stepMap, ancestors, seenRefs);
+				break;
+			default :
+				throw badRequest("Step " + describeStep(step) + " inputRef has unknown sourceType: " + sourceType);
 		}
 	}
 
@@ -382,7 +105,6 @@ public class SquadInputRefValidator {
 			Map<String, SquadStepRequest> stepMap, Set<String> ancestors, Set<String> seenRefs) {
 		String fromStepId = ref.getFromStepId();
 		String outputKey = ref.getKey();
-		String stepId = step.getId();
 
 		if (fromStepId == null || fromStepId.isBlank()) {
 			throw badRequest(
@@ -398,7 +120,7 @@ public class SquadInputRefValidator {
 					+ describeStepLabel(fromStepId, stepMap) + " in an inputRef.");
 		}
 
-		if (stepId.equals(fromStepId)) {
+		if (step.getId().equals(fromStepId)) {
 			throw badRequest("Step " + describeStep(step) + " cannot reference itself in an inputRef.");
 		}
 
@@ -407,8 +129,7 @@ public class SquadInputRefValidator {
 					+ " must reference an upstream ancestor.");
 		}
 
-		String duplicateKey = fromStepId + "\u0000" + outputKey;
-		if (!seenRefs.add(duplicateKey)) {
+		if (!seenRefs.add(fromStepId + NULL_BYTE_SEPARATOR + outputKey)) {
 			throw badRequest("Step " + describeStep(step) + " has a duplicate inputRef from "
 					+ describeStepLabel(fromStepId, stepMap) + " using output key '" + outputKey + "'.");
 		}
@@ -416,7 +137,7 @@ public class SquadInputRefValidator {
 		validateInputRefOutput(step, fromStepId, outputKey, stepMap);
 	}
 
-	private AgentDefinition validateCurrentStepAgent(SquadStepRequest step) {
+	private AgentDefinition requireAgentDefinition(SquadStepRequest step) {
 		if (!(step instanceof AiAgentStepRequest aiAgentStepRequest)) {
 			throw badRequest("Step " + describeStep(step) + " must be an AI-agent step with an assigned agent.");
 		}
@@ -446,8 +167,7 @@ public class SquadInputRefValidator {
 		}
 
 		String sourceAgentKey = aiAgentStepRequest.getAgentKey();
-		List<String> outputs = agentRegistry.findByKey(sourceAgentKey)
-				.map(agentDefinition -> agentDefinition.getOutputs())
+		List<String> outputs = agentRegistry.findByKey(sourceAgentKey).map(AgentDefinition::getOutputs)
 				.orElseThrow(() -> badRequest(
 						"Step " + describeStep(step) + " inputRef from " + describeStepLabel(fromStepId, stepMap)
 								+ " references unknown agent '" + sourceAgentKey + "'."));
@@ -456,60 +176,5 @@ public class SquadInputRefValidator {
 			throw badRequest("Step " + describeStep(step) + " inputRef from " + describeStepLabel(fromStepId, stepMap)
 					+ " references undeclared output key '" + outputKey + "'.");
 		}
-	}
-
-	private Set<String> computeAncestors(String stepId, Map<String, Set<String>> reverseEdges) {
-		Set<String> ancestors = new HashSet<>();
-		Deque<String> queue = new ArrayDeque<>();
-		queue.add(stepId);
-
-		while (!queue.isEmpty()) {
-			String currentStepId = queue.removeFirst();
-			for (String parentStepId : reverseEdges.getOrDefault(currentStepId, Set.of())) {
-				if (ancestors.add(parentStepId)) {
-					queue.addLast(parentStepId);
-				}
-			}
-		}
-
-		return ancestors;
-	}
-
-	private static String resolveAgentKey(SquadStepRequest step) {
-		if (step instanceof AiAgentStepRequest aiAgentStepRequest) {
-			return aiAgentStepRequest.getAgentKey();
-		}
-		return null;
-	}
-
-	private static String describeStep(SquadStepRequest step) {
-		if (step == null) {
-			return "step";
-		}
-
-		String name = step.getName();
-		if (name != null && !name.isBlank()) {
-			return "'" + name.trim() + "'";
-		}
-
-		String id = step.getId();
-		return "with id '" + (id == null || id.isBlank() ? "unknown" : id) + "'";
-	}
-
-	private static String describeStepLabel(String stepId, Map<String, SquadStepRequest> stepMap) {
-		SquadStepRequest step = stepMap.get(stepId);
-		if (step == null) {
-			return "Step with id '" + stepId + "'";
-		}
-		return "Step " + describeStep(step);
-	}
-
-	private static ResponseStatusException badRequest(String message) {
-		return new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
-	}
-
-	private record WorkflowGraph(Map<String, SquadStepRequest> stepMap, Map<String, Set<String>> outgoingEdges,
-			Map<String, Set<String>> incomingEdges, Map<String, Set<String>> undirectedEdges,
-			Map<String, Set<String>> reverseEdges) {
 	}
 }

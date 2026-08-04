@@ -2,10 +2,11 @@ package com.murex.mxorbit.squadorchestrator.infra.persistence.squad.execution;
 
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SaveSquadStepExecutionRequest;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadStepExecutionData;
-import com.murex.mxorbit.squadorchestrator.infra.persistence.squad.execution.entity.SquadStepExecutionEntity;
-import java.util.LinkedHashMap;
+import com.murex.mxorbit.squadorchestrator.core.squad.execution.store.SquadStepExecutionStore;
+import com.murex.mxorbit.squadorchestrator.infra.persistence.squad.execution.mapper.SquadStepExecutionPersistenceMapper;
+
 import java.util.List;
-import java.util.Map;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,39 +14,27 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 @Transactional
 @RequiredArgsConstructor
-public class SquadStepExecutionJpaStore {
+public class SquadStepExecutionJpaStore implements SquadStepExecutionStore {
 
 	private final SquadStepExecutionRepository squadStepExecutionRepository;
 
+	private final SquadStepExecutionPersistenceMapper squadStepExecutionPersistenceMapper;
+
+	@Override
 	public void save(SaveSquadStepExecutionRequest request) {
-		squadStepExecutionRepository.save(toEntity(request));
+		String entityId = buildId(request.getSquadRunId(), request.getStepId());
+
+		squadStepExecutionRepository.save(squadStepExecutionPersistenceMapper.toEntity(request, entityId));
 	}
 
+	@Override
+	@Transactional(readOnly = true)
 	public List<SquadStepExecutionData> findBySquadRunId(String squadRunId) {
 		return squadStepExecutionRepository.findBySquadRunIdOrderByIdAsc(squadRunId).stream()
-				.map(this::toSquadStepExecutionData).toList();
-	}
-
-	private SquadStepExecutionEntity toEntity(SaveSquadStepExecutionRequest request) {
-		return SquadStepExecutionEntity.builder().id(buildId(request.getSquadRunId(), request.getStepId()))
-				.squadRunId(request.getSquadRunId()).squadId(request.getSquadId()).stepId(request.getStepId())
-				.stepName(request.getStepName()).status(request.getStatus()).message(request.getMessage())
-				.startedAt(request.getStartedAt()).completedAt(request.getCompletedAt())
-				.durationMs(request.getDurationMs()).input(copy(request.getInput())).output(copy(request.getOutput()))
-				.build();
-	}
-
-	private SquadStepExecutionData toSquadStepExecutionData(SquadStepExecutionEntity entity) {
-		return SquadStepExecutionData.builder().stepId(entity.getStepId()).stepName(entity.getStepName())
-				.startedAt(entity.getStartedAt()).completedAt(entity.getCompletedAt())
-				.durationMs(entity.getDurationMs()).input(entity.getInput()).output(entity.getOutput()).build();
+				.map(squadStepExecutionPersistenceMapper::toStepExecutionData).toList();
 	}
 
 	private String buildId(String squadRunId, String stepId) {
 		return squadRunId + "::" + stepId;
-	}
-
-	private Map<String, Object> copy(Map<String, Object> source) {
-		return source == null ? new LinkedHashMap<>() : new LinkedHashMap<>(source);
 	}
 }

@@ -14,6 +14,7 @@ import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -35,7 +36,12 @@ public class SquadStepEntity {
 
 	@Id
 	@EqualsAndHashCode.Include
-	private String id;
+	@Builder.Default
+	private String id = UUID.randomUUID().toString();
+
+	/** Author-supplied identifier, unique only within its own squad. */
+	@Column(name = "step_id", nullable = false)
+	private String stepId;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "squad_id", nullable = false)

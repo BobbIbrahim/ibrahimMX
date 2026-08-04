@@ -2,10 +2,18 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, map, tap } from 'rxjs';
 
-import { SquadBuilderInputRef, SquadSavePayload } from '../models/squad-builder.model';
+import {
+  SquadBuilderInputRef,
+  SquadSavePayload,
+  SquadEdgeRoutingType,
+} from '../models/squad-builder.model';
 import { Squad } from '../models/squad.model';
 
-import { SquadExecutionStatus, SquadRunListItem, SquadRunStartResponse } from '../models/squad-run.model';
+import {
+  SquadExecutionStatus,
+  SquadRunListItem,
+  SquadRunStartResponse,
+} from '../models/squad-run.model';
 
 export interface SquadApiStepResponse {
   id: string;
@@ -18,6 +26,10 @@ export interface SquadApiStepResponse {
 export interface SquadApiEdgeResponse {
   sourceStepId: string;
   targetStepId: string;
+  routingType?: SquadEdgeRoutingType | null;
+  condition?: string | null;
+  priority?: number | null;
+  isDefault?: boolean | null;
 }
 
 export interface SquadApiResponse {
@@ -107,7 +119,10 @@ export class SquadService {
     };
   }
 
-  startSquadRun(squadId: string, initialInput: Record<string, unknown> = {}): Observable<SquadRunStartResponse> {
+  startSquadRun(
+    squadId: string,
+    initialInput: Record<string, unknown> = {},
+  ): Observable<SquadRunStartResponse> {
     return this.http.post<SquadRunStartResponse>(`${this.baseUrl}/squads/${squadId}/runs`, {
       input: initialInput,
     });

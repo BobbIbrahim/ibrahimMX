@@ -4,19 +4,19 @@ import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadExecu
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadStepExecutionData;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadStepExecutionStatus;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadStepStatus;
+import com.murex.mxorbit.squadorchestrator.core.squad.execution.store.SquadStepExecutionStore;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.workflow.SquadExecutionWorkflow;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.Squad;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadEdge;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadStep;
 import com.murex.mxorbit.squadorchestrator.core.squad.provider.SquadProvider;
 import com.murex.mxorbit.squadorchestrator.core.squad.routing.SquadRoutingDecision;
+import com.murex.mxorbit.squadorchestrator.core.squad.routing.store.SquadRoutingDecisionStore;
 import com.murex.mxorbit.squadorchestrator.core.squad.run.SquadRunMemoKeys;
 import com.murex.mxorbit.squadorchestrator.core.squad.run.model.SquadRunSummary;
 import com.murex.mxorbit.squadorchestrator.core.workflow.client.TemporalClient;
 import com.murex.mxorbit.squadorchestrator.core.workflow.client.WorkflowExecutionSummary;
 import com.murex.mxorbit.squadorchestrator.core.workflow.client.WorkflowRunStatus;
-import com.murex.mxorbit.squadorchestrator.infra.persistence.squad.execution.SquadStepExecutionJpaStore;
-import com.murex.mxorbit.squadorchestrator.infra.persistence.squad.routing.SquadRoutingDecisionJpaStore;
 import io.temporal.client.WorkflowNotFoundException;
 
 import java.time.Duration;
@@ -41,9 +41,9 @@ public class SquadRunProviderService implements SquadRunProvider {
 
 	private final TemporalClient temporalClient;
 
-	private final SquadStepExecutionJpaStore squadStepExecutionJpaStore;
+	private final SquadStepExecutionStore squadStepExecutionStore;
 
-	private final SquadRoutingDecisionJpaStore squadRoutingDecisionJpaStore;
+	private final SquadRoutingDecisionStore squadRoutingDecisionStore;
 
 	private final SquadProvider squadProvider;
 
@@ -84,7 +84,7 @@ public class SquadRunProviderService implements SquadRunProvider {
 	}
 
 	private void enrichWithRoutingDecisions(String squadRunId, SquadExecutionStatus status) {
-		List<SquadRoutingDecision> persistedDecisions = squadRoutingDecisionJpaStore.findBySquadRunId(squadRunId);
+		List<SquadRoutingDecision> persistedDecisions = squadRoutingDecisionStore.findBySquadRunId(squadRunId);
 
 		if (!persistedDecisions.isEmpty()) {
 			status.setRoutingDecisions(new ArrayList<>(persistedDecisions));
@@ -139,7 +139,7 @@ public class SquadRunProviderService implements SquadRunProvider {
 	}
 
 	private void enrichWithStepExecutionData(String squadRunId, SquadExecutionStatus status) {
-		var stepExecutionDataMap = squadStepExecutionJpaStore.findBySquadRunId(squadRunId).stream()
+		var stepExecutionDataMap = squadStepExecutionStore.findBySquadRunId(squadRunId).stream()
 				.collect(Collectors.toMap(SquadStepExecutionData::getStepId, Function.identity()));
 
 		status.getSteps().forEach(step -> {

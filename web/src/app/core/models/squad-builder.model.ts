@@ -1,5 +1,7 @@
 export type SquadBuilderType = 'hardcoded-flow' | 'prompt-squad';
 
+export type SquadEdgeRoutingType = 'ALWAYS' | 'WHEN';
+
 export interface SquadBuilderPosition {
   x: number;
   y: number;
@@ -14,10 +16,21 @@ export interface SquadBuilderStep {
   inputRefs: SquadBuilderInputRef[];
 }
 
+export interface SquadBuilderConditional {
+  id: string;
+  name: string;
+  sourceStepId: string;
+  position: SquadBuilderPosition;
+}
+
 export interface SquadBuilderEdge {
   id: string;
   sourceStepId: string;
   targetStepId: string;
+  routingType: SquadEdgeRoutingType;
+  condition: string | null;
+  priority: number;
+  isDefault: boolean;
 }
 
 export type SquadBuilderInputRefSourceType = 'MANUAL' | 'STEP_OUTPUT';
@@ -35,6 +48,7 @@ export interface SquadBuilderDraft {
   description: string;
   type: SquadBuilderType;
   steps: SquadBuilderStep[];
+  conditionals: SquadBuilderConditional[];
   edges: SquadBuilderEdge[];
 }
 
@@ -49,6 +63,10 @@ export interface SquadSaveStepPayload {
 export interface SquadSaveEdgePayload {
   sourceStepId: string;
   targetStepId: string;
+  routingType: SquadEdgeRoutingType;
+  condition: string | null;
+  priority: number;
+  isDefault: boolean;
 }
 
 export interface SquadSavePayload {

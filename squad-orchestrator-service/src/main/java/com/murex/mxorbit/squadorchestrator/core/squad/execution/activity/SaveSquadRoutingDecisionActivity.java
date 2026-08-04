@@ -1,6 +1,6 @@
 package com.murex.mxorbit.squadorchestrator.core.squad.execution.activity;
 
-import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SaveSquadRoutingDecisionRequest;
+import com.murex.mxorbit.squadorchestrator.core.squad.routing.store.request.SquadRoutingDecisionStoreRequest;
 import io.temporal.activity.ActivityInterface;
 import io.temporal.activity.ActivityMethod;
 
@@ -8,5 +8,5 @@ import io.temporal.activity.ActivityMethod;
 public interface SaveSquadRoutingDecisionActivity {
 
 	@ActivityMethod
-	void saveSquadRoutingDecision(SaveSquadRoutingDecisionRequest request);
+	void saveSquadRoutingDecision(SquadRoutingDecisionStoreRequest request);
 }

@@ -19,6 +19,7 @@ public class CreateSquadApiRequest {
 
 	private String description;
 
+	@NotBlank
 	private String type;
 
 	@Valid

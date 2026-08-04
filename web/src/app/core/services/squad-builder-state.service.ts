@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { AgentService } from './agent.service';
 import { SquadApiResponse } from './squad.service';
 import {
+  SquadBuilderConditional,
   SquadBuilderDraft,
   SquadBuilderEdge,
   SquadBuilderInputRef,
@@ -9,6 +10,7 @@ import {
   SquadBuilderType,
   SquadSavePayload,
 } from '../models/squad-builder.model';
+import { validateSquadRoutingCondition } from '../validation/squad-routing-condition-validation';
 
 export type CreateSquadDraftPayload = {
   name: string;
@@ -20,6 +22,23 @@ export type UpdateSquadStepPayload = Partial<
   Pick<SquadBuilderStep, 'name' | 'assignedAgentId' | 'parameters' | 'inputRefs'>
 >;
 
+export type AddConditionalRoutePayload = {
+  conditionalId: string;
+  targetStepId: string;
+  routingType: 'WHEN' | 'ALWAYS';
+  condition: string | null;
+  priority: number;
+  isDefault: boolean;
+};
+
+export type UpdateConditionalRoutePayload = {
+  targetStepId: string;
+  routingType: 'WHEN' | 'ALWAYS';
+  condition: string | null;
+  priority: number;
+  isDefault: boolean;
+};
+
 @Injectable({
   providedIn: 'root',
 })
@@ -27,11 +46,14 @@ export class SquadBuilderStateService {
   private readonly agentService = inject(AgentService);
   private readonly draftSignal = signal<SquadBuilderDraft | null>(null);
   private readonly selectedStepIdSignal = signal<string | null>(null);
+  private readonly selectedConditionalIdSignal = signal<string | null>(null);
 
   readonly draft = this.draftSignal.asReadonly();
   readonly selectedStepId = this.selectedStepIdSignal.asReadonly();
+  readonly selectedConditionalId = this.selectedConditionalIdSignal.asReadonly();
 
   readonly steps = computed(() => this.draft()?.steps ?? []);
+  readonly conditionals = computed(() => this.draft()?.conditionals ?? []);
   readonly edges = computed(() => this.draft()?.edges ?? []);
 
   readonly selectedStep = computed(() => {
@@ -44,6 +66,16 @@ export class SquadBuilderStateService {
     return this.steps().find((step) => step.id === selectedStepId);
   });
 
+  readonly selectedConditional = computed(() => {
+    const selectedConditionalId = this.selectedConditionalId();
+
+    if (!selectedConditionalId) {
+      return undefined;
+    }
+
+    return this.conditionals().find((conditional) => conditional.id === selectedConditionalId);
+  });
+
   createDraft(payload: CreateSquadDraftPayload): SquadBuilderDraft {
     const draft: SquadBuilderDraft = {
       id: this.generateId('draft'),
@@ -51,11 +83,13 @@ export class SquadBuilderStateService {
       description: payload.description.trim(),
       type: payload.type,
       steps: [],
+      conditionals: [],
       edges: [],
     };
 
     this.draftSignal.set(draft);
     this.selectedStepIdSignal.set(null);
+    this.selectedConditionalIdSignal.set(null);
 
     return draft;
   }
@@ -82,18 +116,25 @@ export class SquadBuilderStateService {
           y: 140 + (index % 2) * 140,
         },
       })),
+      conditionals: [],
       edges: squad.edges.map((edge, index) => ({
         id: this.generateId(`edge-${index + 1}`),
         sourceStepId: edge.sourceStepId,
         targetStepId: edge.targetStepId,
+        routingType: edge.routingType ?? 'ALWAYS',
+        condition: edge.condition ?? null,
+        priority: edge.priority ?? 100,
+        isDefault: edge.isDefault ?? false,
       })),
     };
 
     const normalizedDraft = this.normalizeDraftInputRefs(draft);
-    this.draftSignal.set(normalizedDraft);
+    const draftWithConditionals = this.reconstructConditionals(normalizedDraft);
+    this.draftSignal.set(draftWithConditionals);
     this.selectedStepIdSignal.set(null);
+    this.selectedConditionalIdSignal.set(null);
 
-    return normalizedDraft;
+    return draftWithConditionals;
   }
 
   addStep(): SquadBuilderStep {
@@ -125,8 +166,148 @@ export class SquadBuilderStateService {
     });
 
     this.selectedStepIdSignal.set(newStep.id);
+    this.selectedConditionalIdSignal.set(null);
 
     return newStep;
+  }
+
+  addConditional(sourceStepId: string): SquadBuilderConditional | null {
+    const currentDraft = this.requireDraft();
+
+    const sourceStep = currentDraft.steps.find((step) => step.id === sourceStepId);
+
+    if (!sourceStep) {
+      return null;
+    }
+
+    const existingConditional = currentDraft.conditionals.find(
+      (conditional) => conditional.sourceStepId === sourceStepId,
+    );
+
+    if (existingConditional) {
+      this.selectConditional(existingConditional.id);
+      return null;
+    }
+
+    const newConditional: SquadBuilderConditional = {
+      id: this.generateId('conditional'),
+      name: 'New Conditional',
+      sourceStepId,
+      position: {
+        x: sourceStep.position.x + 240,
+        y: sourceStep.position.y,
+      },
+    };
+
+    this.draftSignal.update((draft) => {
+      if (!draft) {
+        return draft;
+      }
+
+      return {
+        ...draft,
+        conditionals: [...draft.conditionals, newConditional],
+      };
+    });
+
+    this.selectedConditionalIdSignal.set(newConditional.id);
+    this.selectedStepIdSignal.set(null);
+
+    return newConditional;
+  }
+
+  updateSelectedConditional(
+    payload: Partial<Pick<SquadBuilderConditional, 'name' | 'position'>>,
+  ): void {
+    const selectedConditionalId = this.selectedConditionalId();
+
+    if (!selectedConditionalId) {
+      return;
+    }
+
+    this.updateConditional(selectedConditionalId, payload);
+  }
+
+  updateConditional(
+    conditionalId: string,
+    payload: Partial<Pick<SquadBuilderConditional, 'name' | 'position'>>,
+  ): void {
+    this.draftSignal.update((draft) => {
+      if (!draft) {
+        return draft;
+      }
+
+      const conditionalExists = draft.conditionals.some(
+        (conditional) => conditional.id === conditionalId,
+      );
+
+      if (!conditionalExists) {
+        return draft;
+      }
+
+      return {
+        ...draft,
+        conditionals: draft.conditionals.map((conditional) =>
+          conditional.id === conditionalId
+            ? {
+                ...conditional,
+                ...payload,
+              }
+            : conditional,
+        ),
+      };
+    });
+  }
+
+  updateConditionalPosition(
+    conditionalId: string,
+    position: {
+      x: number;
+      y: number;
+    },
+  ): void {
+    this.updateConditional(conditionalId, {
+      position: {
+        x: position.x,
+        y: position.y,
+      },
+    });
+  }
+
+  deleteSelectedConditional(): void {
+    const selectedConditionalId = this.selectedConditionalId();
+
+    if (!selectedConditionalId) {
+      return;
+    }
+
+    this.deleteConditional(selectedConditionalId);
+  }
+
+  deleteConditional(conditionalId: string): void {
+    this.draftSignal.update((draft) => {
+      if (!draft) {
+        return draft;
+      }
+
+      const conditional = draft.conditionals.find((candidate) => candidate.id === conditionalId);
+
+      if (!conditional) {
+        return draft;
+      }
+
+      const nextDraft: SquadBuilderDraft = {
+        ...draft,
+        conditionals: draft.conditionals.filter((candidate) => candidate.id !== conditionalId),
+        edges: draft.edges.filter((edge) => edge.sourceStepId !== conditional.sourceStepId),
+      };
+
+      return this.normalizeDraftInputRefs(nextDraft);
+    });
+
+    if (this.selectedConditionalId() === conditionalId) {
+      this.selectedConditionalIdSignal.set(null);
+    }
   }
 
   selectStep(stepId: string): void {
@@ -137,10 +318,23 @@ export class SquadBuilderStateService {
     }
 
     this.selectedStepIdSignal.set(stepId);
+    this.selectedConditionalIdSignal.set(null);
+  }
+
+  selectConditional(conditionalId: string): void {
+    const exists = this.conditionals().some((conditional) => conditional.id === conditionalId);
+
+    if (!exists) {
+      return;
+    }
+
+    this.selectedConditionalIdSignal.set(conditionalId);
+    this.selectedStepIdSignal.set(null);
   }
 
   clearSelection(): void {
     this.selectedStepIdSignal.set(null);
+    this.selectedConditionalIdSignal.set(null);
   }
 
   updateSelectedStep(payload: UpdateSquadStepPayload): void {
@@ -183,11 +377,7 @@ export class SquadBuilderStateService {
 
       return {
         ...draft,
-        steps: draft.steps.map((step) =>
-          step.id === stepId
-            ? updatedStep
-            : step,
-        ),
+        steps: draft.steps.map((step) => (step.id === stepId ? updatedStep : step)),
       };
     });
   }
@@ -392,9 +582,18 @@ export class SquadBuilderStateService {
         return draft;
       }
 
+      const conditionalIdsToDelete = new Set(
+        draft.conditionals
+          .filter((conditional) => conditional.sourceStepId === stepId)
+          .map((conditional) => conditional.id),
+      );
+
       const nextDraft: SquadBuilderDraft = {
         ...draft,
         steps: draft.steps.filter((step) => step.id !== stepId),
+        conditionals: draft.conditionals.filter(
+          (conditional) => !conditionalIdsToDelete.has(conditional.id),
+        ),
         edges: draft.edges.filter(
           (edge) => edge.sourceStepId !== stepId && edge.targetStepId !== stepId,
         ),
@@ -405,6 +604,13 @@ export class SquadBuilderStateService {
 
     if (this.selectedStepId() === stepId) {
       this.selectedStepIdSignal.set(null);
+    }
+
+    if (
+      this.selectedConditionalId() &&
+      !this.conditionals().some((conditional) => conditional.id === this.selectedConditionalId())
+    ) {
+      this.selectedConditionalIdSignal.set(null);
     }
   }
 
@@ -445,6 +651,10 @@ export class SquadBuilderStateService {
             id: this.generateId('edge'),
             sourceStepId,
             targetStepId,
+            routingType: 'ALWAYS',
+            condition: null,
+            priority: 100,
+            isDefault: false,
           },
         ],
       };
@@ -470,6 +680,364 @@ export class SquadBuilderStateService {
 
       return this.normalizeDraftInputRefs(nextDraft);
     });
+  }
+
+  addConditionalRoute(payload: AddConditionalRoutePayload): SquadBuilderEdge | null {
+    let createdEdge: SquadBuilderEdge | null = null;
+
+    this.draftSignal.update((draft) => {
+      if (!draft) {
+        return draft;
+      }
+
+      // Resolve the conditional
+      const conditional = draft.conditionals.find((cond) => cond.id === payload.conditionalId);
+      if (!conditional) {
+        return draft;
+      }
+
+      // Check source step exists
+      const sourceStep = draft.steps.find((step) => step.id === conditional.sourceStepId);
+      if (!sourceStep) {
+        return draft;
+      }
+
+      // Check target step exists
+      const targetStep = draft.steps.find((step) => step.id === payload.targetStepId);
+      if (!targetStep) {
+        return draft;
+      }
+
+      // Source and target cannot be the same
+      if (conditional.sourceStepId === payload.targetStepId) {
+        return draft;
+      }
+
+      // Check for duplicate source-target edge
+      const edgeAlreadyExists = draft.edges.some(
+        (edge) =>
+          edge.sourceStepId === conditional.sourceStepId &&
+          edge.targetStepId === payload.targetStepId,
+      );
+      if (edgeAlreadyExists) {
+        return draft;
+      }
+
+      // Validate priority
+      if (!Number.isFinite(payload.priority) || !Number.isInteger(payload.priority) || payload.priority < 0) {
+        return draft;
+      }
+
+      // Validate routingType
+      if (payload.routingType !== 'WHEN' && payload.routingType !== 'ALWAYS') {
+        return draft;
+      }
+
+      // WHEN-specific validations
+      if (payload.routingType === 'WHEN') {
+        // WHEN requires non-blank, non-null condition
+        if (!payload.condition || !payload.condition.trim()) {
+          return draft;
+        }
+
+        // WHEN cannot be marked as default
+        if (payload.isDefault) {
+          return draft;
+        }
+
+        // Validate condition with existing validator
+        const validationError = validateSquadRoutingCondition(payload.condition);
+        if (validationError !== null) {
+          return draft;
+        }
+
+        // Check for duplicate priority under same source
+        const duplicatePriority = draft.edges.some(
+          (edge) =>
+            edge.sourceStepId === conditional.sourceStepId &&
+            edge.routingType === 'WHEN' &&
+            edge.priority === payload.priority,
+        );
+        if (duplicatePriority) {
+          return draft;
+        }
+      }
+
+      // ALWAYS-specific validations
+      if (payload.routingType === 'ALWAYS') {
+        // ALWAYS cannot have a condition
+        if (payload.condition !== null) {
+          return draft;
+        }
+
+        // Default route must use ALWAYS
+        if (payload.isDefault) {
+          if (payload.routingType !== 'ALWAYS') {
+            return draft;
+          }
+
+          // No duplicate default routes for same source
+          const hasExistingDefault = draft.edges.some(
+            (edge) =>
+              edge.sourceStepId === conditional.sourceStepId && edge.isDefault,
+          );
+          if (hasExistingDefault) {
+            return draft;
+          }
+        }
+      }
+
+      // Create the edge
+      const edge: SquadBuilderEdge = {
+        id: this.generateId('edge'),
+        sourceStepId: conditional.sourceStepId,
+        targetStepId: payload.targetStepId,
+        routingType: payload.routingType,
+        condition: payload.condition,
+        priority: payload.priority,
+        isDefault: payload.isDefault,
+      };
+
+      createdEdge = edge;
+
+      const nextDraft: SquadBuilderDraft = {
+        ...draft,
+        edges: [...draft.edges, edge],
+      };
+
+      return this.normalizeDraftInputRefs(nextDraft);
+    });
+
+    return createdEdge;
+  }
+
+  updateConditionalRoute(
+    edgeId: string,
+    payload: UpdateConditionalRoutePayload,
+  ): SquadBuilderEdge | null {
+    let updatedEdge: SquadBuilderEdge | null = null;
+
+    this.draftSignal.update((draft) => {
+      if (!draft) {
+        return draft;
+      }
+
+      // Find the edge to update
+      const edge = draft.edges.find((e) => e.id === edgeId);
+      if (!edge) {
+        return draft;
+      }
+
+      // Check that source step owns a conditional
+      const sourceConditional = draft.conditionals.find(
+        (conditional) => conditional.sourceStepId === edge.sourceStepId,
+      );
+      if (!sourceConditional) {
+        return draft;
+      }
+
+      // Check target step exists
+      const targetStep = draft.steps.find((step) => step.id === payload.targetStepId);
+      if (!targetStep) {
+        return draft;
+      }
+
+      // Source and target cannot be the same
+      if (edge.sourceStepId === payload.targetStepId) {
+        return draft;
+      }
+
+      // Check for duplicate source-target edge (excluding the edge being updated)
+      const edgeAlreadyExists = draft.edges.some(
+        (e) =>
+          e.id !== edgeId &&
+          e.sourceStepId === edge.sourceStepId &&
+          e.targetStepId === payload.targetStepId,
+      );
+      if (edgeAlreadyExists) {
+        return draft;
+      }
+
+      // Validate priority
+      if (!Number.isFinite(payload.priority) || !Number.isInteger(payload.priority) || payload.priority < 0) {
+        return draft;
+      }
+
+      // Validate routingType
+      if (payload.routingType !== 'WHEN' && payload.routingType !== 'ALWAYS') {
+        return draft;
+      }
+
+      // WHEN-specific validations
+      if (payload.routingType === 'WHEN') {
+        // WHEN requires non-blank, non-null condition
+        if (!payload.condition || !payload.condition.trim()) {
+          return draft;
+        }
+
+        // WHEN cannot be marked as default
+        if (payload.isDefault) {
+          return draft;
+        }
+
+        // Validate condition with existing validator
+        const validationError = validateSquadRoutingCondition(payload.condition);
+        if (validationError !== null) {
+          return draft;
+        }
+
+        // Check for duplicate priority under same source (excluding the edge being updated)
+        const duplicatePriority = draft.edges.some(
+          (e) =>
+            e.id !== edgeId &&
+            e.sourceStepId === edge.sourceStepId &&
+            e.routingType === 'WHEN' &&
+            e.priority === payload.priority,
+        );
+        if (duplicatePriority) {
+          return draft;
+        }
+      }
+
+      // ALWAYS-specific validations
+      if (payload.routingType === 'ALWAYS') {
+        // ALWAYS cannot have a condition
+        if (payload.condition !== null) {
+          return draft;
+        }
+
+        // Default route must use ALWAYS
+        if (payload.isDefault) {
+          if (payload.routingType !== 'ALWAYS') {
+            return draft;
+          }
+
+          // No duplicate default routes for same source (excluding the edge being updated)
+          const hasExistingDefault = draft.edges.some(
+            (e) =>
+              e.id !== edgeId &&
+              e.sourceStepId === edge.sourceStepId &&
+              e.isDefault,
+          );
+          if (hasExistingDefault) {
+            return draft;
+          }
+        }
+      }
+
+      // Update the edge, preserving id and sourceStepId
+      const nextEdge: SquadBuilderEdge = {
+        id: edge.id,
+        sourceStepId: edge.sourceStepId,
+        targetStepId: payload.targetStepId,
+        routingType: payload.routingType,
+        condition: payload.condition,
+        priority: payload.priority,
+        isDefault: payload.isDefault,
+      };
+
+      updatedEdge = nextEdge;
+
+      const nextDraft: SquadBuilderDraft = {
+        ...draft,
+        edges: draft.edges.map((e) => (e.id === edgeId ? nextEdge : e)),
+      };
+
+      return this.normalizeDraftInputRefs(nextDraft);
+    });
+
+    return updatedEdge;
+  }
+
+  removeConditionalRoute(edgeId: string): boolean {
+    let removed = false;
+
+    this.draftSignal.update((draft) => {
+      if (!draft) {
+        return draft;
+      }
+
+      // Find the edge to remove
+      const edge = draft.edges.find((e) => e.id === edgeId);
+      if (!edge) {
+        return draft;
+      }
+
+      // Check that the edge source owns a conditional
+      const sourceConditional = draft.conditionals.find(
+        (conditional) => conditional.sourceStepId === edge.sourceStepId,
+      );
+      if (!sourceConditional) {
+        return draft;
+      }
+
+      removed = true;
+
+      const nextDraft: SquadBuilderDraft = {
+        ...draft,
+        edges: draft.edges.filter((e) => e.id !== edgeId),
+      };
+
+      return this.normalizeDraftInputRefs(nextDraft);
+    });
+
+    return removed;
+  }
+
+  replaceConditionalDefaultRoute(edgeId: string): SquadBuilderEdge | null {
+    let updatedEdge: SquadBuilderEdge | null = null;
+
+    this.draftSignal.update((draft) => {
+      if (!draft) {
+        return draft;
+      }
+
+      // Find the edge to update
+      const edge = draft.edges.find((e) => e.id === edgeId);
+      if (!edge) {
+        return draft;
+      }
+
+      // Check that source step owns a conditional
+      const sourceConditional = draft.conditionals.find(
+        (conditional) => conditional.sourceStepId === edge.sourceStepId,
+      );
+      if (!sourceConditional) {
+        return draft;
+      }
+
+      // Clear isDefault on the current default under the same source
+      const edgesWithDefaultCleared = draft.edges.map((e) =>
+        e.sourceStepId === edge.sourceStepId && e.isDefault
+          ? {
+              ...e,
+              isDefault: false,
+            }
+          : e,
+      );
+
+      // Convert the requested edge to default
+      const nextEdge: SquadBuilderEdge = {
+        id: edge.id,
+        sourceStepId: edge.sourceStepId,
+        targetStepId: edge.targetStepId,
+        routingType: 'ALWAYS',
+        condition: null,
+        priority: 100,
+        isDefault: true,
+      };
+
+      updatedEdge = nextEdge;
+
+      const nextDraft: SquadBuilderDraft = {
+        ...draft,
+        edges: edgesWithDefaultCleared.map((e) => (e.id === edgeId ? nextEdge : e)),
+      };
+
+      return this.normalizeDraftInputRefs(nextDraft);
+    });
+
+    return updatedEdge;
   }
 
   buildSavePayload(): SquadSavePayload | null {
@@ -498,13 +1066,59 @@ export class SquadBuilderStateService {
       edges: draft.edges.map((edge) => ({
         sourceStepId: edge.sourceStepId,
         targetStepId: edge.targetStepId,
+        routingType: edge.routingType,
+        condition: edge.condition,
+        priority: edge.priority,
+        isDefault: edge.isDefault,
       })),
+    };
+  }
+
+  private reconstructConditionals(draft: SquadBuilderDraft): SquadBuilderDraft {
+    // Group edges by sourceStepId
+    const edgesBySourceStepId = new Map<string, SquadBuilderEdge[]>();
+    for (const edge of draft.edges) {
+      const sourceEdges = edgesBySourceStepId.get(edge.sourceStepId) ?? [];
+      sourceEdges.push(edge);
+      edgesBySourceStepId.set(edge.sourceStepId, sourceEdges);
+    }
+
+    // Create a map of steps for quick lookup
+    const stepsById = new Map(draft.steps.map((step) => [step.id, step]));
+
+    // Reconstruct conditionals for sources with WHEN edges
+    const reconstructedConditionals: SquadBuilderConditional[] = [];
+    for (const [sourceStepId, edges] of edgesBySourceStepId.entries()) {
+      // Check if this source has at least one WHEN edge
+      const hasWhenEdge = edges.some((edge) => edge.routingType === 'WHEN');
+
+      if (hasWhenEdge) {
+        const sourceStep = stepsById.get(sourceStepId);
+        if (sourceStep) {
+          const conditional: SquadBuilderConditional = {
+            id: this.generateId('conditional'),
+            name: 'Conditional',
+            sourceStepId,
+            position: {
+              x: sourceStep.position.x + 240,
+              y: sourceStep.position.y,
+            },
+          };
+          reconstructedConditionals.push(conditional);
+        }
+      }
+    }
+
+    return {
+      ...draft,
+      conditionals: reconstructedConditionals,
     };
   }
 
   resetDraft(): void {
     this.draftSignal.set(null);
     this.selectedStepIdSignal.set(null);
+    this.selectedConditionalIdSignal.set(null);
   }
 
   private requireDraft(): SquadBuilderDraft {
@@ -527,7 +1141,10 @@ export class SquadBuilderStateService {
     };
   }
 
-  private filterValidInputRefs(step: SquadBuilderStep, draft: SquadBuilderDraft): SquadBuilderInputRef[] {
+  private filterValidInputRefs(
+    step: SquadBuilderStep,
+    draft: SquadBuilderDraft,
+  ): SquadBuilderInputRef[] {
     const ancestorStepIds = new Set(this.computeAncestorStepIds(step.id, draft.edges));
 
     return step.inputRefs.filter((inputRef) => {
@@ -559,7 +1176,9 @@ export class SquadBuilderStateService {
     }
 
     const mappedTargetInputs = new Set(
-      step.inputRefs.map((inputRef) => inputRef.targetInput).filter((targetInput) => Boolean(targetInput?.trim())),
+      step.inputRefs
+        .map((inputRef) => inputRef.targetInput)
+        .filter((targetInput) => Boolean(targetInput?.trim())),
     );
 
     return agentInputs.filter((input) => !mappedTargetInputs.has(input));

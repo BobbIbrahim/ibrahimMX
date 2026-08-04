@@ -1,4 +1,5 @@
 import { SquadBuilderDraft, SquadBuilderStep } from '../models/squad-builder.model';
+import { validateSquadRoutingCondition } from './squad-routing-condition-validation';
 
 export type SquadWorkflowAgent = {
   agentKey: string;
@@ -67,14 +68,18 @@ export function validateSquadWorkflow(
 
     if (!stepMap.has(sourceStepId)) {
       validationErrors.push(
-        'Connection from ' + stepReferenceLabel(sourceStepId, stepMap) + ' references an unknown source step.',
+        'Connection from ' +
+          stepReferenceLabel(sourceStepId, stepMap) +
+          ' references an unknown source step.',
       );
       continue;
     }
 
     if (!stepMap.has(targetStepId)) {
       validationErrors.push(
-        'Connection to ' + stepReferenceLabel(targetStepId, stepMap) + ' references an unknown target step.',
+        'Connection to ' +
+          stepReferenceLabel(targetStepId, stepMap) +
+          ' references an unknown target step.',
       );
       continue;
     }
@@ -93,7 +98,7 @@ export function validateSquadWorkflow(
     const edgeKey = sourceStepId + '\u0000' + targetStepId;
     if (uniqueEdgeKeys.has(edgeKey)) {
       validationErrors.push(
-        "Connection from " +
+        'Connection from ' +
           stepReferenceLabel(sourceStepId, stepMap) +
           ' to ' +
           stepReferenceLabel(targetStepId, stepMap) +
@@ -109,7 +114,7 @@ export function validateSquadWorkflow(
     addGraphEdge(undirectedEdges, targetStepId, sourceStepId);
     addGraphEdge(reverseEdges, targetStepId, sourceStepId);
   }
-
+  validateEdgeRouting(edges, validationErrors);
   const roots = steps.filter((step) => (incomingEdges.get(step.id)?.size ?? 0) === 0);
   const terminals = steps.filter((step) => (outgoingEdges.get(step.id)?.size ?? 0) === 0);
 
@@ -210,7 +215,9 @@ export function validateSquadWorkflow(
     const seenInputRefs = new Set<string>();
     const stepAgentKey = step.assignedAgentId;
     const targetInputs = new Set(
-      (stepAgentKey ? agentByKey.get(stepAgentKey)?.inputs ?? [] : []).filter((input) => Boolean(input?.trim())),
+      (stepAgentKey ? (agentByKey.get(stepAgentKey)?.inputs ?? []) : []).filter((input) =>
+        Boolean(input?.trim()),
+      ),
     );
     const seenTargetInputs = new Set<string>();
 
@@ -228,7 +235,7 @@ export function validateSquadWorkflow(
               " inputRef target input '" +
               inputRef.targetInput +
               "' is not declared by agent '" +
-              (stepAgentKey ? agentByKey.get(stepAgentKey)?.name ?? stepAgentKey : 'unknown') +
+              (stepAgentKey ? (agentByKey.get(stepAgentKey)?.name ?? stepAgentKey) : 'unknown') +
               "'.",
           );
           continue;
@@ -236,7 +243,10 @@ export function validateSquadWorkflow(
 
         if (seenTargetInputs.has(inputRef.targetInput)) {
           validationErrors.push(
-            stepLabel(step) + " has a duplicate inputRef target input '" + inputRef.targetInput + "'.",
+            stepLabel(step) +
+              " has a duplicate inputRef target input '" +
+              inputRef.targetInput +
+              "'.",
           );
           continue;
         }
@@ -263,7 +273,7 @@ export function validateSquadWorkflow(
             " inputRef target input '" +
             inputRef.targetInput +
             "' is not declared by agent '" +
-            (stepAgentKey ? agentByKey.get(stepAgentKey)?.name ?? stepAgentKey : 'unknown') +
+            (stepAgentKey ? (agentByKey.get(stepAgentKey)?.name ?? stepAgentKey) : 'unknown') +
             "'.",
         );
         continue;
@@ -309,7 +319,10 @@ export function validateSquadWorkflow(
 
       if (seenTargetInputs.has(inputRef.targetInput)) {
         validationErrors.push(
-          stepLabel(step) + " has a duplicate inputRef target input '" + inputRef.targetInput + "'.",
+          stepLabel(step) +
+            " has a duplicate inputRef target input '" +
+            inputRef.targetInput +
+            "'.",
         );
         continue;
       }
@@ -347,6 +360,109 @@ export function validateSquadWorkflow(
   return validationErrors;
 }
 
+function validateEdgeRouting(edges: SquadBuilderDraft['edges'], validationErrors: string[]): void {
+  const edgesBySourceStepId = new Map<string, SquadBuilderDraft['edges']>();
+
+  for (const edge of edges) {
+    validateEdgeRoutingProperties(edge, validationErrors);
+
+    const outgoingEdges = edgesBySourceStepId.get(edge.sourceStepId) ?? [];
+    outgoingEdges.push(edge);
+    edgesBySourceStepId.set(edge.sourceStepId, outgoingEdges);
+  }
+
+  for (const [sourceStepId, outgoingEdges] of edgesBySourceStepId) {
+    validateOutgoingEdgeRouting(sourceStepId, outgoingEdges, validationErrors);
+  }
+}
+
+function validateEdgeRoutingProperties(
+  edge: SquadBuilderDraft['edges'][number],
+  validationErrors: string[],
+): void {
+  const edgeLabel = `Connection from step '${edge.sourceStepId}' to step '${edge.targetStepId}'`;
+
+  if (edge.routingType !== 'ALWAYS' && edge.routingType !== 'WHEN') {
+    validationErrors.push(`${edgeLabel} must have a routing type.`);
+    return;
+  }
+
+  if (edge.priority === null || edge.priority === undefined || !Number.isFinite(edge.priority)) {
+    validationErrors.push(`${edgeLabel} must have a priority.`);
+    return;
+  }
+
+  if (edge.priority < 0) {
+    validationErrors.push(`${edgeLabel} must have a nonnegative priority.`);
+  }
+
+  const hasCondition =
+    edge.condition !== null && edge.condition !== undefined && edge.condition.trim().length > 0;
+
+  if (edge.routingType === 'WHEN') {
+    if (!hasCondition) {
+      validationErrors.push(`${edgeLabel} uses routing type WHEN but has no condition.`);
+    } else {
+      const conditionValidationError = validateSquadRoutingCondition(edge.condition);
+
+      if (conditionValidationError) {
+        validationErrors.push(
+          `${edgeLabel} has an invalid routing condition: ${conditionValidationError}`,
+        );
+      }
+    }
+  }
+
+  if (edge.routingType === 'ALWAYS' && hasCondition) {
+    validationErrors.push(`${edgeLabel} uses routing type ALWAYS and must not define a condition.`);
+  }
+
+  if (edge.isDefault && edge.routingType !== 'ALWAYS') {
+    validationErrors.push(`${edgeLabel} is a default edge and must use routing type ALWAYS.`);
+  }
+}
+
+function validateOutgoingEdgeRouting(
+  sourceStepId: string,
+  outgoingEdges: SquadBuilderDraft['edges'],
+  validationErrors: string[],
+): void {
+  const defaultEdgeCount = outgoingEdges.filter((edge) => edge.isDefault).length;
+
+  if (defaultEdgeCount > 1) {
+    validationErrors.push(`Source step '${sourceStepId}' has more than one default outgoing edge.`);
+  }
+
+  if (outgoingEdges.length > 1) {
+    const hasNonDefaultAlwaysEdge = outgoingEdges.some(
+      (edge) => edge.routingType === 'ALWAYS' && !edge.isDefault,
+    );
+
+    if (hasNonDefaultAlwaysEdge) {
+      validationErrors.push(
+        `Source step '${sourceStepId}' has a non-default ALWAYS edge together with other outgoing edges.`,
+      );
+    }
+  }
+
+  const whenPriorities = new Set<number>();
+
+  for (const edge of outgoingEdges) {
+    if (edge.routingType !== 'WHEN') {
+      continue;
+    }
+
+    if (whenPriorities.has(edge.priority)) {
+      validationErrors.push(
+        `Source step '${sourceStepId}' has more than one WHEN edge with priority ${edge.priority}.`,
+      );
+      continue;
+    }
+
+    whenPriorities.add(edge.priority);
+  }
+}
+
 function stepLabel(step: SquadBuilderStep): string {
   if (step.name && step.name.trim()) {
     return "Step '" + step.name.trim() + "'";
@@ -364,7 +480,11 @@ function stepReferenceLabel(stepId: string, stepMap: Map<string, SquadBuilderSte
   return stepLabel(step);
 }
 
-function addGraphEdge(map: Map<string, Set<string>>, sourceStepId: string, targetStepId: string): void {
+function addGraphEdge(
+  map: Map<string, Set<string>>,
+  sourceStepId: string,
+  targetStepId: string,
+): void {
   const stepIds = map.get(sourceStepId) ?? new Set<string>();
   stepIds.add(targetStepId);
   map.set(sourceStepId, stepIds);

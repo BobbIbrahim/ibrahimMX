@@ -40,7 +40,8 @@ public interface SquadPersistenceMapper {
 		request.getEdges().stream().map(this::toEdgeEntity).forEach(entity::addEdge);
 	}
 
-	@Mapping(target = "id", source = "step.id")
+	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "stepId", source = "step.id")
 	@Mapping(target = "squad", ignore = true)
 	@Mapping(target = "type", ignore = true)
 	@Mapping(target = "config", ignore = true)
@@ -70,9 +71,9 @@ public interface SquadPersistenceMapper {
 		}
 
 		return switch (entity.getType()) {
-			case AI_AGENT ->
-				AiAgentStep.builder().id(entity.getId()).name(entity.getName()).inputRefs(new ArrayList<>(inputRefs))
-						.agentKey((String) entity.getConfig().get("agentKey")).build();
+			case AI_AGENT -> AiAgentStep.builder().id(entity.getStepId()).name(entity.getName())
+					.inputRefs(new ArrayList<>(inputRefs)).agentKey((String) entity.getConfig().get("agentKey"))
+					.build();
 		};
 	}
 
