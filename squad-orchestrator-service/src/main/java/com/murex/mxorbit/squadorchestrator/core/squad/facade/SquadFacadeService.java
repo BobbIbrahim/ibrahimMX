@@ -2,6 +2,7 @@ package com.murex.mxorbit.squadorchestrator.core.squad.facade;
 
 import com.murex.mxorbit.squadorchestrator.core.squad.creator.SquadCreator;
 import com.murex.mxorbit.squadorchestrator.core.squad.creator.request.CreateSquadRequest;
+import com.murex.mxorbit.squadorchestrator.core.squad.deleter.SquadDeleter;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.model.SquadRunStartResult;
 import com.murex.mxorbit.squadorchestrator.core.squad.execution.starter.SquadExecutionStarter;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.Squad;
@@ -26,6 +27,7 @@ public class SquadFacadeService implements SquadFacade {
 	private final SquadCreator squadCreator;
 	private final SquadProvider squadProvider;
 	private final SquadUpdater squadUpdater;
+	private final SquadDeleter squadDeleter;
 	private final SquadExecutionStarter squadExecutionStarter;
 	private final SquadRunProvider squadRunProvider;
 	private final SquadRunCanceller squadRunCanceller;
@@ -48,6 +50,11 @@ public class SquadFacadeService implements SquadFacade {
 	@Override
 	public Optional<Squad> updateSquad(String squadId, CreateSquadRequest request) {
 		return squadUpdater.updateSquad(squadId, request);
+	}
+
+	@Override
+	public boolean deleteSquad(String squadId) {
+		return squadDeleter.deleteSquad(squadId);
 	}
 
 	@Override

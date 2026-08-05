@@ -1,8 +1,9 @@
-import { Component, input, output } from '@angular/core';
+import { Component, computed, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
 import { Squad } from '../../../../core/models/squad.model';
+import { getSquadTypeDescriptor } from '../../../../core/models/squad-type';
 
 @Component({
   selector: 'app-squad-card',
@@ -15,6 +16,8 @@ export class SquadCard {
 
   readonly openClicked = output<string>();
   readonly deleteClicked = output<void>();
+
+  readonly typeDescriptor = computed(() => getSquadTypeDescriptor(this.squad().type));
 
   openSquad(): void {
     this.openClicked.emit(this.squad().id);

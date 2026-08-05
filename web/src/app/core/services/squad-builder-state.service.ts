@@ -10,7 +10,13 @@ import {
   SquadBuilderType,
   SquadSavePayload,
 } from '../models/squad-builder.model';
+import { normalizeSquadType, toSquadWireType } from '../models/squad-type';
 import { validateSquadRoutingCondition } from '../validation/squad-routing-condition-validation';
+import {
+  CONDITIONAL_OFFSET_X,
+  CONDITIONAL_OFFSET_Y,
+  layoutWorkflowSteps,
+} from '../layout/workflow-layout';
 
 export type CreateSquadDraftPayload = {
   name: string;
@@ -95,11 +101,16 @@ export class SquadBuilderStateService {
   }
 
   loadDraftFromApi(squad: SquadApiResponse): SquadBuilderDraft {
+    const stepPositions = layoutWorkflowSteps(
+      squad.steps.map((step) => step.id),
+      squad.edges,
+    );
+
     const draft: SquadBuilderDraft = {
       id: squad.id,
       name: squad.name.trim(),
       description: squad.description?.trim() ?? '',
-      type: squad.type as SquadBuilderType,
+      type: normalizeSquadType(squad.type),
       steps: squad.steps.map((step, index) => ({
         id: step.id,
         name: step.name,
@@ -111,10 +122,7 @@ export class SquadBuilderStateService {
           fromStepId: inputRef.fromStepId,
           key: inputRef.key,
         })),
-        position: {
-          x: 160 + index * 220,
-          y: 140 + (index % 2) * 140,
-        },
+        position: stepPositions.get(step.id) ?? { x: 120 + index * 400, y: 120 },
       })),
       conditionals: [],
       edges: squad.edges.map((edge, index) => ({
@@ -149,8 +157,8 @@ export class SquadBuilderStateService {
       parameters: {},
       inputRefs: [],
       position: {
-        x: 160 + currentDraft.steps.length * 220,
-        y: 140 + (currentDraft.steps.length % 2) * 140,
+        x: 120 + currentDraft.steps.length * 400,
+        y: 120,
       },
     };
 
@@ -191,11 +199,11 @@ export class SquadBuilderStateService {
 
     const newConditional: SquadBuilderConditional = {
       id: this.generateId('conditional'),
-      name: 'New Conditional',
+      name: 'Decision',
       sourceStepId,
       position: {
-        x: sourceStep.position.x + 240,
-        y: sourceStep.position.y,
+        x: sourceStep.position.x + CONDITIONAL_OFFSET_X,
+        y: sourceStep.position.y + CONDITIONAL_OFFSET_Y,
       },
     };
 
@@ -1050,7 +1058,7 @@ export class SquadBuilderStateService {
     return {
       name: draft.name,
       description: draft.description,
-      type: draft.type,
+      type: toSquadWireType(draft.type),
       steps: draft.steps.map((step) => ({
         id: step.id,
         name: step.name,
@@ -1097,11 +1105,11 @@ export class SquadBuilderStateService {
         if (sourceStep) {
           const conditional: SquadBuilderConditional = {
             id: this.generateId('conditional'),
-            name: 'Conditional',
+            name: 'Decision',
             sourceStepId,
             position: {
-              x: sourceStep.position.x + 240,
-              y: sourceStep.position.y,
+              x: sourceStep.position.x + CONDITIONAL_OFFSET_X,
+              y: sourceStep.position.y + CONDITIONAL_OFFSET_Y,
             },
           };
           reconstructedConditionals.push(conditional);

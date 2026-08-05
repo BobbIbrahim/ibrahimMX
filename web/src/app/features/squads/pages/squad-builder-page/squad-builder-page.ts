@@ -1,4 +1,3 @@
-import { TitleCasePipe } from '@angular/common';
 import { Component, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -20,6 +19,8 @@ import {
 import { AgentService } from '../../../../core/services/agent.service';
 import { SquadBuilderStateService, UpdateConditionalRoutePayload, AddConditionalRoutePayload } from '../../../../core/services/squad-builder-state.service';
 import { SquadService } from '../../../../core/services/squad.service';
+import { getSquadTypeLabel } from '../../../../core/models/squad-type';
+import { SquadType } from '../../../../core/models/squad.model';
 import { validateSquadWorkflow } from '../../../../core/validation/squad-workflow-validation';
 import { validateSquadRoutingCondition } from '../../../../core/validation/squad-routing-condition-validation';
 import { ReteSquadFlowEditor } from '../../components/rete-squad-flow-editor/rete-squad-flow-editor';
@@ -55,7 +56,6 @@ type AddRouteFormState = {
   imports: [
     FormsModule,
     RouterLink,
-    TitleCasePipe,
     MatButtonModule,
     MatCheckboxModule,
     MatFormFieldModule,
@@ -413,6 +413,10 @@ export class SquadBuilderPage implements OnInit {
   ngOnInit(): void {
     this.persistedSquadId.set(this.readRouteSquadId());
     this.loadExistingSquadFromRouteIfNeeded();
+  }
+
+  getSquadTypeLabel(type: SquadType): string {
+    return getSquadTypeLabel(type);
   }
 
   addStep(): void {

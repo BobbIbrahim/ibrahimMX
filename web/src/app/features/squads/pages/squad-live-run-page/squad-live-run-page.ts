@@ -12,6 +12,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatIconModule } from '@angular/material/icon';
 import { finalize, switchMap } from 'rxjs';
 
 import { ReteSquadFlowEditor } from '../../components/rete-squad-flow-editor/rete-squad-flow-editor';
@@ -26,9 +27,18 @@ import {
 import {
   SquadExecutionStatus,
   SquadRunStartResponse,
+  SquadStepExecutionStatus,
   SquadStepStatus,
 } from '../../../../core/models/squad-run.model';
 import { AgentService } from '../../../../core/services/agent.service';
+import {
+  SquadBuilderConditional,
+} from '../../../../core/models/squad-builder.model';
+import {
+  CONDITIONAL_OFFSET_X,
+  CONDITIONAL_OFFSET_Y,
+  layoutWorkflowSteps,
+} from '../../../../core/layout/workflow-layout';
 import { SquadApiResponse, SquadService } from '../../../../core/services/squad.service';
 import { SquadStepDetailsInspector } from '../../components/squad-step-details-inspector/squad-step-details-inspector';
 import { SelectedStepDetails } from '../../components/squad-step-details-inspector/squad-step-details.types';
@@ -38,12 +48,85 @@ type LiveRunAgent = {
   name: string;
 };
 
+type FinalResultField = {
+  key: string;
+  label: string;
+  value: string;
+  isCompact: boolean;
+};
+
+type RoutingRule = {
+  edgeId: string;
+  targetStepName: string;
+  routingType: string;
+  condition: string | null;
+  isDefault: boolean;
+  matched: boolean;
+  selected: boolean;
+  reason: string | null;
+  evaluatedValues: Array<{ key: string; value: string }>;
+};
+
+type RoutingDecision = {
+  sourceStepId: string;
+  sourceStepName: string;
+  status: SquadStepExecutionStatus;
+  reason: string | null;
+  rules: RoutingRule[];
+};
+
+const CONDITION_OUTPUT_REFERENCE = /output\.([A-Za-z0-9_]+)/g;
+
+function humanizeKey(key: string): string {
+  return key
+    .replace(/[_-]+/g, ' ')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/^./, (character) => character.toUpperCase());
+}
+
+function formatResultValue(value: unknown): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => formatResultValue(item)).join(', ');
+  }
+
+  return JSON.stringify(value, null, 2);
+}
+
+/** Resolves the `output.<key>` references inside a routing condition against the source step output. */
+function resolveConditionValues(
+  condition: string | null | undefined,
+  sourceOutput: Record<string, unknown> | null,
+): Array<{ key: string; value: string }> {
+  if (!condition || !sourceOutput) {
+    return [];
+  }
+
+  const referencedKeys = [
+    ...new Set([...condition.matchAll(CONDITION_OUTPUT_REFERENCE)].map((match) => match[1])),
+  ];
+
+  return referencedKeys
+    .filter((key) => key in sourceOutput)
+    .map((key) => ({ key, value: formatResultValue(sourceOutput[key]) }));
+}
+
 @Component({
   selector: 'app-squad-live-run-page',
   imports: [
     RouterLink,
     MatButtonModule,
     MatDialogModule,
+    MatIconModule,
     ReteSquadFlowEditor,
     SquadStepDetailsInspector,
   ],
@@ -74,7 +157,6 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
   readonly executionStatus = signal<SquadExecutionStatus | null>(null);
   readonly selectedStepId = signal<string | null>(null);
 
-  readonly interactionLocked = signal(true);
   readonly followModeEnabled = signal(true);
   readonly isStoppingWorkflow = signal(false);
 
@@ -136,6 +218,10 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
     return this.executionStatus()?.steps.filter((step) => step.status === 'PENDING').length ?? 0;
   });
 
+  readonly skippedSteps = computed(() => {
+    return this.executionStatus()?.steps.filter((step) => step.status === 'SKIPPED').length ?? 0;
+  });
+
   readonly totalSteps = computed(() => {
     return this.executionStatus()?.steps.length ?? this.squad()?.steps.length ?? 0;
   });
@@ -147,7 +233,13 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
       return 0;
     }
 
-    return Math.round((this.completedSteps() / total) * 100);
+    // Steps skipped by routing are settled work, so they count toward progress.
+    const settled =
+      this.executionStatus()?.steps.filter(
+        (step) => step.status !== 'PENDING' && step.status !== 'RUNNING',
+      ).length ?? 0;
+
+    return Math.round((settled / total) * 100);
   });
 
   readonly isWorkflowRunning = computed(() => {
@@ -156,6 +248,43 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
 
   readonly workflowCancelled = computed(() => {
     return this.executionStatus()?.overallStatus === 'CANCELLED';
+  });
+
+  /** Explains every branching point using the routing trace the orchestrator reports. */
+  readonly routingDecisions = computed<RoutingDecision[]>(() => {
+    const status = this.executionStatus();
+
+    if (!status?.routingDecisions?.length) {
+      return [];
+    }
+
+    const stepStatusById = new Map(status.steps.map((step) => [step.stepId, step]));
+    const stepNames = this.stepNamesById();
+
+    return status.routingDecisions
+      .filter((decision) => decision.checkedEdges.some((edge) => edge.routingType === 'WHEN'))
+      .map((decision) => {
+        const sourceStatus = stepStatusById.get(decision.sourceStepId);
+        const sourceOutput = sourceStatus?.output ?? null;
+
+        return {
+          sourceStepId: decision.sourceStepId,
+          sourceStepName: stepNames[decision.sourceStepId] ?? decision.sourceStepId,
+          status: sourceStatus?.status ?? 'PENDING',
+          reason: decision.reason ?? null,
+          rules: decision.checkedEdges.map<RoutingRule>((edge) => ({
+            edgeId: edge.edgeId,
+            targetStepName: stepNames[edge.targetStepId] ?? edge.targetStepId,
+            routingType: edge.routingType,
+            condition: edge.condition ?? null,
+            isDefault: edge.isDefault ?? false,
+            matched: edge.matched,
+            selected: edge.edgeId === decision.selectedEdgeId,
+            reason: edge.reason ?? null,
+            evaluatedValues: resolveConditionValues(edge.condition, sourceOutput),
+          })),
+        };
+      });
   });
 
   readonly finalResult = computed<Record<string, unknown> | null>(() => {
@@ -168,46 +297,30 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
     return status.finalResult ?? null;
   });
 
-  readonly finalResultEntries = computed(() => {
+  readonly finalResultFields = computed<FinalResultField[]>(() => {
     const finalResult = this.finalResult();
 
     if (!finalResult) {
       return [];
     }
 
-    return Object.entries(finalResult);
+    const labels = this.executionStatus()?.finalResultFieldLabels ?? {};
+
+    return Object.entries(finalResult)
+      .filter(([, value]) => value !== null && value !== undefined && value !== '')
+      .map(([key, value]) => {
+        const text = formatResultValue(value);
+
+        return {
+          key,
+          label: labels[key] ?? humanizeKey(key),
+          value: text,
+          isCompact: text.length <= 40 && !text.includes('\n'),
+        };
+      });
   });
 
-  readonly orderedFinalResultFields = computed(() => {
-    const finalResult = this.finalResult();
-
-    if (!finalResult) {
-      return [];
-    }
-
-    const knownKeys = ['change', 'changeType', 'test', 'nextAction'];
-    const allKeys = Object.keys(finalResult);
-    const orderedFields: Array<[string, unknown]> = [];
-    const seenKeys = new Set<string>();
-
-    for (const key of knownKeys) {
-      if (key in finalResult) {
-        orderedFields.push([key, finalResult[key]]);
-        seenKeys.add(key);
-      }
-    }
-
-    for (const key of allKeys) {
-      if (!seenKeys.has(key)) {
-        orderedFields.push([key, finalResult[key]]);
-      }
-    }
-
-    return orderedFields;
-  });
-
-  readonly failureMessage = computed<string | null>(() => {
-    const status = this.executionStatus();
+  readonly failureMessage = computed<string | null>(() => {    const status = this.executionStatus();
 
     if (!status || status.overallStatus !== 'FAILED') {
       return null;
@@ -253,8 +366,9 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
       durationMs: executionStep?.durationMs ?? null,
       configuredInputRefs: squadStep?.inputRefs?.map((inputRef) => ({
         targetInput: inputRef.targetInput,
-        fromStepId: inputRef.fromStepId,
-        key: inputRef.key,
+        sourceType: inputRef.sourceType,
+        fromStepId: inputRef.fromStepId ?? null,
+        key: inputRef.key ?? null,
       })) ?? [],
       input: executionStep?.input,
       output: executionStep?.output,
@@ -411,14 +525,16 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
   }
 
   mapSteps(squad: SquadApiResponse) {
+    const positions = layoutWorkflowSteps(
+      squad.steps.map((step) => step.id),
+      squad.edges,
+    );
+
     return squad.steps.map((step, index) => ({
       id: step.id,
       name: step.name,
       assignedAgentId: step.agentKey || null,
-      position: {
-        x: 160 + index * 220,
-        y: 140 + (index % 2) * 140,
-      },
+      position: positions.get(step.id) ?? { x: 120 + index * 400, y: 120 },
     }));
   }
 
@@ -427,15 +543,43 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
       id: `edge-${index}`,
       sourceStepId: edge.sourceStepId,
       targetStepId: edge.targetStepId,
+      routingType: edge.routingType ?? 'ALWAYS',
+      condition: edge.condition ?? null,
+      priority: edge.priority ?? 0,
+      isDefault: edge.isDefault ?? false,
     }));
+  }
+
+  /** Mirrors the builder canvas: a source step with WHEN edges is drawn as a conditional diamond. */
+  mapConditionals(squad: SquadApiResponse): SquadBuilderConditional[] {
+    const stepPositionsById = new Map(
+      this.mapSteps(squad).map((step) => [step.id, step.position] as const),
+    );
+
+    const conditionalSourceStepIds = new Set(
+      squad.edges
+        .filter((edge) => edge.routingType === 'WHEN')
+        .map((edge) => edge.sourceStepId)
+        .filter((sourceStepId) => stepPositionsById.has(sourceStepId)),
+    );
+
+    return [...conditionalSourceStepIds].map((sourceStepId) => {
+      const sourcePosition = stepPositionsById.get(sourceStepId)!;
+
+      return {
+        id: `conditional-${sourceStepId}`,
+        name: 'Decision',
+        sourceStepId,
+        position: {
+          x: sourcePosition.x + CONDITIONAL_OFFSET_X,
+          y: sourcePosition.y + CONDITIONAL_OFFSET_Y,
+        },
+      };
+    });
   }
 
   toggleFollowMode(): void {
     this.followModeEnabled.update((enabled) => !enabled);
-  }
-
-  toggleInteractionLock(): void {
-    this.interactionLocked.update((locked) => !locked);
   }
 
   selectStep(stepId: string): void {
@@ -605,26 +749,6 @@ export class SquadLiveRunPage implements OnInit, OnDestroy {
     }
 
     return JSON.stringify(value);
-  }
-
-  getFieldLabel(key: string): string {
-    const executionStatus = this.executionStatus();
-    
-    // Use agent-provided label if available
-    if (executionStatus?.finalResultFieldLabels?.[key]) {
-      return executionStatus.finalResultFieldLabels[key];
-    }
-
-    // If no agent-provided label, return the key itself (or empty string)
-    return key;
-  }
-
-  isKnownResultField(key: string): boolean {
-    return ['change', 'changeType', 'test', 'nextAction'].includes(key);
-  }
-
-  isChangeTypeBadge(key: string): boolean {
-    return key === 'changeType';
   }
 
   private resolveAgentName(executionStep?: SquadStepStatus, squadStepAgentKey?: string): string {

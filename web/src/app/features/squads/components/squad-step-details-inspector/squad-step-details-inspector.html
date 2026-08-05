@@ -117,15 +117,24 @@
           <span class="inspector-chip">{{ inputRefRow.targetInput }}</span>
           </div>
 
-        <div class="inspector-card__section">
-          <span class="inspector-entry__label">Source</span>
-          <p class="inspector-card__title">{{ inputRefRow.sourceStepName }}</p>
-        </div>
+          @if (inputRefRow.isManual) {
+          <div class="inspector-card__section">
+            <span class="inspector-entry__label">Source</span>
+            <p class="inspector-card__title">Provided when the run was started</p>
+          </div>
+          } @else {
+          <div class="inspector-card__section">
+            <span class="inspector-entry__label">Source</span>
+            <p class="inspector-card__title">{{ inputRefRow.sourceStepName }}</p>
+          </div>
 
+          @if (inputRefRow.outputKey) {
           <div class="inspector-card__section">
             <span class="inspector-entry__label">Consumed Output</span>
             <span class="inspector-chip">{{ inputRefRow.outputKey }}</span>
           </div>
+          }
+          }
 
           <div class="inspector-card__section">
             <span class="inspector-entry__label">Received Data</span>
@@ -167,27 +176,57 @@
     } @else {
     <div class="developer-details">
       <div class="developer-details__content">
+        <p class="developer-details__hint">
+          The untransformed payloads exchanged with the agent, for debugging and bug reports.
+        </p>
+
         <div class="developer-details__meta">
           <span class="inspector-entry__label">Step ID</span>
           <code>{{ step().stepId }}</code>
         </div>
 
-        <div class="json-viewer">
-          <span class="inspector-entry__label">Raw Input JSON</span>
-          @if (isJsonUnavailable(step().input)) {
-          <div class="json-viewer__placeholder">Not available yet</div>
-          } @else {
-          <pre>{{ formatRawJson(step().input) }}</pre>
-          }
+        <div class="json-block">
+          <div class="json-block__head">
+            <span class="inspector-entry__label">Raw Input JSON</span>
+            @if (!isJsonUnavailable(step().input)) {
+            <button
+              type="button"
+              class="json-block__copy"
+              (click)="copyJson('input', step().input)"
+            >
+              {{ copiedKey() === 'input' ? 'Copied' : 'Copy' }}
+            </button>
+            }
+          </div>
+          <div class="json-viewer">
+            @if (isJsonUnavailable(step().input)) {
+            <div class="json-viewer__placeholder">Not available yet</div>
+            } @else {
+            <pre>{{ formatRawJson(step().input) }}</pre>
+            }
+          </div>
         </div>
 
-        <div class="json-viewer">
-          <span class="inspector-entry__label">Raw Output JSON</span>
-          @if (isJsonUnavailable(step().output)) {
-          <div class="json-viewer__placeholder">Not available yet</div>
-          } @else {
-          <pre>{{ formatRawJson(step().output) }}</pre>
-          }
+        <div class="json-block">
+          <div class="json-block__head">
+            <span class="inspector-entry__label">Raw Output JSON</span>
+            @if (!isJsonUnavailable(step().output)) {
+            <button
+              type="button"
+              class="json-block__copy"
+              (click)="copyJson('output', step().output)"
+            >
+              {{ copiedKey() === 'output' ? 'Copied' : 'Copy' }}
+            </button>
+            }
+          </div>
+          <div class="json-viewer">
+            @if (isJsonUnavailable(step().output)) {
+            <div class="json-viewer__placeholder">Not available yet</div>
+            } @else {
+            <pre>{{ formatRawJson(step().output) }}</pre>
+            }
+          </div>
         </div>
       </div>
     </div>

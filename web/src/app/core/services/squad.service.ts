@@ -8,6 +8,7 @@ import {
   SquadEdgeRoutingType,
 } from '../models/squad-builder.model';
 import { Squad } from '../models/squad.model';
+import { normalizeSquadType } from '../models/squad-type';
 
 import {
   SquadExecutionStatus,
@@ -98,8 +99,12 @@ export class SquadService {
     });
   }
 
-  deleteSquad(squadId: string): void {
-    this.squadsSignal.update((squads) => squads.filter((squad) => squad.id !== squadId));
+  deleteSquad(squadId: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/squads/${squadId}`).pipe(
+      tap(() => {
+        this.squadsSignal.update((squads) => squads.filter((squad) => squad.id !== squadId));
+      }),
+    );
   }
 
   private mapApiResponseToSquad(apiSquad: SquadApiResponse): Squad {
@@ -109,7 +114,7 @@ export class SquadService {
       id: apiSquad.id,
       name: apiSquad.name,
       description: apiSquad.description,
-      type: apiSquad.type as Squad['type'],
+      type: normalizeSquadType(apiSquad.type),
       status: 'active',
       metrics: {
         steps: apiSquad.steps.length,

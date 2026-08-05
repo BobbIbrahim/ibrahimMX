@@ -18,6 +18,8 @@ public interface TemporalClient {
 
 	List<WorkflowExecutionSummary> listWorkflowExecutions(String workflowType);
 
+	List<WorkflowExecutionSummary> listRunningWorkflowExecutions(String workflowType);
+
 	<T> T getWorkflowExecutionStub(Class<T> workflowClass, String workflowId);
 
 	WorkflowStub getWorkflowStub(String workflowId);

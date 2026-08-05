@@ -36,8 +36,10 @@ public class HttpAgentExecutor implements AgentExecutor {
 	}
 
 	private static ClientHttpRequestFactory buildRequestFactory(AgentServiceProperties agentServiceProperties) {
-		HttpClient httpClient = HttpClient.newBuilder().connectTimeout(agentServiceProperties.getConnectTimeout())
-				.build();
+		// The default HTTP/2 setting makes the client send an h2c upgrade over plain
+		// HTTP, which the agent service's ASGI server rejects as a malformed request.
+		HttpClient httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1)
+				.connectTimeout(agentServiceProperties.getConnectTimeout()).build();
 
 		JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
 		requestFactory.setReadTimeout(agentServiceProperties.getReadTimeout());

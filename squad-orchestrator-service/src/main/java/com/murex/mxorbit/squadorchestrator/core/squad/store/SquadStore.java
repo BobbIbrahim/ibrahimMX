@@ -15,4 +15,6 @@ public interface SquadStore {
 	Optional<Squad> findById(String squadId);
 
 	Optional<Squad> update(String squadId, CreateSquadStoreRequest request);
+
+	boolean deleteById(String squadId);
 }

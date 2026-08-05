@@ -1,4 +1,10 @@
-export type SquadStepExecutionStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+export type SquadStepExecutionStatus =
+  | 'PENDING'
+  | 'RUNNING'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'CANCELLED'
+  | 'SKIPPED';
 
 export type SquadRunOverallStatus = 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 
@@ -31,10 +37,31 @@ export interface SquadStepStatus {
   durationMs?: number | null;
 }
 
+export interface SquadRoutingCheckedEdge {
+  edgeId: string;
+  targetStepId: string;
+  routingType: string;
+  condition?: string | null;
+  priority?: number | null;
+  isDefault?: boolean | null;
+  matched: boolean;
+  reason?: string | null;
+}
+
+export interface SquadRoutingDecision {
+  sourceStepId: string;
+  selectedEdgeId?: string | null;
+  selectedTargetStepId?: string | null;
+  outcome: string;
+  reason?: string | null;
+  checkedEdges: SquadRoutingCheckedEdge[];
+}
+
 export interface SquadExecutionStatus {
   squadId: string;
   overallStatus: SquadRunOverallStatus;
   steps: SquadStepStatus[];
+  routingDecisions?: SquadRoutingDecision[] | null;
   finalResult?: Record<string, unknown> | null;
   finalResultFieldLabels?: Record<string, string> | null;
 }

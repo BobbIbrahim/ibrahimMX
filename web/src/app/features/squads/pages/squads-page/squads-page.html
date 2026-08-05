@@ -2,7 +2,7 @@
   <app-page-header
     eyebrow="SQUADS"
     title="Agent Squads"
-    description="Group agents into reusable execution units for hardcoded flows and prompt-driven collaboration."
+    description="Group agents into reusable execution units built as hardcoded workflow flows."
     actionLabel="New Squad"
     actionIcon="add"
     (actionClick)="onCreateSquad()"
@@ -25,9 +25,9 @@
     </article>
 
     <article>
-      <span>Prompt Squads</span>
-      <strong>{{ promptSquads() }}</strong>
-      <small>Prompt-driven squads</small>
+      <span>Workflow Steps</span>
+      <strong>{{ totalSteps() }}</strong>
+      <small>Across all squads</small>
     </article>
 
     <article>
@@ -93,6 +93,7 @@
     </div>
 
     <div class="squad-toolbar__bottom">
+      @if (availableTypeFilters().length > 1) {
       <div
         class="filter-pills"
         aria-label="Squad type filters"
@@ -100,54 +101,32 @@
         <button
           type="button"
           class="filter-pill"
-          [class.filter-pill--active]="
-            typeFilter() === 'all'
-          "
-          [attr.aria-pressed]="
-            typeFilter() === 'all'
-          "
+          [class.filter-pill--active]="typeFilter() === 'all'"
+          [attr.aria-pressed]="typeFilter() === 'all'"
           (click)="onTypeFilterChange('all')"
         >
           All
         </button>
 
+        @for (squadType of availableTypeFilters(); track squadType.value) {
         <button
           type="button"
           class="filter-pill"
-          [class.filter-pill--active]="
-            typeFilter() === 'hardcoded-flow'
-          "
-          [attr.aria-pressed]="
-            typeFilter() === 'hardcoded-flow'
-          "
-          (click)="
-            onTypeFilterChange('hardcoded-flow')
-          "
+          [class.filter-pill--active]="typeFilter() === squadType.value"
+          [attr.aria-pressed]="typeFilter() === squadType.value"
+          (click)="onTypeFilterChange(squadType.value)"
         >
-          Hardcoded Flow
+          {{ squadType.label }}
         </button>
-
-        <button
-          type="button"
-          class="filter-pill"
-          [class.filter-pill--active]="
-            typeFilter() === 'prompt-squad'
-          "
-          [attr.aria-pressed]="
-            typeFilter() === 'prompt-squad'
-          "
-          (click)="
-            onTypeFilterChange('prompt-squad')
-          "
-        >
-          Prompt Squad
-        </button>
+        }
       </div>
+      }
 
       <button
         type="button"
         mat-stroked-button
         class="clear-button"
+        [disabled]="!hasActiveFilters()"
         (click)="clearFilters()"
       >
         <mat-icon>restart_alt</mat-icon>
@@ -163,6 +142,16 @@
     >
       <mat-icon>error_outline</mat-icon>
       <span>{{ loadSquadsError() }}</span>
+    </section>
+  }
+
+  @if (deleteSquadError()) {
+    <section
+      class="squad-feedback squad-feedback--error"
+      role="alert"
+    >
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ deleteSquadError() }}</span>
     </section>
   }
 
@@ -285,7 +274,7 @@
             @for (squad of paginatedSquads();
               track squad.id) {
               <tr
-                role="button"
+                class="squads-table__row"
                 tabindex="0"
                 [attr.aria-label]="
                   'Open squad ' + squad.name
@@ -303,14 +292,7 @@
                       class="squad-list__icon"
                       aria-hidden="true"
                     >
-                      <mat-icon>
-                        {{
-                          squad.type ===
-                          'hardcoded-flow'
-                            ? 'account_tree'
-                            : 'auto_awesome'
-                        }}
-                      </mat-icon>
+                      <mat-icon>{{ getSquadTypeIcon(squad.type) }}</mat-icon>
                     </div>
 
                     <div
@@ -332,18 +314,9 @@
                       squad.type === 'prompt-squad'
                     "
                   >
-                    <mat-icon>
-                      {{
-                        squad.type ===
-                        'hardcoded-flow'
-                          ? 'account_tree'
-                          : 'auto_awesome'
-                      }}
-                    </mat-icon>
+                    <mat-icon>{{ getSquadTypeIcon(squad.type) }}</mat-icon>
 
-                    {{
-                      getSquadTypeLabel(squad.type)
-                    }}
+                    {{ getSquadTypeLabel(squad.type) }}
                   </span>
                 </td>
 

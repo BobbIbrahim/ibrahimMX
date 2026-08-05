@@ -6,8 +6,9 @@ type StepDetailsTab = 'inputs' | 'outputs' | 'developer';
 
 type InputInspectorRefRow = {
   targetInput: string;
-  sourceStepName: string;
-  outputKey: string;
+  isManual: boolean;
+  sourceStepName: string | null;
+  outputKey: string | null;
   value: unknown;
   hasResolvedValue: boolean;
 };
@@ -28,9 +29,17 @@ export class SquadStepDetailsInspector {
   readonly expanded = input(false);
 
   readonly activeTab = signal<StepDetailsTab>('inputs');
+  readonly copiedKey = signal<'input' | 'output' | null>(null);
 
   selectTab(tab: StepDetailsTab): void {
     this.activeTab.set(tab);
+  }
+
+  copyJson(key: 'input' | 'output', value: Record<string, unknown> | null | undefined): void {
+    void navigator.clipboard.writeText(this.formatRawJson(value)).then(() => {
+      this.copiedKey.set(key);
+      setTimeout(() => this.copiedKey.set(null), 1500);
+    });
   }
 
   isExecutionDataMissing(step: SelectedStepDetails): boolean {
@@ -58,11 +67,13 @@ export class SquadStepDetailsInspector {
       const hasResolvedValue = Boolean(
         step.input && Object.prototype.hasOwnProperty.call(step.input, inputRef.targetInput),
       );
+      const isManual = inputRef.sourceType === 'MANUAL';
 
       return {
         targetInput: inputRef.targetInput,
-        sourceStepName: this.resolveStepName(inputRef.fromStepId),
-        outputKey: inputRef.key,
+        isManual,
+        sourceStepName: isManual ? null : this.resolveStepName(inputRef.fromStepId),
+        outputKey: isManual ? null : inputRef.key,
         value: hasResolvedValue ? step.input?.[inputRef.targetInput] : undefined,
         hasResolvedValue,
       };
@@ -144,8 +155,8 @@ export class SquadStepDetailsInspector {
     return `${outputEntries.length} item${outputEntries.length > 1 ? 's' : ''}`;
   }
 
-  private resolveStepName(stepId: string): string {
-    const stepName = this.stepNamesById()[stepId];
+  private resolveStepName(stepId: string | null): string {
+    const stepName = stepId ? this.stepNamesById()[stepId] : undefined;
 
     if (!stepName) {
       return 'Unknown source step';

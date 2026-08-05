@@ -1,0 +1,233 @@
+<section class="autopilot-dialog">
+  <header class="autopilot-dialog__header">
+    <div>
+      <span class="autopilot-dialog__eyebrow">AUTOPILOT</span>
+      <h2>New autopilot</h2>
+      <p>Pick what should run and how often it should run.</p>
+    </div>
+
+    <button type="button" mat-icon-button aria-label="Close dialog" (click)="cancel()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </header>
+
+  <form class="autopilot-dialog__form" [formGroup]="form" (ngSubmit)="submit()">
+    <div class="field-group">
+      <label class="field-label" for="autopilot-name">Name <span>*</span></label>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <input
+          id="autopilot-name"
+          matInput
+          formControlName="name"
+          placeholder="Nightly regression sweep"
+        />
+
+        @if (form.controls.name.hasError('required') && form.controls.name.touched) {
+          <mat-error>Name is required</mat-error>
+        }
+
+        @if (form.controls.name.hasError('minlength') && form.controls.name.touched) {
+          <mat-error>Name must be at least 3 characters</mat-error>
+        }
+      </mat-form-field>
+    </div>
+
+    <div class="field-group">
+      <span class="field-label">What runs <span>*</span></span>
+
+      <div class="type-grid">
+        @for (assigneeTypeOption of assigneeTypes; track assigneeTypeOption.value) {
+          <button
+            type="button"
+            class="type-card"
+            [class.type-card--active]="assigneeType() === assigneeTypeOption.value"
+            [class.type-card--disabled]="assigneeTypeOption.disabled"
+            [attr.aria-pressed]="assigneeType() === assigneeTypeOption.value"
+            [disabled]="assigneeTypeOption.disabled"
+            (click)="selectAssigneeType(assigneeTypeOption.value)"
+          >
+            <span class="type-card__icon">
+              <mat-icon>{{ assigneeTypeOption.icon }}</mat-icon>
+            </span>
+
+            <span class="type-card__content">
+              <strong>{{ assigneeTypeOption.label }}</strong>
+              <small>{{ assigneeTypeOption.description }}</small>
+
+              @if (assigneeTypeOption.disabled) {
+                <span class="coming-soon-badge">Coming soon</span>
+              }
+            </span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="autopilot-assignee">
+        {{ assigneeType() === 'agent' ? 'Agent' : 'Squad' }} <span>*</span>
+      </label>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-select
+          id="autopilot-assignee"
+          formControlName="assigneeId"
+          panelClass="autopilot-assignee-panel"
+          disableOptionCentering
+          [placeholder]="assigneeType() === 'agent' ? 'Select an agent' : 'Select a squad'"
+          (selectionChange)="onAssigneeChange()"
+        >
+          <mat-select-trigger>{{ selectedAssigneeName }}</mat-select-trigger>
+
+          @for (assignee of assignees; track assignee.id) {
+            <mat-option [value]="assignee.id">
+              <span class="assignee-option">
+                <mat-icon>{{ assignee.icon }}</mat-icon>
+
+                <span class="assignee-option__text">
+                  <strong>{{ assignee.name }}</strong>
+                  <small>{{ assignee.hint }}</small>
+                </span>
+              </span>
+            </mat-option>
+          }
+        </mat-select>
+
+        @if (form.controls.assigneeId.hasError('required') && form.controls.assigneeId.touched) {
+          <mat-error>Pick what this autopilot should run</mat-error>
+        }
+      </mat-form-field>
+    </div>
+
+    @if (resolvingInputs()) {
+      <p class="input-hint">Reading the inputs this squad starts with…</p>
+    } @else if (inputKeys().length > 0) {
+      <div class="field-group" formGroupName="input">
+        <span class="field-label">Starting input <span>*</span></span>
+
+        <p class="input-hint">
+          Sent to the first step on every run, since there is nobody around to type it in.
+        </p>
+
+        @for (inputKey of inputKeys(); track inputKey) {
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <span matTextPrefix class="input-key">{{ inputKey }}</span>
+
+            <input matInput [formControlName]="inputKey" placeholder="Value to send each run" />
+          </mat-form-field>
+        }
+      </div>
+    }
+
+    <div class="schedule-row">
+      <div class="field-group">
+        <span class="field-label">Frequency <span>*</span></span>
+
+        <div class="frequency-grid">
+          @for (frequencyOption of frequencies; track frequencyOption.value) {
+            <button
+              type="button"
+              class="frequency-card"
+              [class.frequency-card--active]="frequency() === frequencyOption.value"
+              [attr.aria-pressed]="frequency() === frequencyOption.value"
+              (click)="selectFrequency(frequencyOption.value)"
+            >
+              <strong>{{ frequencyOption.label }}</strong>
+              <small>{{ frequencyOption.hint }}</small>
+            </button>
+          }
+        </div>
+      </div>
+
+      @if (frequency() === 'interval') {
+        <div class="field-group">
+          <label class="field-label" for="autopilot-every-value">Every <span>*</span></label>
+
+          <div class="interval-row">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <input
+                id="autopilot-every-value"
+                matInput
+                type="number"
+                min="1"
+                formControlName="everyValue"
+              />
+            </mat-form-field>
+
+            <div class="unit-toggle">
+              @for (unit of intervalUnits; track unit.value) {
+                <button
+                  type="button"
+                  [class.unit-toggle__option--active]="intervalUnit() === unit.value"
+                  class="unit-toggle__option"
+                  [attr.aria-pressed]="intervalUnit() === unit.value"
+                  (click)="selectIntervalUnit(unit.value)"
+                >
+                  {{ unit.label }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <p class="input-hint">{{ intervalPreview }}</p>
+        </div>
+      } @else {
+        <div class="calendar-row" [class.calendar-row--weekly]="frequency() === 'weekly'">
+          @if (frequency() === 'weekly') {
+            <div class="field-group">
+              <label class="field-label" for="autopilot-weekday">
+                Weekday <span>*</span>
+              </label>
+
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-select id="autopilot-weekday" formControlName="weeklyDay">
+                  @for (weekday of weekdays; track weekday.value) {
+                    <mat-option [value]="weekday.value">{{ weekday.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            </div>
+          }
+
+          <div class="field-group">
+            <label class="field-label" for="autopilot-time">Time <span>*</span></label>
+
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <input id="autopilot-time" matInput type="time" formControlName="runTime" />
+            </mat-form-field>
+          </div>
+        </div>
+
+        <p class="input-hint">Calendar schedules run at this time in your time zone ({{ timeZoneLabel }}).</p>
+      }
+    </div>
+
+    <button
+      type="button"
+      class="active-toggle"
+      [class.active-toggle--on]="form.controls.isActive.value"
+      [attr.aria-pressed]="form.controls.isActive.value"
+      (click)="toggleActive()"
+    >
+      <span class="active-toggle__switch"></span>
+
+      <span class="active-toggle__text">
+        <strong>Start active</strong>
+        <small>
+          {{
+            form.controls.isActive.value
+              ? 'It will show as active straight away.'
+              : 'It will be created paused.'
+          }}
+        </small>
+      </span>
+    </button>
+
+    <footer class="autopilot-dialog__actions">
+      <button type="button" mat-stroked-button (click)="cancel()">Cancel</button>
+
+      <button type="submit" mat-flat-button class="autopilot-dialog__submit">Create</button>
+    </footer>
+  </form>
+</section>

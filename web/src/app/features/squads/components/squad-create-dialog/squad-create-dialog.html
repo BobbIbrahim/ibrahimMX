@@ -17,17 +17,26 @@
         <label
           class="type-card"
           [class.type-card--active]="form.controls.type.value === squadType.value"
+          [class.type-card--disabled]="!squadType.supported"
         >
-          <input type="radio" formControlName="type" [value]="squadType.value" />
+          <input
+            type="radio"
+            formControlName="type"
+            [value]="squadType.value"
+            [disabled]="!squadType.supported"
+          />
 
           <span class="type-card__icon">
-            <mat-icon>
-              {{ squadType.value === 'hardcoded-flow' ? 'account_tree' : 'auto_awesome' }}
-            </mat-icon>
+            <mat-icon>{{ squadType.icon }}</mat-icon>
           </span>
 
           <span class="type-card__content">
-            <strong>{{ squadType.title }}</strong>
+            <strong>
+              {{ squadType.label }}
+              @if (!squadType.supported) {
+              <em class="type-card__badge">Coming soon</em>
+              }
+            </strong>
             <small>{{ squadType.description }}</small>
           </span>
         </label>

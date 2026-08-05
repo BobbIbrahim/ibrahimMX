@@ -124,10 +124,12 @@ export function validateSquadWorkflow(
     validationErrors.push('The workflow must contain exactly one root step.');
   }
 
-  if (terminals.length !== 1) {
-    validationErrors.push('The workflow must contain exactly one terminal step.');
-  } else if ((incomingEdges.get(terminals[0].id)?.size ?? 0) === 0) {
-    validationErrors.push('The workflow must contain exactly one terminal step.');
+  const hasReachableTerminal = terminals.some(
+    (terminal) => (incomingEdges.get(terminal.id)?.size ?? 0) > 0,
+  );
+
+  if (!hasReachableTerminal) {
+    validationErrors.push('The workflow must contain at least one terminal step.');
   }
 
   if (validationErrors.length > 0) {

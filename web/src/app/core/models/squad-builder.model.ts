@@ -1,4 +1,6 @@
-export type SquadBuilderType = 'hardcoded-flow' | 'prompt-squad';
+import { SquadType } from './squad.model';
+
+export type SquadBuilderType = SquadType;
 
 export type SquadEdgeRoutingType = 'ALWAYS' | 'WHEN';
 
@@ -72,7 +74,8 @@ export interface SquadSaveEdgePayload {
 export interface SquadSavePayload {
   name: string;
   description: string;
-  type: SquadBuilderType;
+  /** Wire-level squad type expected by the API, produced by `toSquadWireType`. */
+  type: string;
   steps: SquadSaveStepPayload[];
   edges: SquadSaveEdgePayload[];
 }

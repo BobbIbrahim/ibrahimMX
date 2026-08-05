@@ -13,6 +13,10 @@ export class PageHeader {
   readonly title = input.required<string>();
   readonly description = input<string>('');
 
+  readonly badgeLabel = input<string>('');
+  readonly badgeIcon = input<string>('science');
+  readonly badgeHint = input<string>('');
+
   readonly actionLabel = input<string>('');
   readonly actionIcon = input<string>('add');
 

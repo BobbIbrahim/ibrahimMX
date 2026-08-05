@@ -3,6 +3,18 @@
   --rete-grid-y: 0px;
   --rete-grid-size: 28px;
 
+  /* Semantic palette for the canvas. Steps use the product accent,
+     decisions use amber so branching points read at a glance. */
+  --rete-step: var(--color-accent);
+  --rete-condition: #f59e0b;
+  --rete-running: #38bdf8;
+  --rete-completed: #22c55e;
+  --rete-failed: #ef4444;
+  --rete-cancelled: #f97316;
+
+  --rete-node-radius: 0.9rem;
+  --rete-socket-size: 14px;
+
   width: 100%;
   height: 100%;
   min-height: 40rem;
@@ -36,24 +48,29 @@
      Rete-rendered elements
 
      The rete-angular-plugin injects its nodes, sockets and
-     connections as custom elements inside this container.
-     They are styled here via ::ng-deep so the editor matches
-     the application theme tokens (light + dark).
+     connections as custom elements inside this container, so they
+     are styled through ::ng-deep and driven by the theme tokens.
      ========================================================= */
   ::ng-deep {
-    /* ---- Node card ------------------------------------------------ */
+    /* ---- Node card ------------------------------------------------
+       Rete renders every node as `<div class="rete-step-node|...">`
+       (the area-plugin wrapper that receives our runtime classes)
+       wrapping the `[data-testid='node']` host element, so variant and
+       status rules are written as `.wrapper-class > [data-testid='node']`. */
     [data-testid='node'] {
+      --rete-node-accent: var(--rete-step);
+
       display: flex;
       align-items: center;
       justify-content: center;
       position: relative;
       box-sizing: border-box;
-      padding: 0.6rem 1.15rem;
-      border-radius: 0.9rem;
+      padding: 0.6rem 1.15rem 0.6rem 1.35rem;
+      border-radius: var(--rete-node-radius);
       border: 1px solid color-mix(in srgb, var(--color-border) 65%, transparent);
       background: linear-gradient(
         160deg,
-        color-mix(in srgb, var(--color-surface-soft) 90%, var(--color-accent) 10%),
+        color-mix(in srgb, var(--color-surface-soft) 90%, var(--rete-node-accent) 10%),
         var(--color-surface)
       );
       color: var(--color-text-primary);
@@ -66,8 +83,21 @@
       background 180ms ease;
     }
 
+    /* A thin accent rail makes the flow direction readable. */
+    [data-testid='node']::after {
+      content: '';
+      position: absolute;
+      top: 0.6rem;
+      bottom: 0.6rem;
+      left: 0;
+      width: 3px;
+      border-radius: 0 3px 3px 0;
+      background: var(--rete-node-accent);
+      transition: background 180ms ease;
+    }
+
     [data-testid='node']:hover {
-      border-color: color-mix(in srgb, var(--color-accent) 50%, var(--color-border));
+      border-color: color-mix(in srgb, var(--rete-node-accent) 50%, var(--color-border));
       box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 8%, transparent),
       0 16px 34px rgba(2, 6, 18, 0.52);
     }
@@ -76,39 +106,16 @@
       cursor: grabbing;
     }
 
-    [data-testid='node'].selected {
-      border-color: var(--color-accent);
+    [data-testid='node'].selected,
+    .node-selected-runtime > [data-testid='node'] {
+      border-color: var(--rete-node-accent);
       background: linear-gradient(
         160deg,
-        color-mix(in srgb, var(--color-accent) 18%, var(--color-surface-soft)),
+        color-mix(in srgb, var(--rete-node-accent) 18%, var(--color-surface-soft)),
         var(--color-surface)
       );
-      box-shadow: 0 0 0 1px var(--color-accent),
-      0 0 0 4px color-mix(in srgb, var(--color-accent) 22%, transparent),
-      0 16px 38px rgba(2, 6, 18, 0.58);
-    }
-
-    [data-testid='node'].node-selected-runtime {
-      border-color: var(--color-accent) !important;
-      background: linear-gradient(
-        160deg,
-        color-mix(in srgb, var(--color-accent) 18%, var(--color-surface-soft)),
-        var(--color-surface)
-      );
-      box-shadow: 0 0 0 1px var(--color-accent),
-      0 0 0 4px color-mix(in srgb, var(--color-accent) 22%, transparent),
-      0 16px 38px rgba(2, 6, 18, 0.58);
-    }
-
-    [data-testid='node'].node-selected-conditional {
-      border-color: var(--color-accent) !important;
-      background: linear-gradient(
-        160deg,
-        color-mix(in srgb, var(--color-accent) 18%, var(--color-surface-soft)),
-        var(--color-surface)
-      );
-      box-shadow: 0 0 0 1px var(--color-accent),
-      0 0 0 4px color-mix(in srgb, var(--color-accent) 22%, transparent),
+      box-shadow: 0 0 0 1px var(--rete-node-accent),
+      0 0 0 4px color-mix(in srgb, var(--rete-node-accent) 22%, transparent),
       0 16px 38px rgba(2, 6, 18, 0.58);
     }
 
@@ -165,11 +172,11 @@
     }
 
     [data-testid='node'] .input-socket {
-      left: -7px;
+      left: calc(var(--rete-socket-size) / -2);
     }
 
     [data-testid='node'] .output-socket {
-      right: -7px;
+      right: calc(var(--rete-socket-size) / -2);
     }
 
     /* ---- Sockets ------------------------------------------------- */
@@ -177,13 +184,13 @@
     [data-testid='input-socket'] > * {
       display: block;
       box-sizing: border-box;
-      width: 14px;
-      height: 14px;
+      width: var(--rete-socket-size);
+      height: var(--rete-socket-size);
       margin: 0;
       border-radius: 50%;
-      border: 2px solid color-mix(in srgb, var(--color-accent) 70%, var(--color-border));
+      border: 2px solid color-mix(in srgb, var(--rete-node-accent) 70%, var(--color-border));
       background: var(--color-surface);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 14%, transparent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--rete-node-accent) 14%, transparent);
       transition: transform 140ms ease,
       border-color 140ms ease,
       box-shadow 140ms ease,
@@ -192,9 +199,9 @@
 
     [data-testid='output-socket'] > *:hover,
     [data-testid='input-socket'] > *:hover {
-      border-color: var(--color-accent);
-      background: color-mix(in srgb, var(--color-accent) 30%, var(--color-surface));
-      box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-accent) 24%, transparent);
+      border-color: var(--rete-node-accent);
+      background: color-mix(in srgb, var(--rete-node-accent) 30%, var(--color-surface));
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--rete-node-accent) 24%, transparent);
       transform: scale(1.18);
     }
 
@@ -211,19 +218,18 @@
     }
 
     [data-testid='connection'] > path.edge-path--running {
-      stroke: #38bdf8;
+      stroke: var(--rete-running);
       stroke-width: 3px;
       stroke-dasharray: 10 16;
       animation: live-edge-flow 1.1s linear infinite,
       live-edge-pulse 1.5s ease-in-out infinite;
-      filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.75)) drop-shadow(0 0 14px rgba(56, 189, 248, 0.55));
       opacity: 1;
     }
 
     [data-testid='connection'] > path.edge-path--completed {
-      stroke: #22c55e;
+      stroke: var(--rete-completed);
       stroke-width: 2.8px;
-      filter: drop-shadow(0 0 5px rgba(34, 197, 94, 0.55)) drop-shadow(0 0 10px rgba(34, 197, 94, 0.3));
+      filter: drop-shadow(0 0 5px color-mix(in srgb, var(--rete-completed) 55%, transparent));
       opacity: 1;
     }
 
@@ -232,47 +238,234 @@
       fill: context-stroke;
     }
 
-    [data-testid='node'].node-running {
-      border-color: #3b82f6 !important;
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25),
-      0 0 18px rgba(59, 130, 246, 0.6),
-      0 0 36px rgba(59, 130, 246, 0.35) !important;
-
-      animation: live-node-pulse 1.4s infinite;
+    /* ---- Route labels ---------------------------------------------
+       Injected by the component into the pan/zoom content holder, so
+       they travel with the graph while staying out of the hit-testing. */
+    .rete-route-label-layer {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 0;
+      height: 0;
+      overflow: visible;
+      pointer-events: none;
+      z-index: 2;
     }
 
-    [data-testid='node'].node-completed {
-      border-color: #22c55e !important;
-      box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.25),
-      0 0 18px rgba(34, 197, 94, 0.45) !important;
+    .rete-route-label-group {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.3rem;
+      transform: translate(-50%, -100%);
     }
 
-    [data-testid='node'].node-cancelled {
-      border-color: #f97316 !important;
-
-      box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.25),
-      0 0 18px rgba(249, 115, 22, 0.45) !important;
+    /* A caret ties the badge stack to the step it describes. */
+    .rete-route-label-group::after {
+      content: '';
+      width: 0;
+      height: 0;
+      margin-top: -0.15rem;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 6px solid color-mix(in srgb, var(--color-border) 90%, transparent);
     }
 
-    [data-testid='node'].node-failed {
-      border-color: #ef4444 !important;
-      box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25),
-      0 0 18px rgba(239, 68, 68, 0.55) !important;
+    .rete-route-label {
+      --rete-route-accent: var(--rete-condition);
+
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.35rem;
+      box-sizing: border-box;
+      width: 13rem;
+      padding: 0.45rem 0.6rem 0.5rem;
+      border-radius: 0.7rem;
+      border: 1px solid color-mix(in srgb, var(--rete-route-accent) 42%, var(--color-border));
+      background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 10px 24px rgba(2, 6, 18, 0.4),
+      inset 0 1px 0 color-mix(in srgb, #ffffff 6%, transparent);
+      font-family: inherit;
+      text-align: left;
     }
 
-    /* Conditional diamond nodes */
-    [data-testid='node'].rete-conditional-node {
-      --condition-border: color-mix(in srgb, var(--color-border) 65%, transparent);
-      position: relative;
-      background: transparent;
-      border: none;
-      border-radius: 0;
+    .rete-route-label__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding-bottom: 0.3rem;
+      border-bottom: 1px solid color-mix(in srgb, var(--rete-route-accent) 22%, transparent);
+    }
+
+    .rete-route-label__type {
+      padding: 0.05rem 0.4rem;
+      border-radius: 0.35rem;
+      background: color-mix(in srgb, var(--rete-route-accent) 20%, transparent);
+      color: var(--rete-route-accent);
+      font-size: 0.58rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+    }
+
+    .rete-route-label__state {
+      color: var(--rete-route-accent);
+      font-size: 0.62rem;
+      font-weight: 750;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
+    .rete-route-label__condition {
+      color: var(--color-text-primary);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.7rem;
+      font-weight: 650;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .rete-route-label__evaluated {
+      display: flex;
+      align-items: baseline;
+      gap: 0.3rem;
+      font-size: 0.6rem;
+      line-height: 1.25;
+    }
+
+    .rete-route-label__evaluated-key {
+      color: var(--color-text-secondary);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .rete-route-label__evaluated-value {
+      color: var(--color-text-primary);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-weight: 750;
+      overflow-wrap: anywhere;
+    }
+
+    .rete-route-label--taken {
+      --rete-route-accent: var(--rete-completed);
+    }
+
+    .rete-route-label--rejected {
+      --rete-route-accent: var(--color-text-muted, var(--color-text-secondary));
+
+      opacity: 0.65;
       box-shadow: none;
+    }
+
+    .rete-route-label--rejected .rete-route-label__condition {
+      text-decoration: line-through;
+      text-decoration-color: color-mix(in srgb, var(--color-text-secondary) 55%, transparent);
+    }
+
+    /* ---- Run status -----------------------------------------------
+       Each status re-points --rete-node-accent, so the border, the left
+       rail and the sockets all recolour together. */
+    .node-running > [data-testid='node'] {
+      --rete-node-accent: var(--rete-running);
+
+      border-color: var(--rete-node-accent);
+      background: linear-gradient(
+        140deg,
+        color-mix(in srgb, var(--rete-node-accent) 20%, var(--color-surface-soft)),
+        var(--color-surface)
+      );
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--rete-node-accent) 22%, transparent),
+      0 0 20px color-mix(in srgb, var(--rete-node-accent) 40%, transparent);
+      animation: live-node-pulse 1.6s ease-in-out infinite;
+    }
+
+    .node-completed > [data-testid='node'] {
+      --rete-node-accent: var(--rete-completed);
+
+      border-color: var(--rete-node-accent);
+      background: linear-gradient(
+        140deg,
+        color-mix(in srgb, var(--rete-node-accent) 14%, var(--color-surface-soft)),
+        var(--color-surface)
+      );
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--rete-node-accent) 22%, transparent);
+    }
+
+    .node-cancelled > [data-testid='node'] {
+      --rete-node-accent: var(--rete-cancelled);
+
+      border-color: var(--rete-node-accent);
+      background: linear-gradient(
+        140deg,
+        color-mix(in srgb, var(--rete-node-accent) 14%, var(--color-surface-soft)),
+        var(--color-surface)
+      );
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--rete-node-accent) 22%, transparent);
+    }
+
+    .node-failed > [data-testid='node'] {
+      --rete-node-accent: var(--rete-failed);
+
+      border-color: var(--rete-node-accent);
+      background: linear-gradient(
+        140deg,
+        color-mix(in srgb, var(--rete-node-accent) 18%, var(--color-surface-soft)),
+        var(--color-surface)
+      );
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--rete-node-accent) 25%, transparent),
+      0 0 18px color-mix(in srgb, var(--rete-node-accent) 35%, transparent);
+    }
+
+    .node-skipped > [data-testid='node'] {
+      --rete-node-accent: var(--rete-condition);
+
+      opacity: 0.7;
+      border-color: color-mix(in srgb, var(--rete-node-accent) 40%, var(--color-border));
+      background: color-mix(in srgb, var(--rete-node-accent) 8%, var(--color-surface-soft));
+      box-shadow: none;
+    }
+
+    .node-idle > [data-testid='node'] {
+      --rete-node-accent: var(--color-text-muted, var(--color-text-secondary));
+
+      opacity: 0.55;
+      border-color: color-mix(in srgb, var(--color-border) 80%, transparent);
+      background: var(--color-surface-soft);
+      box-shadow: none;
+    }
+
+    /* ---- Condition node (diamond) --------------------------------
+       The node box stays square and transparent; the ::before pseudo
+       element is a square rotated 45deg, inscribed in that box. At
+       70.71% (1/sqrt(2)) the rotated corners touch the box edges, so
+       the sockets pinned to the box edges land exactly on the left and
+       right vertices of the diamond. */
+    .rete-conditional-node > [data-testid='node'],
+    .rete-conditional-node > [data-testid='node']:hover,
+    .rete-conditional-node.node-running > [data-testid='node'],
+    .rete-conditional-node.node-completed > [data-testid='node'],
+    .rete-conditional-node.node-cancelled > [data-testid='node'],
+    .rete-conditional-node.node-failed > [data-testid='node'],
+    .rete-conditional-node.node-selected-runtime > [data-testid='node'] {
+      --rete-node-accent: var(--rete-condition);
+
       padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: none;
+      box-shadow: none;
+      animation: none;
       overflow: visible;
     }
 
-    [data-testid='node'].rete-conditional-node::before {
+    .rete-conditional-node > [data-testid='node']::after {
+      content: none;
+    }
+
+    .rete-conditional-node > [data-testid='node']::before {
       content: '';
       position: absolute;
       top: 50%;
@@ -280,132 +473,195 @@
       width: 70.71%;
       height: 70.71%;
       transform: translate(-50%, -50%) rotate(45deg);
-      border-radius: 0.25rem;
-      border: 2px solid var(--condition-border);
-      background: linear-gradient(160deg, color-mix(in srgb, var(--color-surface-soft) 90%, var(--color-accent) 10%), var(--color-surface));
-      z-index: 0;
-      transition: border-color 140ms ease, filter 180ms ease, background 180ms ease;
-    }
-
-    [data-testid='node'].rete-conditional-node:hover::before {
-      border-color: color-mix(in srgb, var(--color-accent) 50%, var(--color-border));
-    }
-
-    [data-testid='node'].rete-conditional-node.selected::before,
-    [data-testid='node'].rete-conditional-node.node-selected-conditional::before {
-      border-color: var(--color-accent);
+      border-radius: 0.35rem;
+      border: 2px solid color-mix(in srgb, var(--rete-node-accent) 55%, var(--color-border));
       background: linear-gradient(
         160deg,
-        color-mix(in srgb, var(--color-accent) 18%, var(--color-surface-soft)),
+        color-mix(in srgb, var(--rete-node-accent) 22%, var(--color-surface-soft)),
         var(--color-surface)
       );
-      filter: drop-shadow(0 0 2px color-mix(in srgb, var(--color-accent) 22%, transparent)) drop-shadow(0 0 16px color-mix(in srgb, var(--color-accent) 42%, transparent));
+      box-shadow: 0 12px 28px rgba(2, 6, 18, 0.42);
+      transition: border-color 140ms ease,
+      filter 180ms ease,
+      background 180ms ease;
     }
 
-    [data-testid='node'].rete-conditional-node.node-running::before {
-      border-color: #3b82f6;
-      filter: drop-shadow(0 0 2px rgba(59, 130, 246, 0.25)) drop-shadow(0 0 18px rgba(59, 130, 246, 0.6)) drop-shadow(0 0 36px rgba(59, 130, 246, 0.35));
+    .rete-conditional-node > [data-testid='node']:hover::before {
+      border-color: var(--rete-node-accent);
+      filter: drop-shadow(0 0 10px color-mix(in srgb, var(--rete-node-accent) 35%, transparent));
+    }
+
+    .rete-conditional-node > [data-testid='node'].selected::before,
+    .rete-conditional-node.node-selected-conditional > [data-testid='node']::before {
+      border-color: var(--rete-node-accent);
+      background: linear-gradient(
+        160deg,
+        color-mix(in srgb, var(--rete-node-accent) 38%, var(--color-surface-soft)),
+        var(--color-surface)
+      );
+      filter: drop-shadow(0 0 4px color-mix(in srgb, var(--rete-node-accent) 45%, transparent))
+      drop-shadow(0 0 18px color-mix(in srgb, var(--rete-node-accent) 45%, transparent));
+    }
+
+    .rete-conditional-node.node-running > [data-testid='node']::before {
+      border-color: var(--rete-running);
+      filter: drop-shadow(0 0 4px color-mix(in srgb, var(--rete-running) 40%, transparent))
+      drop-shadow(0 0 18px color-mix(in srgb, var(--rete-running) 55%, transparent));
       animation: live-node-pulse 1.4s infinite;
     }
 
-    [data-testid='node'].rete-conditional-node.node-completed::before {
-      border-color: #22c55e;
-      filter: drop-shadow(0 0 2px rgba(34, 197, 94, 0.25)) drop-shadow(0 0 18px rgba(34, 197, 94, 0.45));
+    .rete-conditional-node.node-completed > [data-testid='node']::before {
+      border-color: var(--rete-completed);
+      filter: drop-shadow(0 0 4px color-mix(in srgb, var(--rete-completed) 35%, transparent))
+      drop-shadow(0 0 16px color-mix(in srgb, var(--rete-completed) 45%, transparent));
     }
 
-    [data-testid='node'].rete-conditional-node.node-failed::before {
-      border-color: #ef4444;
-      filter: drop-shadow(0 0 2px rgba(239, 68, 68, 0.25)) drop-shadow(0 0 18px rgba(239, 68, 68, 0.55));
+    .rete-conditional-node.node-failed > [data-testid='node']::before {
+      border-color: var(--rete-failed);
+      filter: drop-shadow(0 0 4px color-mix(in srgb, var(--rete-failed) 35%, transparent))
+      drop-shadow(0 0 16px color-mix(in srgb, var(--rete-failed) 50%, transparent));
     }
 
-    [data-testid='node'].rete-conditional-node.node-cancelled::before {
-      border-color: #f97316;
-      filter: drop-shadow(0 0 2px rgba(249, 115, 22, 0.25)) drop-shadow(0 0 18px rgba(249, 115, 22, 0.45));
+    .rete-conditional-node.node-cancelled > [data-testid='node']::before {
+      border-color: var(--rete-cancelled);
+      filter: drop-shadow(0 0 4px color-mix(in srgb, var(--rete-cancelled) 35%, transparent))
+      drop-shadow(0 0 16px color-mix(in srgb, var(--rete-cancelled) 45%, transparent));
     }
 
-    [data-testid='node'].rete-conditional-node .title {
+    .rete-conditional-node > [data-testid='node'] .title {
       position: relative;
       z-index: 1;
-      width: 62%;
-      font-size: 0.8rem;
+      width: 58%;
+      font-size: 0.78rem;
+      font-weight: 700;
       line-height: 1.2;
+      letter-spacing: 0.005em;
       text-align: center;
       white-space: normal;
-      word-wrap: break-word;
+      overflow-wrap: anywhere;
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
     }
 
-    [data-testid='node'].rete-conditional-node .input-socket {
-      position: absolute;
-      top: 50%;
-      left: -7px;
-      transform: translateY(-50%);
+    .rete-conditional-node > [data-testid='node'] .input-socket,
+    .rete-conditional-node > [data-testid='node'] .output-socket {
       z-index: 2;
     }
+  }
+}
 
-    [data-testid='node'].rete-conditional-node .output-socket {
-      position: absolute;
-      top: 50%;
-      right: -7px;
-      transform: translateY(-50%);
-      z-index: 2;
+/* =========================================================
+   Read-only canvas (live run view): nodes stay clickable but
+   connections and sockets cannot be edited.
+   ========================================================= */.rete-squad-flow-editor--interaction-locked {
+  ::ng-deep {
+    [data-testid='node'],
+    [data-testid='node']:active {
+      cursor: pointer;
     }
 
-    @keyframes live-node-pulse {
-      0% {
-        transform: scale(1);
-      }
-
-      50% {
-        transform: scale(1.04);
-      }
-
-      100% {
-        transform: scale(1);
-      }
+    [data-testid='input-socket'],
+    [data-testid='output-socket'],
+    [data-testid='connection'],
+    [data-testid='connection'] > svg,
+    [data-testid='connection'] > path {
+      pointer-events: none;
     }
+  }
+}
 
-    @keyframes live-edge-flow {
-      from {
-        stroke-dashoffset: 0;
-      }
+/* =========================================================
+   Canvas overlay control
+   ========================================================= */
+.rete-canvas-toggle {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.7rem 0.35rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  backdrop-filter: blur(8px);
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 140ms ease, border-color 140ms ease, background 140ms ease;
+}
 
-      to {
-        stroke-dashoffset: -52;
-      }
-    }
+.rete-canvas-toggle:hover,
+.rete-canvas-toggle:focus-visible {
+  border-color: color-mix(in srgb, var(--rete-condition) 50%, var(--color-border));
+  color: var(--color-text-primary);
+  outline: none;
+}
 
-    .rete-squad-flow-editor--interaction-locked {
-      ::ng-deep {
-        [data-testid='node'] {
-          cursor: pointer;
-        }
+.rete-canvas-toggle__switch {
+  position: relative;
+  width: 1.7rem;
+  height: 0.9rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-text-secondary) 28%, transparent);
+  transition: background 160ms ease;
+}
 
-        [data-testid='node']:active {
-          cursor: pointer;
-        }
+.rete-canvas-toggle__switch::after {
+  content: '';
+  position: absolute;
+  top: 0.15rem;
+  left: 0.15rem;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--color-surface);
+  transition: transform 160ms ease;
+}
 
-        [data-testid='input-socket'],
-        [data-testid='output-socket'] {
-          pointer-events: none;
-        }
+.rete-canvas-toggle--active {
+  color: var(--color-text-primary);
+}
 
-        [data-testid='connection'],
-        [data-testid='connection'] > svg,
-        [data-testid='connection'] > path {
-          pointer-events: none;
-        }
-      }
-    }
+.rete-canvas-toggle--active .rete-canvas-toggle__switch {
+  background: var(--rete-condition);
+}
 
-    @keyframes live-edge-pulse {
-      0%,
-      100% {
-        filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.72)) drop-shadow(0 0 12px rgba(56, 189, 248, 0.48));
-      }
+.rete-canvas-toggle--active .rete-canvas-toggle__switch::after {
+  transform: translateX(0.8rem);
+}
 
-      50% {
-        filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.9)) drop-shadow(0 0 18px rgba(56, 189, 248, 0.65));
-      }
-    }
+@keyframes live-node-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.04);
+  }
+}
+
+@keyframes live-edge-flow {
+  from {
+    stroke-dashoffset: 0;
+  }
+
+  to {
+    stroke-dashoffset: -52;
+  }
+}
+
+@keyframes live-edge-pulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.72)) drop-shadow(0 0 12px rgba(56, 189, 248, 0.48));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.9)) drop-shadow(0 0 18px rgba(56, 189, 248, 0.65));
   }
 }

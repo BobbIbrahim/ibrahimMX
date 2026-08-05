@@ -60,6 +60,12 @@ public class SquadController implements SquadApi {
 	}
 
 	@Override
+	public ResponseEntity<Void> deleteSquad(String squadId) {
+		log.debug("Received request to delete squad with id: {}", squadId);
+		return squadFacade.deleteSquad(squadId) ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+	}
+
+	@Override
 	public ResponseEntity<SquadRunApiResponse> startSquadRun(String squadId, StartSquadRunApiRequest request) {
 		log.debug("Received request to start squad run for squad id: {}", squadId);
 		Map<String, Object> initialInput = request == null || request.getInput() == null

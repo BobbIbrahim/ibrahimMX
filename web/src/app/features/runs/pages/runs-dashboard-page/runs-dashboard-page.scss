@@ -8,7 +8,7 @@
 
 .runs-stats {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
   gap: 1rem;
   margin-bottom: 1rem;
 }
@@ -29,11 +29,6 @@
   color: var(--color-text-primary);
   font: inherit;
   text-align: left;
-  cursor: pointer;
-  transition: transform 160ms ease,
-  border-color 160ms ease,
-  background-color 160ms ease,
-  box-shadow 160ms ease;
 }
 
 .runs-stat-card::before {
@@ -48,35 +43,23 @@
   opacity: 0.75;
 }
 
-.runs-stat-card:hover {
+/* Used by the small-screen run cards, which act as table rows. */
+.runs-stat-card--interactive {
+  cursor: pointer;
+  transition: transform 160ms ease,
+  border-color 160ms ease,
+  box-shadow 160ms ease;
+}
+
+.runs-stat-card--interactive:hover {
   transform: translateY(-2px);
-  border-color: color-mix(
-    in srgb,
-    var(--stat-color) 42%,
-    var(--color-border)
-  );
+  border-color: color-mix(in srgb, var(--stat-color) 42%, var(--color-border));
   box-shadow: 0 0.8rem 1.8rem color-mix(in srgb, var(--stat-color) 10%, transparent);
 }
 
-.runs-stat-card:focus-visible {
+.runs-stat-card--interactive:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--stat-color) 28%, transparent);
   outline-offset: 2px;
-}
-
-.runs-stat-card--selected {
-  border-color: var(--stat-color);
-  background: radial-gradient(
-    circle at top right,
-    color-mix(in srgb, var(--stat-color) 16%, transparent),
-    transparent 12rem
-  ),
-  color-mix(
-    in srgb,
-    var(--stat-color) 5%,
-    var(--color-surface)
-  );
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--stat-color) 16%, transparent),
-  0 0.8rem 1.8rem color-mix(in srgb, var(--stat-color) 12%, transparent);
 }
 
 .runs-stat-card--running {
@@ -821,6 +804,12 @@
   line-height: 1.35;
   letter-spacing: normal;
   text-transform: none;
+}
+
+.runs-stats[aria-label='Squad run cards']
+.runs-stat-card
+> small:last-of-type {
+  margin-bottom: 1rem;
 }
 
 .runs-stats[aria-label='Squad run cards']

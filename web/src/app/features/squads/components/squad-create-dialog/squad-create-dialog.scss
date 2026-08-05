@@ -81,6 +81,30 @@
   background: color-mix(in srgb, var(--color-accent) 12%, transparent);
 }
 
+.type-card--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.type-card--disabled .type-card__icon {
+  background: var(--color-surface-soft);
+  color: var(--color-text-secondary);
+}
+
+.type-card__badge {
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-text-secondary) 18%, transparent);
+  color: var(--color-text-secondary);
+  font-size: 0.65rem;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
 .type-card input {
   position: absolute;
   opacity: 0;

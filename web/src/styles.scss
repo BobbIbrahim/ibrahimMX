@@ -1,8 +1,8 @@
 @use '@angular/material' as mat;
 @use './styles/squad-builder-page';
 
-/* =================================================:/* =========================================================
-   Define global CSS variables used by all components.
+/* =========================================================
+   Global design tokens shared by every component.
    Components should use var(--color-...) instead of hardcoded colors.
    ========================================================= */
 
@@ -276,18 +276,21 @@ html {
    Squad create dialog panel
    Used by:
    SquadCreateDialog through panelClass: 'squad-create-dialog-panel'
+   AutopilotCreateDialog through panelClass: 'autopilot-create-dialog-panel'
 
    Purpose:
    Style Angular Material dialog container globally because
    Material dialogs render inside the CDK overlay container.
    ========================================================= */
 
-.squad-create-dialog-panel {
+.squad-create-dialog-panel,
+.autopilot-create-dialog-panel {
   --mat-dialog-container-color: var(--color-surface);
   --mat-dialog-container-shape: 1.35rem;
 }
 
-.squad-create-dialog-panel .mat-mdc-dialog-container {
+.squad-create-dialog-panel .mat-mdc-dialog-container,
+.autopilot-create-dialog-panel .mat-mdc-dialog-container {
   padding: 0;
   border-radius: 1.35rem;
   background: var(--color-surface);
@@ -296,11 +299,39 @@ html {
   box-shadow: 0 2rem 5rem rgba(0, 0, 0, 0.35);
 }
 
-.squad-create-dialog-panel .mdc-dialog__surface {
+.squad-create-dialog-panel .mdc-dialog__surface,
+.autopilot-create-dialog-panel .mdc-dialog__surface {
   border-radius: 1.35rem !important;
   background: var(--color-surface) !important;
   color: var(--color-text-primary) !important;
   overflow: hidden !important;
+}
+
+/* Assignee picker overlay for AutopilotCreateDialog. */
+.autopilot-assignee-panel.mat-mdc-select-panel {
+  padding: 0.35rem !important;
+  border: 1px solid var(--color-border);
+  border-radius: 0.9rem !important;
+  background: var(--color-surface) !important;
+  box-shadow: 0 1.25rem 2.75rem rgba(0, 0, 0, 0.35) !important;
+}
+
+.autopilot-assignee-panel .mat-mdc-option {
+  min-height: 3.35rem;
+  border-radius: 0.7rem;
+}
+
+.autopilot-assignee-panel .mat-mdc-option:hover:not(.mdc-list-item--disabled),
+.autopilot-assignee-panel .mat-mdc-option.mat-mdc-option-active {
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+
+.autopilot-assignee-panel .mat-mdc-option.mdc-list-item--selected:not(.mat-mdc-option-multiple) {
+  background: color-mix(in srgb, var(--color-accent) 16%, transparent);
+}
+
+.autopilot-assignee-panel .mat-pseudo-checkbox-minimal::after {
+  color: var(--color-accent);
 }
 
 .squad-stop-dialog-panel {
@@ -343,352 +374,4 @@ html {
   background: var(--color-surface) !important;
   color: var(--color-text-primary) !important;
   overflow: hidden !important;
-}
-
-/* =========================================================
-   MXORBIT Rete Flow Node Styling
-   Global because Rete renders internal DOM dynamically.
-   ========================================================= */
-
-.rete-squad-flow-editor .node {
-  width: 17rem !important;
-  min-height: 6.25rem !important;
-  border: 1px solid color-mix(in srgb, var(--color-border) 78%, transparent) !important;
-  border-radius: 1rem !important;
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--color-bg-elevated) 96%, transparent),
-      color-mix(in srgb, var(--color-surface) 96%, transparent)
-    ) !important;
-  color: var(--color-text-primary) !important;
-  box-shadow:
-    0 1.25rem 2.75rem rgba(0, 0, 0, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
-  overflow: visible !important;
-  transition:
-    border-color 160ms ease,
-    box-shadow 160ms ease,
-    transform 160ms ease,
-    background 160ms ease !important;
-}
-
-.rete-squad-flow-editor .node:hover {
-  transform: translateY(-2px) !important;
-  border-color: color-mix(in srgb, var(--color-accent) 48%, var(--color-border)) !important;
-  box-shadow:
-    0 1.5rem 3rem rgba(0, 0, 0, 0.34),
-    0 0 0 1px color-mix(in srgb, var(--color-accent) 18%, transparent) !important;
-}
-
-.rete-squad-flow-editor .node.selected {
-  border-color: var(--color-accent) !important;
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--color-accent) 18%, var(--color-bg-elevated)),
-      color-mix(in srgb, var(--color-bg-elevated) 94%, transparent)
-    ) !important;
-  box-shadow:
-    0 1.5rem 3rem rgba(0, 0, 0, 0.36),
-    0 0 0 2px color-mix(in srgb, var(--color-accent) 34%, transparent) !important;
-}
-
-/* Node title: now supports multiline "Step name / Agent" format */
-.rete-squad-flow-editor .node .title {
-  padding: 1rem 1rem 0.75rem !important;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent) !important;
-  color: var(--color-text-primary) !important;
-  font-size: 0.95rem !important;
-  font-weight: 800 !important;
-  line-height: 1.35 !important;
-  letter-spacing: -0.02em !important;
-  white-space: pre-line !important;
-  text-shadow: none !important;
-}
-
-/* Hide technical Previous / Next labels for a cleaner product UI */
-.rete-squad-flow-editor .node .input-title,
-.rete-squad-flow-editor .node .output-title {
-  display: none !important;
-}
-
-/* Keep socket rows compact */
-.rete-squad-flow-editor .node .input,
-.rete-squad-flow-editor .node .output {
-  height: 1.4rem !important;
-  min-height: 1.4rem !important;
-  padding: 0 !important;
-}
-
-/* Smaller, cleaner connection sockets */
-.rete-squad-flow-editor .socket {
-  width: 0.9rem !important;
-  height: 0.9rem !important;
-  border: 2px solid color-mix(in srgb, var(--color-accent) 76%, white) !important;
-  background: color-mix(in srgb, var(--color-accent) 72%, var(--color-surface)) !important;
-  box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--color-accent) 14%, transparent),
-    0 0.4rem 0.9rem rgba(0, 0, 0, 0.24) !important;
-  transition:
-    transform 140ms ease,
-    background 140ms ease,
-    border-color 140ms ease !important;
-}
-
-.rete-squad-flow-editor .socket:hover {
-  transform: scale(1.14) !important;
-  border-color: white !important;
-  background: var(--color-accent) !important;
-}
-
-/* Cleaner connection line */
-.rete-squad-flow-editor .connection path {
-  stroke: color-mix(in srgb, var(--color-accent) 82%, #60a5fa) !important;
-  stroke-width: 3px !important;
-  filter: drop-shadow(
-    0 0 0.35rem color-mix(in srgb, var(--color-accent) 36%, transparent)
-  ) !important;
-}
-
-/* =========================================================
-   MXORBIT Rete Classic Node Styling
-   Purpose:
-   Improve default Rete classic nodes without using a custom node component.
-   ========================================================= */
-
-body .rete-squad-flow-editor .node {
-  width: 16rem !important;
-  min-height: 6rem !important;
-  border: 1px solid color-mix(in srgb, var(--color-border) 75%, transparent) !important;
-  border-radius: 1rem !important;
-  background:
-    radial-gradient(
-      circle at top left,
-      color-mix(in srgb, var(--color-accent) 14%, transparent),
-      transparent 8rem
-    ),
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--color-bg-elevated) 98%, transparent),
-      color-mix(in srgb, var(--color-surface) 96%, transparent)
-    ) !important;
-  color: var(--color-text-primary) !important;
-  box-shadow:
-    0 1.15rem 2.7rem rgba(0, 0, 0, 0.34),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
-  overflow: visible !important;
-  transition:
-    transform 160ms ease,
-    border-color 160ms ease,
-    box-shadow 160ms ease !important;
-}
-
-body .rete-squad-flow-editor .node:hover {
-  transform: translateY(-2px) !important;
-  border-color: color-mix(in srgb, var(--color-accent) 48%, var(--color-border)) !important;
-  box-shadow:
-    0 1.45rem 3rem rgba(0, 0, 0, 0.4),
-    0 0 0 1px color-mix(in srgb, var(--color-accent) 22%, transparent) !important;
-}
-
-body .rete-squad-flow-editor .node.selected {
-  border-color: var(--color-accent) !important;
-  box-shadow:
-    0 1.45rem 3rem rgba(0, 0, 0, 0.42),
-    0 0 0 2px color-mix(in srgb, var(--color-accent) 32%, transparent) !important;
-}
-
-/* Main node title */
-body .rete-squad-flow-editor .node .title {
-  padding: 0.95rem 1rem 0.75rem !important;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 55%, transparent) !important;
-  color: var(--color-text-primary) !important;
-  font-size: 0.95rem !important;
-  font-weight: 850 !important;
-  line-height: 1.35 !important;
-  letter-spacing: -0.02em !important;
-  white-space: normal !important;
-  text-shadow: none !important;
-}
-
-/* Socket rows */
-body .rete-squad-flow-editor .node .input,
-body .rete-squad-flow-editor .node .output {
-  min-height: 1.55rem !important;
-  height: 1.55rem !important;
-  padding: 0 0.8rem !important;
-}
-
-/* Input / Output labels */
-body .rete-squad-flow-editor .node .input-title,
-body .rete-squad-flow-editor .node .output-title {
-  color: var(--color-text-muted) !important;
-  font-size: 0.62rem !important;
-  font-weight: 900 !important;
-  letter-spacing: 0.08em !important;
-  text-transform: uppercase !important;
-}
-
-body .rete-squad-flow-editor .node .input-title {
-  margin-left: 0.35rem !important;
-}
-
-body .rete-squad-flow-editor .node .output-title {
-  margin-right: 0.35rem !important;
-}
-
-/* Sockets */
-body .rete-squad-flow-editor .socket {
-  width: 0.85rem !important;
-  height: 0.85rem !important;
-  border: 2px solid color-mix(in srgb, var(--color-accent) 72%, white) !important;
-  background: color-mix(in srgb, var(--color-accent) 68%, var(--color-surface)) !important;
-  box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--color-accent) 14%, transparent),
-    0 0.35rem 0.85rem rgba(0, 0, 0, 0.26) !important;
-}
-
-body .rete-squad-flow-editor .socket:hover {
-  transform: scale(1.14) !important;
-  border-color: white !important;
-  background: var(--color-accent) !important;
-}
-
-/* Connections */
-body .rete-squad-flow-editor .connection path {
-  stroke: color-mix(in srgb, var(--color-accent) 82%, #60a5fa) !important;
-  stroke-width: 3px !important;
-  filter: drop-shadow(
-    0 0 0.4rem color-mix(in srgb, var(--color-accent) 38%, transparent)
-  ) !important;
-}
-/* =========================================================
-   MXORBIT Rete Classic Node Styling
-   Active because we are currently using:
-   render.addPreset(AngularPresets.classic.setup())
-   ========================================================= */
-
-/* Target classic Rete node host and internal node */
-body .rete-squad-flow-editor .node,
-body .rete-squad-flow-editor rete-node .node,
-body rete-node .node {
-  width: 15.5rem !important;
-  min-height: 6rem !important;
-  border: 1px solid color-mix(in srgb, var(--color-border) 76%, transparent) !important;
-  border-radius: 1rem !important;
-  background:
-    radial-gradient(
-      circle at top left,
-      color-mix(in srgb, var(--color-accent) 12%, transparent),
-      transparent 8rem
-    ),
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--color-bg-elevated) 98%, transparent),
-      color-mix(in srgb, var(--color-surface) 97%, transparent)
-    ) !important;
-  color: var(--color-text-primary) !important;
-  box-shadow:
-    0 1.1rem 2.4rem rgba(0, 0, 0, 0.34),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
-  overflow: visible !important;
-  transition:
-    transform 160ms ease,
-    border-color 160ms ease,
-    box-shadow 160ms ease !important;
-}
-
-/* Hover */
-body .rete-squad-flow-editor .node:hover,
-body .rete-squad-flow-editor rete-node .node:hover,
-body rete-node .node:hover {
-  transform: translateY(-2px) !important;
-  border-color: color-mix(in srgb, var(--color-accent) 46%, var(--color-border)) !important;
-  box-shadow:
-    0 1.35rem 2.8rem rgba(0, 0, 0, 0.4),
-    0 0 0 1px color-mix(in srgb, var(--color-accent) 22%, transparent) !important;
-}
-
-/* Selected */
-body .rete-squad-flow-editor .node.selected,
-body .rete-squad-flow-editor rete-node .node.selected,
-body rete-node .node.selected {
-  border-color: var(--color-accent) !important;
-  box-shadow:
-    0 1.35rem 2.9rem rgba(0, 0, 0, 0.42),
-    0 0 0 2px color-mix(in srgb, var(--color-accent) 34%, transparent) !important;
-}
-
-/* Title */
-body .rete-squad-flow-editor .node .title,
-body .rete-squad-flow-editor rete-node .node .title,
-body rete-node .node .title {
-  padding: 0.85rem 0.95rem 0.65rem !important;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 55%, transparent) !important;
-  color: var(--color-text-primary) !important;
-  font-size: 0.92rem !important;
-  font-weight: 850 !important;
-  line-height: 1.3 !important;
-  letter-spacing: -0.02em !important;
-  white-space: normal !important;
-  text-shadow: none !important;
-}
-
-/* Port rows */
-body .rete-squad-flow-editor .node .input,
-body .rete-squad-flow-editor .node .output,
-body .rete-squad-flow-editor rete-node .node .input,
-body .rete-squad-flow-editor rete-node .node .output,
-body rete-node .node .input,
-body rete-node .node .output {
-  min-height: 1.45rem !important;
-  height: 1.45rem !important;
-  padding: 0 0.75rem !important;
-}
-
-/* Input / Output labels */
-body .rete-squad-flow-editor .node .input-title,
-body .rete-squad-flow-editor .node .output-title,
-body .rete-squad-flow-editor rete-node .node .input-title,
-body .rete-squad-flow-editor rete-node .node .output-title,
-body rete-node .node .input-title,
-body rete-node .node .output-title {
-  color: var(--color-text-muted) !important;
-  font-size: 0.62rem !important;
-  font-weight: 900 !important;
-  letter-spacing: 0.08em !important;
-  text-transform: uppercase !important;
-}
-
-/* Sockets */
-body .rete-squad-flow-editor .socket,
-body .rete-squad-flow-editor rete-socket .socket,
-body rete-socket .socket {
-  width: 0.82rem !important;
-  height: 0.82rem !important;
-  border: 2px solid color-mix(in srgb, var(--color-accent) 72%, white) !important;
-  background: color-mix(in srgb, var(--color-accent) 68%, var(--color-surface)) !important;
-  box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--color-accent) 14%, transparent),
-    0 0.35rem 0.85rem rgba(0, 0, 0, 0.26) !important;
-}
-
-body .rete-squad-flow-editor .socket:hover,
-body .rete-squad-flow-editor rete-socket .socket:hover,
-body rete-socket .socket:hover {
-  transform: scale(1.14) !important;
-  border-color: white !important;
-  background: var(--color-accent) !important;
-}
-
-/* Connection lines */
-body .rete-squad-flow-editor .connection path,
-body .rete-squad-flow-editor rete-connection path,
-body rete-connection path {
-  stroke: color-mix(in srgb, var(--color-accent) 82%, #60a5fa) !important;
-  stroke-width: 3px !important;
-  filter: drop-shadow(
-    0 0 0.4rem color-mix(in srgb, var(--color-accent) 38%, transparent)
-  ) !important;
 }

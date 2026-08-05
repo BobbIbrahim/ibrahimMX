@@ -9,65 +9,35 @@
   />
 
   <section class="runs-stats" aria-label="Squad run statistics">
-    <button
-      type="button"
-      class="runs-stat-card runs-stat-card--running"
-      [class.runs-stat-card--selected]="statusFilter() === 'RUNNING'"
-      [attr.aria-pressed]="statusFilter() === 'RUNNING'"
-      (click)="onStatusFilterChange('RUNNING')"
-    >
+    <article class="runs-stat-card runs-stat-card--running">
       <span>Running</span>
       <strong>{{ runningCount() }}</strong>
       <small>Currently in progress</small>
-    </button>
+    </article>
 
-    <button
-      type="button"
-      class="runs-stat-card runs-stat-card--completed"
-      [class.runs-stat-card--selected]="statusFilter() === 'COMPLETED'"
-      [attr.aria-pressed]="statusFilter() === 'COMPLETED'"
-      (click)="onStatusFilterChange('COMPLETED')"
-    >
+    <article class="runs-stat-card runs-stat-card--completed">
       <span>Completed</span>
       <strong>{{ completedCount() }}</strong>
       <small>Finished successfully</small>
-    </button>
+    </article>
 
-    <button
-      type="button"
-      class="runs-stat-card runs-stat-card--failed"
-      [class.runs-stat-card--selected]="statusFilter() === 'FAILED'"
-      [attr.aria-pressed]="statusFilter() === 'FAILED'"
-      (click)="onStatusFilterChange('FAILED')"
-    >
+    <article class="runs-stat-card runs-stat-card--failed">
       <span>Failed</span>
       <strong>{{ failedCount() }}</strong>
       <small>Ended with errors</small>
-    </button>
+    </article>
 
-    <button
-      type="button"
-      class="runs-stat-card runs-stat-card--cancelled"
-      [class.runs-stat-card--selected]="statusFilter() === 'CANCELLED'"
-      [attr.aria-pressed]="statusFilter() === 'CANCELLED'"
-      (click)="onStatusFilterChange('CANCELLED')"
-    >
+    <article class="runs-stat-card runs-stat-card--cancelled">
       <span>Cancelled</span>
       <strong>{{ cancelledCount() }}</strong>
       <small>Stopped by a user</small>
-    </button>
+    </article>
 
-    <button
-      type="button"
-      class="runs-stat-card runs-stat-card--total"
-      [class.runs-stat-card--selected]="statusFilter() === 'all'"
-      [attr.aria-pressed]="statusFilter() === 'all'"
-      (click)="onStatusFilterChange('all')"
-    >
+    <article class="runs-stat-card runs-stat-card--total">
       <span>Total</span>
       <strong>{{ totalCount() }}</strong>
       <small>Across all squad runs</small>
-    </button>
+    </article>
   </section>
 
   <section class="runs-toolbar" aria-label="Squad run filters">
@@ -345,7 +315,7 @@
               @for (run of paginatedRuns();
                 track run.squadRunId) {
                 <tr
-                  role="button"
+                  class="runs-table__row"
                   tabindex="0"
                   [attr.aria-label]="
                     'Open run ' +
@@ -449,7 +419,7 @@
           @for (run of paginatedRuns();
             track run.squadRunId) {
             <article
-              class="runs-stat-card"
+              class="runs-stat-card runs-stat-card--interactive"
               role="button"
               tabindex="0"
               [class.runs-stat-card--running]="

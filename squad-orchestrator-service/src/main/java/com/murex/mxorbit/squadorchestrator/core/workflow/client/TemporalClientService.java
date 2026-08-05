@@ -69,8 +69,16 @@ public class TemporalClientService implements TemporalClient {
 
 	@Override
 	public List<WorkflowExecutionSummary> listWorkflowExecutions(String workflowType) {
+		return queryWorkflowExecutions("WorkflowType = '" + workflowType + "'");
+	}
+
+	@Override
+	public List<WorkflowExecutionSummary> listRunningWorkflowExecutions(String workflowType) {
+		return queryWorkflowExecutions("WorkflowType = '" + workflowType + "' AND ExecutionStatus = 'Running'");
+	}
+
+	private List<WorkflowExecutionSummary> queryWorkflowExecutions(String query) {
 		List<WorkflowExecutionSummary> summaries = new ArrayList<>();
-		String query = "WorkflowType = '" + workflowType + "'";
 		ByteString nextPageToken = ByteString.EMPTY;
 		do {
 			ListWorkflowExecutionsRequest request = ListWorkflowExecutionsRequest.newBuilder()

@@ -2,7 +2,9 @@
   <app-page-header
     eyebrow="AUTOPILOT"
     title="Scheduled AI Tasks"
-    description="Schedule agents or squads to automatically run recurring tasks using runbooks, triggers, and project context."
+    description="Schedule a squad to run on a recurring basis, without anyone having to kick it off."
+    badgeLabel="Sample data"
+    badgeIcon="science"
     actionLabel="New Autopilot"
     actionIcon="add"
     (actionClick)="onCreateAutopilot()"
@@ -11,7 +13,11 @@
   @if (autopilots().length > 0) {
     <div class="autopilot-grid">
       @for (autopilot of autopilots(); track autopilot.id) {
-        <app-autopilot-card [autopilot]="autopilot" />
+        <app-autopilot-card
+          [autopilot]="autopilot"
+          (pauseRequested)="onPauseAutopilot($event)"
+          (resumeRequested)="onResumeAutopilot($event)"
+        />
       }
     </div>
   } @else {
@@ -23,7 +29,7 @@
       <h2>No autopilots configured yet</h2>
 
       <p>
-        Create your first autopilot to schedule an agent or squad to run a recurring task automatically.
+        Create your first autopilot to schedule a squad to run a recurring task automatically.
       </p>
     </div>
   }

@@ -1,15 +1,17 @@
 <section class="feature-page">
   <app-page-header
     eyebrow="AGENT REGISTRY"
-    title="Specialists on the Mesh"
-    description="View reusable AI specialists, capabilities, model assignments, and operational metadata."
+    title="Available Agents"
+    description="The agents you can drop into a squad, with the inputs they expect, the outputs they produce, and the model behind each one."
+    badgeLabel="Sample data"
+    badgeIcon="science"
   />
 
   <section class="stats-grid" aria-label="Agent registry summary">
     <article class="stat-card">
       <span class="stat-card__label">Total Agents</span>
       <strong>{{ totalAgents() }}</strong>
-      <span class="stat-card__hint">Registered specialists</span>
+      <span class="stat-card__hint">In the catalogue</span>
     </article>
 
     <article class="stat-card">
@@ -27,7 +29,7 @@
     <article class="stat-card">
       <span class="stat-card__label">Avg. Success</span>
       <strong>{{ averageSuccessRate() }}%</strong>
-      <span class="stat-card__hint">Across all mock runs</span>
+      <span class="stat-card__hint">Placeholder metric</span>
     </article>
   </section>
 

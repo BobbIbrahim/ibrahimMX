@@ -14,7 +14,7 @@
             <h1>{{ currentDraft.name }}</h1>
 
             <span class="builder-status-pill">
-              {{ currentDraft.type | titlecase }}
+              {{ getSquadTypeLabel(currentDraft.type) }}
             </span>
           </div>
 

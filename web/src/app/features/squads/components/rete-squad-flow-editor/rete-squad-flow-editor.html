@@ -1,1 +1,15 @@
-<div class="rete-squad-flow-editor" #reteContainer></div>
+<div class="rete-squad-flow-editor" #reteContainer>
+  @if (hasRouteLabels) {
+  <button
+    type="button"
+    class="rete-canvas-toggle"
+    [class.rete-canvas-toggle--active]="routeLabelsVisible()"
+    [attr.aria-pressed]="routeLabelsVisible()"
+    (pointerdown)="$event.stopPropagation()"
+    (click)="toggleRouteLabels()"
+  >
+    <span class="rete-canvas-toggle__switch"></span>
+    Branch rules
+  </button>
+  }
+</div>

@@ -20,6 +20,8 @@ public interface SquadFacade {
 
 	Optional<Squad> updateSquad(String squadId, CreateSquadRequest request);
 
+	boolean deleteSquad(String squadId);
+
 	Optional<SquadRunStartResult> startSquadRun(String squadId, Map<String, Object> initialInput);
 
 	List<SquadRunSummary> getSquadRuns();

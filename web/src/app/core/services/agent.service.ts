@@ -11,7 +11,7 @@ export class AgentService {
       id: 'agent-001',
       agentKey: 'change-classifier',
       name: 'Change Classifier',
-      role: 'Change Classification Specialist',
+      role: 'Change intake',
       model: 'GPT-4.1',
       description:
         'Classifies incoming changes and determines their change type for downstream planning.',
@@ -28,7 +28,7 @@ export class AgentService {
       id: 'agent-002',
       agentKey: 'test-selector',
       name: 'Test Selector',
-      role: 'Test Selection Specialist',
+      role: 'Test planning',
       model: 'Claude Sonnet',
       description:
         'Selects the relevant tests to run based on a change and its classified change type.',
@@ -45,7 +45,7 @@ export class AgentService {
       id: 'agent-003',
       agentKey: 'deployment-planner',
       name: 'Deployment Planner',
-      role: 'Deployment Planning Specialist',
+      role: 'Release planning',
       model: 'Gemini Pro',
       description:
         'Plans the deployment steps based on the change, its change type, and the selected tests.',

@@ -1,4 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,6 +11,12 @@ import { MatSelectModule } from '@angular/material/select';
 
 import { SquadService } from '../../../../core/services/squad.service';
 import { SquadBuilderStateService } from '../../../../core/services/squad-builder-state.service';
+import {
+  SQUAD_TYPES,
+  getSquadTypeIcon,
+  getSquadTypeLabel,
+} from '../../../../core/models/squad-type';
+import { SquadType } from '../../../../core/models/squad.model';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { SquadCard } from '../../components/squad-card/squad-card';
 import {
@@ -22,7 +29,7 @@ import {
   SquadDeleteConfirmDialogData,
 } from '../../components/squad-delete-confirm-dialog/squad-delete-confirm-dialog';
 
-type SquadTypeFilter = 'all' | 'hardcoded-flow' | 'prompt-squad';
+type SquadTypeFilter = 'all' | SquadType;
 
 type SquadSortOption = 'name-asc' | 'name-desc' | 'steps-desc' | 'edges-desc' | 'members-desc';
 
@@ -86,6 +93,7 @@ export class SquadsPage implements OnInit {
 
   readonly isLoadingSquads = signal(false);
   readonly loadSquadsError = signal<string | null>(null);
+  readonly deleteSquadError = signal<string | null>(null);
 
   readonly searchTerm = signal('');
   readonly typeFilter = signal<SquadTypeFilter>('all');
@@ -100,8 +108,19 @@ export class SquadsPage implements OnInit {
     return this.squads().filter((squad) => squad.type === 'hardcoded-flow').length;
   });
 
-  readonly promptSquads = computed(() => {
-    return this.squads().filter((squad) => squad.type === 'prompt-squad').length;
+  /** Only types that actually occur are offered, so the filter row never shows dead options. */
+  readonly availableTypeFilters = computed(() => {
+    const presentTypes = new Set(this.squads().map((squad) => squad.type));
+
+    return SQUAD_TYPES.filter((squadType) => presentTypes.has(squadType.value));
+  });
+
+  readonly hasActiveFilters = computed(() => {
+    return (
+      this.searchTerm().trim().length > 0 ||
+      this.typeFilter() !== 'all' ||
+      this.sortOption() !== 'name-asc'
+    );
   });
 
   readonly totalSteps = computed(() => {
@@ -237,12 +256,7 @@ export class SquadsPage implements OnInit {
 
       this.squadBuilderState.createDraft(result);
 
-      if (result.type === 'hardcoded-flow') {
-        void this.router.navigate(['/squads/builder/new']);
-        return;
-      }
-
-      console.log('Prompt Squad flow will be implemented later:', result);
+      void this.router.navigate(['/squads/builder/new']);
     });
   }
 
@@ -292,8 +306,23 @@ export class SquadsPage implements OnInit {
         return;
       }
 
-      this.squadService.deleteSquad(squadId);
-      this.correctCurrentPage();
+      this.deleteSquadError.set(null);
+
+      this.squadService.deleteSquad(squadId).subscribe({
+        next: () => {
+          this.correctCurrentPage();
+        },
+        error: (error: HttpErrorResponse) => {
+          console.error('Failed to delete squad:', error);
+
+          this.deleteSquadError.set(
+            error.status === 409
+              ? (error.error?.message ??
+                  `${squad.name} still has runs in progress. Cancel them before deleting.`)
+              : `Failed to delete ${squad.name}. Please try again.`,
+          );
+        },
+      });
     });
   }
 
@@ -362,8 +391,12 @@ export class SquadsPage implements OnInit {
     this.resetPagination();
   }
 
-  getSquadTypeLabel(type: 'hardcoded-flow' | 'prompt-squad'): string {
-    return type === 'hardcoded-flow' ? 'Hardcoded Flow' : 'Prompt Squad';
+  getSquadTypeLabel(type: SquadType): string {
+    return getSquadTypeLabel(type);
+  }
+
+  getSquadTypeIcon(type: SquadType): string {
+    return getSquadTypeIcon(type);
   }
 
   private resetPagination(): void {

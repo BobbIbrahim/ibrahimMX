@@ -36,16 +36,6 @@
         {{ followModeEnabled() ? 'Unfollow' : 'Follow' }}
       </button>
 
-      <button
-        mat-stroked-button
-        type="button"
-        class="interaction-lock-button"
-        [class.interaction-lock-button--active]="interactionLocked()"
-        (click)="toggleInteractionLock()"
-      >
-        {{ interactionLocked() ? 'Locked' : 'Unlocked' }}
-      </button>
-
       <a
         mat-stroked-button
         [routerLink]="['/squads/builder', squadId()]"
@@ -91,6 +81,12 @@
       <span class="execution-summary-card__label">Pending</span>
       <span class="execution-summary-card__value">{{ pendingSteps() }}</span>
     </article>
+    @if (skippedSteps() > 0) {
+    <article class="execution-summary-card execution-summary-card--skipped">
+      <span class="execution-summary-card__label">Skipped</span>
+      <span class="execution-summary-card__value">{{ skippedSteps() }}</span>
+    </article>
+    }
   </section>
 
   <section class="run-summary-card">
@@ -108,6 +104,9 @@
       <span>{{ completedSteps() }} Completed</span>
       <span>{{ runningSteps() }} Running</span>
       <span>{{ pendingSteps() }} Pending</span>
+      @if (skippedSteps() > 0) {
+      <span>{{ skippedSteps() }} Skipped</span>
+      }
       <span>{{ failedSteps() }} Failed</span>
     </div>
 
@@ -119,74 +118,106 @@
     </div>
   </section>
 
-  @if (finalResult(); as result) {
+  @if (routingDecisions().length > 0) {
+  <section class="routing-decisions">
+    <header class="routing-decisions__header">
+      <h2 class="routing-decisions__title">Routing Decisions</h2>
+      <p class="routing-decisions__subtitle">
+        How each branching step chose its next path, and the values the rules were evaluated against.
+      </p>
+    </header>
+
+    @for (decision of routingDecisions(); track decision.sourceStepId) {
+    <article class="routing-decision">
+      <div class="routing-decision__source">
+        <span class="routing-decision__source-label">Branching after</span>
+        <span class="routing-decision__source-name">{{ decision.sourceStepName }}</span>
+        <span
+          class="status-chip"
+          [class.status-chip--completed]="decision.status === 'COMPLETED'"
+          [class.status-chip--running]="decision.status === 'RUNNING'"
+          [class.status-chip--failed]="decision.status === 'FAILED'"
+          [class.status-chip--pending]="decision.status === 'PENDING'"
+          [class.status-chip--cancelled]="decision.status === 'CANCELLED'"
+          [class.status-chip--skipped]="decision.status === 'SKIPPED'"
+        >
+          {{ decision.status }}
+        </span>
+      </div>
+
+      @if (decision.reason) {
+      <p class="routing-decision__reason">{{ decision.reason }}</p>
+      }
+
+      <ul class="routing-rules">
+        @for (rule of decision.rules; track rule.edgeId) {
+        <li
+          class="routing-rule"
+          [class.routing-rule--taken]="rule.selected"
+          [class.routing-rule--skipped]="!rule.matched"
+        >
+          <div class="routing-rule__head">
+            <span class="routing-rule__type">{{ rule.routingType }}</span>
+            @if (rule.isDefault) {
+            <span class="routing-rule__default">Default</span>
+            }
+            <span class="routing-rule__target">→ {{ rule.targetStepName }}</span>
+            <span class="routing-rule__outcome">
+              {{ rule.selected ? 'Route taken' : rule.matched ? 'Matched' : 'Not matched' }}
+            </span>
+          </div>
+
+          @if (rule.condition) {
+          <code class="routing-rule__condition">{{ rule.condition }}</code>
+          } @else {
+          <p class="routing-rule__condition routing-rule__condition--none">
+            No condition — unconditional path.
+          </p>
+          }
+
+          @if (rule.evaluatedValues.length > 0) {
+          <div class="routing-rule__values">
+            @for (evaluated of rule.evaluatedValues; track evaluated.key) {
+            <span class="routing-rule__value">
+              <span class="routing-rule__value-key">{{ evaluated.key }}</span>
+              <span class="routing-rule__value-data">{{ evaluated.value }}</span>
+            </span>
+            }
+          </div>
+          }
+
+          @if (rule.reason) {
+          <p class="routing-rule__reason">{{ rule.reason }}</p>
+          }
+        </li>
+        }
+      </ul>
+    </article>
+    }
+  </section>
+  }
+
+  @if (finalResultFields().length > 0) {
   <section class="final-result-card">
     <div class="final-result-card__header">
-      <div class="final-result-card__title-group">
-        <span class="final-result-card__icon">✓</span>
-        <div>
-          <h2 class="final-result-card__title">Final Result</h2>
-          <p class="final-result-card__subtitle">Output produced by the terminal workflow step</p>
-        </div>
+      <mat-icon class="final-result-card__icon">check_circle</mat-icon>
+      <div>
+        <h2 class="final-result-card__title">Final Result</h2>
+        <p class="final-result-card__subtitle">Output produced when the workflow finished</p>
       </div>
     </div>
 
-    @if (orderedFinalResultFields().length === 0) {
-    <p class="final-result-card__empty">No output was produced.</p>
-    } @else {
-    <div class="final-result-card__content">
-      <!-- Change Summary + Change Type row -->
-      @if (finalResult()['change'] || finalResult()['changeType']; as hasSummaryOrType) {
-      <div class="final-result-card__summary-row">
-        @if (finalResult()['change']) {
-        <div class="final-result-card__summary-section">
-          <span class="final-result-card__field-label">Change Summary</span>
-          <div class="final-result-card__summary-value">
-            {{ formatFinalResultValue(finalResult()['change']) }}
-          </div>
-        </div>
-        }
-        @if (finalResult()['changeType']) {
-        <div class="final-result-card__type-badge-wrapper">
-          <span class="final-result-card__badge">{{ finalResult()['changeType'] }}</span>
-        </div>
-        }
+    <dl class="final-result-card__fields">
+      @for (field of finalResultFields(); track field.key) {
+      <div
+        class="final-result-card__field"
+        [class.final-result-card__field--compact]="field.isCompact"
+      >
+        <dt class="final-result-card__field-label">{{ field.label }}</dt>
+        <dd class="final-result-card__field-value">{{ field.value }}</dd>
       </div>
       }
-
-      <!-- Recommended Test -->
-      @if (finalResult()['test']) {
-      <div class="final-result-card__field">
-        <span class="final-result-card__field-label">Recommended Test</span>
-        <div class="final-result-card__field-value">
-          {{ formatFinalResultValue(finalResult()['test']) }}
-        </div>
-      </div>
-      }
-
-      <!-- Next Action -->
-      @if (finalResult()['nextAction']) {
-      <div class="final-result-card__field final-result-card__field--prominent">
-        <span class="final-result-card__field-label">Next Action</span>
-        <div class="final-result-card__field-value">
-          {{ formatFinalResultValue(finalResult()['nextAction']) }}
-        </div>
-      </div>
-      }
-
-      <!-- Unknown fields -->
-      @for (entry of orderedFinalResultFields(); track entry[0]) {
-      @if (!isKnownResultField(entry[0])) {
-      <div class="final-result-card__field final-result-card__field--unknown">
-        <span class="final-result-card__field-label">{{ getFieldLabel(entry[0]) }}</span>
-        <div class="final-result-card__field-value" [class.final-result-card__field-value--code]="isCodeLike(entry[1])">
-          {{ formatFinalResultValue(entry[1]) }}
-        </div>
-      </div>
-      }
-      }
-    </div>
-    }
+    </dl>
   </section>
   }
 
@@ -207,11 +238,12 @@
       <app-rete-squad-flow-editor
         [steps]="mapSteps(squadData)"
         [edges]="mapEdges(squadData)"
+        [conditionals]="mapConditionals(squadData)"
         [agentNamesById]="agentNamesById()"
         [executionStatus]="executionStatus()"
         [followModeEnabled]="followModeEnabled()"
         [workflowCancelled]="workflowCancelled()"
-        [interactionLocked]="interactionLocked()"
+        [interactionLocked]="true"
         [selectedStepId]="selectedStepId()"
         (stepSelected)="selectStep($event)"
       ></app-rete-squad-flow-editor>
@@ -234,6 +266,7 @@
             [class.status-chip--failed]="selectedStep.status === 'FAILED'"
             [class.status-chip--pending]="selectedStep.status === 'PENDING'"
             [class.status-chip--cancelled]="selectedStep.status === 'CANCELLED'"
+          [class.status-chip--skipped]="selectedStep.status === 'SKIPPED'"
           >
             {{ selectedStep.status }}
           </span>
@@ -282,6 +315,7 @@
           [class.status-chip--failed]="expandedStep.status === 'FAILED'"
           [class.status-chip--pending]="expandedStep.status === 'PENDING'"
           [class.status-chip--cancelled]="expandedStep.status === 'CANCELLED'"
+          [class.status-chip--skipped]="expandedStep.status === 'SKIPPED'"
         >
           {{ expandedStep.status }}
         </span>

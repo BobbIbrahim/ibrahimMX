@@ -21,6 +21,7 @@ import io.temporal.client.WorkflowNotFoundException;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -52,6 +53,14 @@ public class SquadRunProviderService implements SquadRunProvider {
 		log.debug("Listing squad runs from Temporal");
 		return temporalClient.listWorkflowExecutions(SQUAD_EXECUTION_WORKFLOW_TYPE).stream()
 				.map(this::toSquadRunSummary).toList();
+	}
+
+	@Override
+	public List<String> getRunningSquadRunIds(String squadId) {
+		// The squad id lives in the memo, which Temporal visibility cannot query, so filter here.
+		return temporalClient.listRunningWorkflowExecutions(SQUAD_EXECUTION_WORKFLOW_TYPE).stream()
+				.filter(execution -> squadId.equals(execution.getMemo().get(SquadRunMemoKeys.SQUAD_ID)))
+				.map(WorkflowExecutionSummary::getWorkflowId).toList();
 	}
 
 	@Override
@@ -101,17 +110,41 @@ public class SquadRunProviderService implements SquadRunProvider {
 			return;
 		}
 
-		Optional<String> terminalStepId = findSelectedTerminalStepId(status);
+		List<String> terminalStepIds = squadProvider.getSquadById(status.getSquadId())
+				.map(SquadRunProviderService::findTerminalStepIds).orElseGet(List::of);
 
-		if (terminalStepId.isEmpty()) {
-			terminalStepId = squadProvider.getSquadById(status.getSquadId())
-					.flatMap(SquadRunProviderService::findTerminalStepId);
+		List<SquadStepStatus> completedTerminals = status.getSteps().stream()
+				.filter(step -> terminalStepIds.contains(step.getStepId()))
+				.filter(step -> step.getStatus() == SquadStepExecutionStatus.COMPLETED).toList();
+
+		if (completedTerminals.size() == 1) {
+			status.setFinalResult(completedTerminals.get(0).getOutput());
+			return;
 		}
 
-		terminalStepId
+		if (completedTerminals.size() > 1) {
+			status.setFinalResult(mergeTerminalOutputs(completedTerminals));
+			return;
+		}
+
+		findSelectedTerminalStepId(status)
 				.flatMap(stepId -> status.getSteps().stream().filter(step -> step.getStepId().equals(stepId))
 						.filter(step -> step.getStatus() == SquadStepExecutionStatus.COMPLETED).findFirst())
 				.ifPresent(terminalStep -> status.setFinalResult(terminalStep.getOutput()));
+	}
+
+	/** Several branches ended in parallel, so each terminal output is kept under its step name. */
+	static Map<String, Object> mergeTerminalOutputs(List<SquadStepStatus> completedTerminals) {
+		Map<String, Object> mergedResult = new LinkedHashMap<>();
+
+		for (SquadStepStatus terminalStep : completedTerminals) {
+			String key = terminalStep.getStepName() == null || terminalStep.getStepName().isBlank()
+					? terminalStep.getStepId()
+					: terminalStep.getStepName();
+			mergedResult.put(key, terminalStep.getOutput());
+		}
+
+		return mergedResult;
 	}
 
 	static Optional<String> findSelectedTerminalStepId(SquadExecutionStatus status) {
@@ -130,12 +163,12 @@ public class SquadRunProviderService implements SquadRunProvider {
 				.reduce((first, second) -> second).map(SquadStepStatus::getStepId);
 	}
 
-	static Optional<String> findTerminalStepId(Squad squad) {
+	static List<String> findTerminalStepIds(Squad squad) {
 		Set<String> sourceStepIds = squad.getEdges().stream().map(SquadEdge::getSourceStepId)
 				.collect(Collectors.toSet());
 
 		return squad.getSteps().stream().map(SquadStep::getId).filter(stepId -> !sourceStepIds.contains(stepId))
-				.findFirst();
+				.toList();
 	}
 
 	private void enrichWithStepExecutionData(String squadRunId, SquadExecutionStatus status) {

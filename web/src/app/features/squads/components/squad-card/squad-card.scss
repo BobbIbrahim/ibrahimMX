@@ -305,6 +305,10 @@
 }
 
 .open-squad-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
   min-height: 2.65rem;
   padding-inline: 1.15rem;
   border-radius: 0.75rem;
@@ -328,11 +332,14 @@
   outline-offset: 2px;
 }
 
-.open-squad-button mat-icon {
+.open-squad-button__label {
+  line-height: 1;
+}
+
+.open-squad-button__icon {
   width: 1rem;
   height: 1rem;
-  margin-left: 0.4rem;
-  margin-right: 0;
+  flex: 0 0 auto;
   font-size: 1rem;
 }
 

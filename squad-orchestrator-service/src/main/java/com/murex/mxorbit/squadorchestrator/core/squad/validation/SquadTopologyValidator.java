@@ -98,8 +98,14 @@ public class SquadTopologyValidator {
 			throw badRequest("The workflow must contain exactly one root step.");
 		}
 
-		if (terminals.size() != 1 || topology.parentsOf(terminals.get(0)).isEmpty()) {
-			throw badRequest("The workflow must contain exactly one terminal step.");
+		if (terminals.isEmpty()) {
+			throw badRequest("The workflow must contain at least one terminal step.");
+		}
+
+		for (String terminalStepId : terminals) {
+			if (topology.parentsOf(terminalStepId).isEmpty()) {
+				throw badRequest("The workflow must contain at least one terminal step.");
+			}
 		}
 	}
 

@@ -1,3 +1,4 @@
+import { SquadBuilderInputRefSourceType } from '../../../../core/models/squad-builder.model';
 import { SquadStepExecutionStatus } from '../../../../core/models/squad-run.model';
 
 export type SelectedStepDetails = {
@@ -11,8 +12,9 @@ export type SelectedStepDetails = {
   durationMs: number | null;
   configuredInputRefs: Array<{
     targetInput: string;
-    fromStepId: string;
-    key: string;
+    sourceType: SquadBuilderInputRefSourceType;
+    fromStepId: string | null;
+    key: string | null;
   }>;
   input?: Record<string, unknown> | null;
   output?: Record<string, unknown> | null;

@@ -13,7 +13,7 @@
           [class.status-badge--active]="autopilot().isActive"
           [class.status-badge--inactive]="!autopilot().isActive"
         >
-          {{ autopilot().isActive ? 'ACTIVE' : 'INACTIVE' }}
+          {{ autopilot().isActive ? 'ACTIVE' : 'PAUSED' }}
         </span>
       </div>
 
@@ -30,10 +30,6 @@
     <span>{{ autopilot().assigneeName }}</span>
   </div>
 
-  <p class="autopilot-card__runbook">
-    {{ autopilot().runbook }}
-  </p>
-
   <div class="autopilot-card__schedule">
     <div>
       <span class="schedule-label">Frequency</span>
@@ -41,29 +37,46 @@
     </div>
 
     <div>
-      <span class="schedule-label">Time</span>
-      <span class="schedule-value">{{ autopilot().time }}</span>
-    </div>
-
-    <div>
-      <span class="schedule-label">Timezone</span>
-      <span class="schedule-value">{{ autopilot().timezone }}</span>
+      <span class="schedule-label">{{ isInterval ? 'Interval' : 'Schedule (' + timeZoneLabel + ')' }}</span>
+      <span class="schedule-value">{{ intervalLabel }}</span>
     </div>
   </div>
 
+  @if (inputEntries.length > 0) {
+    <div class="autopilot-card__input">
+      <span class="autopilot-card__input-label">Starting input</span>
+
+      @for (inputEntry of inputEntries; track inputEntry.key) {
+        <div class="input-row">
+          <span class="input-row__key">{{ inputEntry.key }}</span>
+          <span class="input-row__value" [title]="inputEntry.value">{{ inputEntry.value }}</span>
+        </div>
+      }
+    </div>
+  }
+
   <div class="autopilot-card__footer">
-    <div class="autopilot-card__meta">
-      <span class="output-chip">{{ outputModeLabel }}</span>
-      <span>{{ autopilot().nextRunLabel }}</span>
+    <div class="next-run">
+      <mat-icon>schedule</mat-icon>
+
+      <div class="next-run__text">
+        <span class="next-run__label">Next run</span>
+        <span class="next-run__value">{{ nextRunLabel }}</span>
+      </div>
     </div>
 
     <div class="autopilot-card__actions">
-      <button type="button" mat-icon-button aria-label="Edit autopilot">
-        <mat-icon>edit</mat-icon>
-      </button>
-
-      <button type="button" mat-icon-button aria-label="Delete autopilot">
-        <mat-icon>delete</mat-icon>
+      <button
+        type="button"
+        class="autopilot-card__toggle"
+        [class.autopilot-card__toggle--resume]="!autopilot().isActive"
+        [attr.aria-label]="
+          (autopilot().isActive ? 'Pause ' : 'Resume ') + autopilot().name
+        "
+        (click)="onToggleActive()"
+      >
+        <mat-icon>{{ autopilot().isActive ? 'pause' : 'play_arrow' }}</mat-icon>
+        <span>{{ autopilot().isActive ? 'Pause' : 'Resume' }}</span>
       </button>
     </div>
   </div>

@@ -11,6 +11,7 @@ import {
   SimpleChanges,
   ViewChild,
   inject,
+  signal,
 } from '@angular/core';
 
 import { ClassicPreset, GetSchemes, NodeEditor } from 'rete';
@@ -19,7 +20,10 @@ import { ConnectionPlugin, Presets as ConnectionPresets } from 'rete-connection-
 import { getDOMSocketPosition } from 'rete-render-utils';
 import { AngularArea2D, AngularPlugin, Presets as AngularPresets } from 'rete-angular-plugin/21';
 
-import { SquadBuilderConditional } from '../../../../core/models/squad-builder.model';
+import {
+  SquadBuilderConditional,
+  SquadEdgeRoutingType,
+} from '../../../../core/models/squad-builder.model';
 import { SquadExecutionStatus } from '../../../../core/models/squad-run.model';
 
 type StepExecutionState = SquadExecutionStatus['steps'][number]['status'];
@@ -38,6 +42,27 @@ interface ReteFlowEdge {
   id: string;
   sourceStepId: string;
   targetStepId: string;
+  routingType?: SquadEdgeRoutingType;
+  condition?: string | null;
+  priority?: number;
+  isDefault?: boolean;
+}
+
+type RouteLabelOutcome = 'idle' | 'taken' | 'rejected';
+
+interface RouteLabel {
+  routingType: SquadEdgeRoutingType;
+  isDefault: boolean;
+  condition: string | null;
+  priority: number;
+  outcome: RouteLabelOutcome;
+  evaluatedValues: Array<{ key: string; value: string }>;
+}
+
+interface RouteLabelGroup {
+  x: number;
+  y: number;
+  labels: RouteLabel[];
 }
 
 interface ReteConnectionCreatedEvent {
@@ -87,6 +112,9 @@ interface AreaWithConnectionViews {
 const NODE_WIDTH = 210;
 const NODE_HEIGHT = 92;
 const CONDITION_NODE_SIZE = 150;
+const ROUTE_LABEL_GAP = 14;
+const ROUTE_LABEL_ALLOWANCE = 52;
+const CONDITION_OUTPUT_REFERENCE = /output\.([A-Za-z0-9_]+)/g;
 
 @Component({
   selector: 'app-rete-squad-flow-editor',
@@ -120,6 +148,18 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
   @ViewChild('reteContainer', { static: true })
   private readonly reteContainer!: ElementRef<HTMLElement>;
 
+  readonly routeLabelsVisible = signal(false);
+
+  /** The toggle is only meaningful on graphs that actually branch. */
+  get hasRouteLabels(): boolean {
+    return this.edges.some((edge) => edge.routingType === 'WHEN');
+  }
+
+  toggleRouteLabels(): void {
+    this.routeLabelsVisible.update((visible) => !visible);
+    this.applyRouteLabels();
+  }
+
   private readonly injector = inject(Injector);
 
   private editor: NodeEditor<ReteSchemes> | null = null;
@@ -149,6 +189,8 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
   private latestRunningStepId: string | null = null;
   private lastFollowedStepId: string | null = null;
   private followAnimationFrameId: number | null = null;
+  private hasFittedViewToGraph = false;
+  private routeLabelLayer: HTMLElement | null = null;
   private readonly handleContainerPointerDown = (event: PointerEvent): void => {
     if (!this.interactionLocked) {
       return;
@@ -191,6 +233,7 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
   async ngOnChanges(changes: SimpleChanges): Promise<void> {
     if (changes['executionStatus']) {
       this.handleExecutionStatusChange();
+      this.applyRouteLabels();
     }
 
     if (changes['followModeEnabled']) {
@@ -251,6 +294,7 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
 
     this.editor = null;
     this.area = null;
+    this.routeLabelLayer = null;
 
     this.nodeByStepId.clear();
     this.stepIdByNodeId.clear();
@@ -650,14 +694,53 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
       await this.addOrUpdateConditionals();
       await this.addMissingConnections();
       this.updateEdgeAnimationStates();
+      this.applyNodeClasses();
       this.applyNodeStatuses();
       this.applyConnectionAnimationStates();
+      this.applyRouteLabels();
 
       requestAnimationFrame(() => {
         this.applyNodeClasses();
       });
+
+      await this.fitViewToGraphOnce();
     } finally {
       this.isSyncingFromAngularState = false;
+    }
+  }
+
+  /** Frames the whole graph the first time nodes appear so backend flows are never off-screen. */
+  private async fitViewToGraphOnce(): Promise<void> {
+    if (this.hasFittedViewToGraph || !this.editor || !this.area) {
+      return;
+    }
+
+    const nodes = this.editor.getNodes();
+
+    if (nodes.length === 0) {
+      return;
+    }
+
+    this.hasFittedViewToGraph = true;
+
+    await AreaExtensions.zoomAt(this.area, nodes, { scale: 0.85 });
+
+    // Route labels sit above their step, so room is reserved for them even while they are hidden.
+    if (this.hasRouteLabels) {
+      const areaTransform = (
+        this.area as unknown as {
+          area?: {
+            transform: { x: number; y: number; k: number };
+            translate(x: number, y: number): Promise<unknown> | unknown;
+          };
+        }
+      ).area;
+
+      if (areaTransform) {
+        const { x, y, k } = areaTransform.transform;
+
+        await areaTransform.translate(x, y + ROUTE_LABEL_ALLOWANCE * k);
+      }
     }
   }
 
@@ -770,7 +853,7 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
       const existingNode = this.nodeByConditionalId.get(conditional.id);
 
       if (existingNode) {
-        existingNode.label = conditional.name || 'Conditional';
+        existingNode.label = conditional.name || 'Decision';
         this.applyConditionalLayout(existingNode);
 
         await this.area.update('node', existingNode.id);
@@ -778,7 +861,7 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
         continue;
       }
 
-      const node = new ClassicPreset.Node(conditional.name || 'Conditional');
+      const node = new ClassicPreset.Node(conditional.name || 'Decision');
 
       this.applyConditionalLayout(node);
 
@@ -1304,6 +1387,233 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
     return null;
   }
 
+  /**
+   * Branch rules live on the edges, so every route leaving a decision gets a badge
+   * pinned above its target step showing the rule, and — once a run exists — whether
+   * it matched and against which value.
+   */
+  private applyRouteLabels(): void {
+    const layer = this.ensureRouteLabelLayer();
+
+    if (!layer) {
+      return;
+    }
+
+    layer.replaceChildren();
+
+    if (!this.routeLabelsVisible()) {
+      return;
+    }
+
+    for (const group of this.buildRouteLabelGroups()) {
+      const groupElement = document.createElement('div');
+
+      groupElement.className = 'rete-route-label-group';
+      groupElement.style.left = `${group.x}px`;
+      groupElement.style.top = `${group.y}px`;
+
+      for (const label of group.labels) {
+        groupElement.appendChild(this.buildRouteLabelElement(label));
+      }
+
+      layer.appendChild(groupElement);
+    }
+  }
+
+  private ensureRouteLabelLayer(): HTMLElement | null {
+    if (this.routeLabelLayer?.isConnected) {
+      return this.routeLabelLayer;
+    }
+
+    const holder = this.resolveAreaContentHolder();
+
+    if (!holder) {
+      return null;
+    }
+
+    const layer = document.createElement('div');
+
+    layer.className = 'rete-route-label-layer';
+    holder.appendChild(layer);
+
+    this.routeLabelLayer = layer;
+
+    return layer;
+  }
+
+  /** The area content holder carries the pan/zoom transform, so labels placed in it stay pinned. */
+  private resolveAreaContentHolder(): HTMLElement | null {
+    const areaWithContent = this.area as unknown as {
+      content?: { holder?: HTMLElement };
+    } | null;
+
+    if (areaWithContent?.content?.holder) {
+      return areaWithContent.content.holder;
+    }
+
+    const anyNodeId = [...this.nodeByStepId.values()][0]?.id;
+    const nodeViews = (this.area as unknown as { nodeViews?: Map<string, { element: HTMLElement }> })
+      ?.nodeViews;
+
+    return anyNodeId ? (nodeViews?.get(anyNodeId)?.element.parentElement ?? null) : null;
+  }
+
+  private buildRouteLabelGroups(): RouteLabelGroup[] {
+    const decisionSourceStepIds = new Set(
+      this.edges.filter((edge) => edge.routingType === 'WHEN').map((edge) => edge.sourceStepId),
+    );
+
+    if (decisionSourceStepIds.size === 0) {
+      return [];
+    }
+
+    const stepById = new Map(this.steps.map((step) => [step.id, step]));
+    const labelsByTargetStepId = new Map<string, RouteLabel[]>();
+
+    for (const edge of this.edges) {
+      if (!decisionSourceStepIds.has(edge.sourceStepId) || !stepById.has(edge.targetStepId)) {
+        continue;
+      }
+
+      const labels = labelsByTargetStepId.get(edge.targetStepId) ?? [];
+
+      labels.push(this.buildRouteLabel(edge));
+      labelsByTargetStepId.set(edge.targetStepId, labels);
+    }
+
+    return [...labelsByTargetStepId.entries()].map(([targetStepId, labels]) => {
+      const target = stepById.get(targetStepId)!;
+
+      return {
+        x: target.position.x + NODE_WIDTH / 2,
+        y: target.position.y - ROUTE_LABEL_GAP,
+        labels: labels.sort((left, right) => left.priority - right.priority),
+      };
+    });
+  }
+
+  private buildRouteLabel(edge: ReteFlowEdge): RouteLabel {
+    const decision =
+      this.executionStatus?.routingDecisions?.find(
+        (candidate) => candidate.sourceStepId === edge.sourceStepId,
+      ) ?? null;
+    const checkedEdge =
+      decision?.checkedEdges.find((candidate) => candidate.targetStepId === edge.targetStepId) ??
+      null;
+    const condition = edge.condition ?? checkedEdge?.condition ?? null;
+
+    let outcome: RouteLabelOutcome = 'idle';
+
+    if (decision) {
+      outcome = decision.selectedTargetStepId === edge.targetStepId ? 'taken' : 'rejected';
+    }
+
+    return {
+      routingType: edge.routingType ?? (checkedEdge?.routingType === 'WHEN' ? 'WHEN' : 'ALWAYS'),
+      isDefault: edge.isDefault ?? Boolean(checkedEdge?.isDefault),
+      condition,
+      priority: edge.priority ?? checkedEdge?.priority ?? 0,
+      outcome,
+      evaluatedValues: this.resolveConditionValues(condition, edge.sourceStepId),
+    };
+  }
+
+  private buildRouteLabelElement(label: RouteLabel): HTMLElement {
+    const element = document.createElement('div');
+
+    element.className = `rete-route-label rete-route-label--${label.outcome}`;
+
+    const head = document.createElement('span');
+
+    head.className = 'rete-route-label__head';
+
+    const type = document.createElement('span');
+
+    type.className = 'rete-route-label__type';
+    type.textContent =
+      label.routingType === 'WHEN' ? 'IF' : label.isDefault ? 'OTHERWISE' : 'ALWAYS';
+    head.appendChild(type);
+
+    if (label.outcome !== 'idle') {
+      const state = document.createElement('span');
+
+      state.className = 'rete-route-label__state';
+      state.textContent = label.outcome === 'taken' ? '✓ taken' : '✕ skipped';
+      head.appendChild(state);
+    }
+
+    element.appendChild(head);
+
+    if (label.condition) {
+      const condition = document.createElement('span');
+
+      condition.className = 'rete-route-label__condition';
+      condition.textContent = this.humanizeCondition(label.condition);
+      element.appendChild(condition);
+    }
+
+    for (const evaluatedValue of label.evaluatedValues) {
+      const evaluated = document.createElement('span');
+
+      evaluated.className = 'rete-route-label__evaluated';
+
+      const key = document.createElement('span');
+
+      key.className = 'rete-route-label__evaluated-key';
+      key.textContent = `${evaluatedValue.key} was`;
+
+      const value = document.createElement('span');
+
+      value.className = 'rete-route-label__evaluated-value';
+      value.textContent = evaluatedValue.value;
+
+      evaluated.append(key, value);
+      element.appendChild(evaluated);
+    }
+
+    return element;
+  }
+
+  /** Turns the engine syntax (`output.changeType equals "BUG_FIX"`) into something readable at a glance. */
+  private humanizeCondition(condition: string): string {
+    return condition
+      .replace(/\boutput\./g, '')
+      .replace(/\s+greaterThanOrEquals\s+/g, ' ≥ ')
+      .replace(/\s+lessThanOrEquals\s+/g, ' ≤ ')
+      .replace(/\s+greaterThan\s+/g, ' > ')
+      .replace(/\s+lessThan\s+/g, ' < ')
+      .replace(/\s+notEquals\s+/g, ' ≠ ')
+      .replace(/\s+equals\s+/g, ' = ')
+      .trim();
+  }
+
+  private resolveConditionValues(
+    condition: string | null,
+    sourceStepId: string,
+  ): Array<{ key: string; value: string }> {
+    const sourceOutput = this.executionStatus?.steps.find(
+      (step) => step.stepId === sourceStepId,
+    )?.output;
+
+    if (!condition || !sourceOutput) {
+      return [];
+    }
+
+    const referencedKeys = new Set(
+      [...condition.matchAll(CONDITION_OUTPUT_REFERENCE)].map((match) => match[1]),
+    );
+
+    return [...referencedKeys]
+      .filter((key) => sourceOutput[key] !== undefined)
+      .map((key) => ({
+        key,
+        value:
+          typeof sourceOutput[key] === 'string'
+            ? (sourceOutput[key] as string)
+            : JSON.stringify(sourceOutput[key]),
+      }));
+  }
+
   private buildNodeLabel(step: ReteFlowStep): string {
     const stepName = step.name.trim() || 'Untitled Step';
 
@@ -1445,6 +1755,8 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
         'node-completed',
         'node-failed',
         'node-cancelled',
+        'node-skipped',
+        'node-idle',
         'node-selected-runtime',
         'node-selected-conditional',
       );
@@ -1478,6 +1790,15 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
 
       if (status === 'CANCELLED') {
         nodeElement.classList.add('node-cancelled');
+      }
+
+      if (status === 'SKIPPED') {
+        nodeElement.classList.add('node-skipped');
+      }
+
+      // Once a run exists, steps that never started recede so the live path stands out.
+      if (this.executionStatus && (!status || status === 'PENDING')) {
+        nodeElement.classList.add('node-idle');
       }
 
       if (stepId === this.selectedStepId) {

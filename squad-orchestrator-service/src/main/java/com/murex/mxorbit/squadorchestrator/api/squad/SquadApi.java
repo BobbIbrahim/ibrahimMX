@@ -14,6 +14,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -59,6 +60,14 @@ public interface SquadApi {
 			@ApiResponse(responseCode = "500", description = "Internal error")})
 	ResponseEntity<SquadApiResponse> updateSquad(@PathVariable String squadId,
 			@RequestBody @Valid CreateSquadApiRequest request);
+
+	@DeleteMapping("/{squadId}")
+	@Operation(summary = "Delete a squad")
+	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Squad deleted"),
+			@ApiResponse(responseCode = "404", description = "Squad not found"),
+			@ApiResponse(responseCode = "409", description = "Squad has runs in progress"),
+			@ApiResponse(responseCode = "500", description = "Internal error")})
+	ResponseEntity<Void> deleteSquad(@PathVariable String squadId);
 
 	@PostMapping("/{squadId}/runs")
 	@Operation(summary = "Start a squad execution")

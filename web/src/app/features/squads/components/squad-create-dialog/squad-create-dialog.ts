@@ -7,6 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 
 import { SquadBuilderType } from '../../../../core/models/squad-builder.model';
+import { DEFAULT_SQUAD_TYPE, SQUAD_TYPES } from '../../../../core/models/squad-type';
 
 export type SquadCreateDialogData = Record<string, never>;
 
@@ -35,25 +36,10 @@ export class SquadCreateDialog {
 
   readonly data = inject<SquadCreateDialogData>(MAT_DIALOG_DATA);
 
-  readonly squadTypes: Array<{
-    value: SquadBuilderType;
-    title: string;
-    description: string;
-  }> = [
-    {
-      value: 'hardcoded-flow',
-      title: 'Hardcoded Flow',
-      description: 'Build a fixed step-by-step workflow with explicit nodes and connections.',
-    },
-    {
-      value: 'prompt-squad',
-      title: 'Prompt Squad',
-      description: 'Define a flexible prompt-driven squad that can reason about the task.',
-    },
-  ];
+  readonly squadTypes = SQUAD_TYPES;
 
   readonly form = this.formBuilder.group({
-    type: ['hardcoded-flow' as SquadBuilderType, [Validators.required]],
+    type: [DEFAULT_SQUAD_TYPE as SquadBuilderType, [Validators.required]],
     name: ['', [Validators.required, Validators.minLength(3)]],
     description: ['', [Validators.required, Validators.minLength(10)]],
   });
