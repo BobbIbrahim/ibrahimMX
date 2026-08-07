@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, ViewEncapsulation, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -62,6 +62,7 @@ type WeekdayOption = {
   ],
   templateUrl: './autopilot-create-dialog.html',
   styleUrl: './autopilot-create-dialog.scss',
+  encapsulation: ViewEncapsulation.None,
 })
 export class AutopilotCreateDialog {
   private readonly formBuilder = inject(NonNullableFormBuilder);
@@ -140,19 +141,19 @@ export class AutopilotCreateDialog {
   get assignees(): Array<{ id: string; name: string; hint: string; icon: string }> {
     return this.assigneeType() === 'agent'
       ? this.agentService
-          .agents()
-          .map((agent) => ({
-            id: agent.agentKey,
-            name: agent.name,
-            hint: agent.role,
-            icon: 'smart_toy',
-          }))
+        .agents()
+        .map((agent) => ({
+          id: agent.agentKey,
+          name: agent.name,
+          hint: agent.role,
+          icon: 'smart_toy',
+        }))
       : this.squads().map((squad) => ({
-          id: squad.id,
-          name: squad.name,
-          hint: squad.description,
-          icon: 'groups',
-        }));
+        id: squad.id,
+        name: squad.name,
+        hint: squad.description,
+        icon: 'groups',
+      }));
   }
 
   get selectedAssigneeName(): string {
@@ -219,12 +220,27 @@ export class AutopilotCreateDialog {
       runTimeControl.clearValidators();
       weeklyDayControl.clearValidators();
       everyValueControl.setValidators([Validators.required, Validators.min(1)]);
+
+      runTimeControl.setValue('');
+      weeklyDayControl.setValue(1);
     } else {
       runTimeControl.setValidators([Validators.required]);
-      weeklyDayControl.setValidators(
-        frequency === 'weekly' ? [Validators.required, Validators.min(1), Validators.max(7)] : [],
-      );
       everyValueControl.clearValidators();
+
+      if (!runTimeControl.value) {
+        runTimeControl.setValue('09:00');
+      }
+
+      if (frequency === 'weekly') {
+        weeklyDayControl.setValidators([
+          Validators.required,
+          Validators.min(1),
+          Validators.max(7),
+        ]);
+      } else {
+        weeklyDayControl.clearValidators();
+        weeklyDayControl.setValue(1);
+      }
     }
 
     runTimeControl.updateValueAndValidity();

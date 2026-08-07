@@ -537,18 +537,6 @@
                         <strong>{{ route.priority }}</strong>
                       </div>
 
-                      @if (!route.isDefault && selectedConditionalRoutes().some((r) => r.isDefault)) {
-                        <div class="route-replace-default">
-                          <button
-                            type="button"
-                            mat-stroked-button
-                            (click)="replaceDefaultRoute(route.id)"
-                          >
-                            Replace as Default
-                          </button>
-                        </div>
-                      }
-
                       @if (deleteRouteConfirmId() === route.id) {
                         <div class="route-delete-confirm">
                           <p>Are you sure you want to delete this route?</p>

@@ -2035,14 +2035,6 @@
   }
 }
 
-.route-replace-default {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
-}
-
 .route-delete-confirm {
   display: grid;
   gap: 0.75rem;

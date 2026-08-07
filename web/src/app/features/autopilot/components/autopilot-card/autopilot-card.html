@@ -68,6 +68,16 @@
     <div class="autopilot-card__actions">
       <button
         type="button"
+        class="autopilot-card__delete"
+        [attr.aria-label]="'Delete ' + autopilot().name"
+        (click)="onDeleteRequested()"
+      >
+        <mat-icon>delete_outline</mat-icon>
+        <span>Delete</span>
+      </button>
+
+      <button
+        type="button"
         class="autopilot-card__toggle"
         [class.autopilot-card__toggle--resume]="!autopilot().isActive"
         [attr.aria-label]="

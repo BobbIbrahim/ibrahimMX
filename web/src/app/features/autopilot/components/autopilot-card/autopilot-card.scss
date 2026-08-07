@@ -268,7 +268,48 @@
 
 .autopilot-card__actions {
   display: flex;
-  justify-content: flex-end;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.autopilot-card__delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--color-danger) 35%, var(--color-border));
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--color-danger) 8%, transparent);
+  color: var(--color-danger);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.autopilot-card__delete:hover {
+  background: color-mix(in srgb, var(--color-danger) 16%, transparent);
+}
+
+.autopilot-card__delete:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-danger) 28%, transparent);
+  outline-offset: 2px;
+}
+
+.autopilot-card__delete mat-icon {
+  width: 1rem;
+  height: 1rem;
+  font-size: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .autopilot-card__delete {
+    transition: none;
+  }
 }
 
 .autopilot-card__toggle {

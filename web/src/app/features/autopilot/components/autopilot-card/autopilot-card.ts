@@ -18,6 +18,7 @@ export class AutopilotCard {
   readonly autopilot = input.required<Autopilot>();
   readonly pauseRequested = output<string>();
   readonly resumeRequested = output<string>();
+  readonly deleteAutopilot = output<string>();
 
   readonly timeZoneLabel = localTimeZoneLabel();
 
@@ -92,5 +93,9 @@ export class AutopilotCard {
     }
 
     this.resumeRequested.emit(autopilot.id);
+  }
+
+  onDeleteRequested(): void {
+    this.deleteAutopilot.emit(this.autopilot().id);
   }
 }

@@ -1,28 +1,69 @@
-import { Injectable, signal } from '@angular/core';
-import { Observable, of, throwError } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject, signal } from '@angular/core';
+import { Observable, map, tap } from 'rxjs';
 
-import { Autopilot } from '../models/autopilot.model';
+import { Autopilot, toLocalScheduleTime, toUtcScheduleTime } from '../models/autopilot.model';
+
+type AutopilotApiAssigneeType = 'SQUAD' | 'AGENT';
+
+type AutopilotApiStatus = 'ACTIVE' | 'PAUSED';
+
+type AutopilotApiFrequency = 'INTERVAL' | 'DAILY' | 'WEEKDAYS' | 'WEEKLY';
+
+const API_TO_FRONTEND_FREQUENCY: Record<AutopilotApiFrequency, Autopilot['frequency']> = {
+  INTERVAL: 'interval',
+  DAILY: 'daily',
+  WEEKDAYS: 'weekdays',
+  WEEKLY: 'weekly',
+};
+
+const FRONTEND_TO_API_FREQUENCY: Record<Autopilot['frequency'], AutopilotApiFrequency> = {
+  interval: 'INTERVAL',
+  daily: 'DAILY',
+  weekdays: 'WEEKDAYS',
+  weekly: 'WEEKLY',
+};
+
+interface AutopilotApiResponse {
+  id: string;
+  name: string;
+  assigneeType: AutopilotApiAssigneeType;
+  assigneeId: string;
+  temporalScheduleId?: string;
+  frequency: AutopilotApiFrequency;
+  runTime?: string;
+  weeklyDay?: number;
+  everyMinutes?: number;
+  input: Record<string, string>;
+  createdAt?: string;
+  updatedAt?: string;
+  assigneeName: string;
+  status: AutopilotApiStatus;
+  nextRunAt?: string;
+  lastRunId?: string;
+}
+
+interface AutopilotApiCreateRequest {
+  name: string;
+  assigneeType: 'SQUAD';
+  assigneeId: string;
+  frequency: AutopilotApiFrequency;
+  runTime?: string;
+  weeklyDay?: number;
+  everyMinutes?: number;
+  input: Record<string, string>;
+  startPaused: boolean;
+}
 
 @Injectable({
   providedIn: 'root',
 })
 export class AutopilotService {
-  private readonly autopilotsSignal = signal<Autopilot[]>([
-    {
-      id: 'autopilot-002',
-      name: 'Incident Summary Sweep',
-      assigneeType: 'squad',
-      assigneeId: 'squad-002',
-      assigneeName: 'Incident Triage Squad',
-      projectId: 'project-002',
-      triggerType: 'schedule',
-      frequency: 'interval',
-      everyMinutes: 240,
-      input: { change: 'Open operational incidents' },
-      subscribers: ['ops-team'],
-      isActive: true,
-    },
-  ]);
+  private readonly http = inject(HttpClient);
+
+  private readonly baseUrl = 'http://localhost:8080';
+
+  private readonly autopilotsSignal = signal<Autopilot[]>([]);
 
   readonly autopilots = this.autopilotsSignal.asReadonly();
 
@@ -30,39 +71,107 @@ export class AutopilotService {
     return this.autopilots;
   }
 
-  addAutopilot(autopilot: Omit<Autopilot, 'id' | 'triggerType' | 'subscribers'>): void {
-    this.autopilotsSignal.update((autopilots) => [
-      ...autopilots,
-      {
-        ...autopilot,
-        id: `autopilot-${crypto.randomUUID()}`,
-        triggerType: 'schedule',
-        subscribers: [],
-      },
-    ]);
+  loadAutopilotsFromApi(): Observable<Autopilot[]> {
+    return this.http.get<AutopilotApiResponse[]>(`${this.baseUrl}/automations`).pipe(
+      map((apiAutopilots) => apiAutopilots.map((apiAutopilot) => this.mapApiResponseToAutopilot(apiAutopilot))),
+      tap((autopilots) => {
+        this.autopilotsSignal.set(autopilots);
+      }),
+    );
+  }
+
+  addAutopilot(autopilot: Omit<Autopilot, 'id' | 'triggerType' | 'subscribers'>): Observable<Autopilot> {
+    const isInterval = autopilot.frequency === 'interval';
+    const utcScheduleTime = isInterval
+      ? { runTime: undefined, weeklyDay: undefined }
+      : toUtcScheduleTime({ runTime: autopilot.runTime, weeklyDay: autopilot.weeklyDay });
+
+    const request: AutopilotApiCreateRequest = {
+      name: autopilot.name,
+      assigneeType: 'SQUAD',
+      assigneeId: autopilot.assigneeId,
+      frequency: FRONTEND_TO_API_FREQUENCY[autopilot.frequency],
+      runTime: utcScheduleTime.runTime,
+      weeklyDay: utcScheduleTime.weeklyDay,
+      everyMinutes: autopilot.everyMinutes,
+      input: autopilot.input,
+      startPaused: !autopilot.isActive,
+    };
+
+    return this.http.post<AutopilotApiResponse>(`${this.baseUrl}/automations`, request).pipe(
+      map((response) => this.mapApiResponseToAutopilot(response)),
+      tap((createdAutopilot) => {
+        this.upsertAutopilot(createdAutopilot);
+      }),
+    );
   }
 
   pauseAutopilot(autopilotId: string): Observable<Autopilot> {
-    return this.setActiveState(autopilotId, false);
+    return this.http.post<AutopilotApiResponse>(`${this.baseUrl}/automations/${autopilotId}/pause`, {}).pipe(
+      map((response) => this.mapApiResponseToAutopilot(response)),
+      tap((updatedAutopilot) => {
+        this.upsertAutopilot(updatedAutopilot);
+      }),
+    );
   }
 
   resumeAutopilot(autopilotId: string): Observable<Autopilot> {
-    return this.setActiveState(autopilotId, true);
+    return this.http.post<AutopilotApiResponse>(`${this.baseUrl}/automations/${autopilotId}/resume`, {}).pipe(
+      map((response) => this.mapApiResponseToAutopilot(response)),
+      tap((updatedAutopilot) => {
+        this.upsertAutopilot(updatedAutopilot);
+      }),
+    );
   }
 
-  private setActiveState(autopilotId: string, isActive: boolean): Observable<Autopilot> {
-    const autopilot = this.autopilotsSignal().find((item) => item.id === autopilotId);
-
-    if (!autopilot) {
-      return throwError(() => new Error(`Autopilot '${autopilotId}' was not found.`));
-    }
-
-    const updatedAutopilot = { ...autopilot, isActive };
-
-    this.autopilotsSignal.update((autopilots) =>
-      autopilots.map((item) => (item.id === autopilotId ? updatedAutopilot : item)),
+  deleteAutopilot(autopilotId: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/automations/${autopilotId}`).pipe(
+      tap(() => {
+        this.removeAutopilot(autopilotId);
+      }),
     );
+  }
 
-    return of(updatedAutopilot);
+  private removeAutopilot(autopilotId: string): void {
+    this.autopilotsSignal.update((autopilots) =>
+      autopilots.filter((autopilot) => autopilot.id !== autopilotId),
+    );
+  }
+
+  private upsertAutopilot(autopilot: Autopilot): void {
+    this.autopilotsSignal.update((autopilots) => {
+      const exists = autopilots.some((existingAutopilot) => existingAutopilot.id === autopilot.id);
+
+      if (!exists) {
+        return [...autopilots, autopilot];
+      }
+
+      return autopilots.map((existingAutopilot) =>
+        existingAutopilot.id === autopilot.id ? autopilot : existingAutopilot,
+      );
+    });
+  }
+
+  private mapApiResponseToAutopilot(response: AutopilotApiResponse): Autopilot {
+    const isInterval = response.frequency === 'INTERVAL';
+    const localScheduleTime = isInterval
+      ? { runTime: undefined, weeklyDay: undefined }
+      : toLocalScheduleTime({ runTime: response.runTime, weeklyDay: response.weeklyDay });
+
+    return {
+      id: response.id,
+      name: response.name,
+      assigneeType: response.assigneeType.toLowerCase() as Autopilot['assigneeType'],
+      assigneeId: response.assigneeId,
+      assigneeName: response.assigneeName,
+      triggerType: 'schedule',
+      frequency: API_TO_FRONTEND_FREQUENCY[response.frequency],
+      runTime: localScheduleTime.runTime,
+      weeklyDay: localScheduleTime.weeklyDay,
+      everyMinutes: response.everyMinutes,
+      input: response.input,
+      subscribers: [],
+      isActive: response.status === 'ACTIVE',
+    };
   }
 }

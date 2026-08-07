@@ -992,62 +992,6 @@ export class SquadBuilderStateService {
     return removed;
   }
 
-  replaceConditionalDefaultRoute(edgeId: string): SquadBuilderEdge | null {
-    let updatedEdge: SquadBuilderEdge | null = null;
-
-    this.draftSignal.update((draft) => {
-      if (!draft) {
-        return draft;
-      }
-
-      // Find the edge to update
-      const edge = draft.edges.find((e) => e.id === edgeId);
-      if (!edge) {
-        return draft;
-      }
-
-      // Check that source step owns a conditional
-      const sourceConditional = draft.conditionals.find(
-        (conditional) => conditional.sourceStepId === edge.sourceStepId,
-      );
-      if (!sourceConditional) {
-        return draft;
-      }
-
-      // Clear isDefault on the current default under the same source
-      const edgesWithDefaultCleared = draft.edges.map((e) =>
-        e.sourceStepId === edge.sourceStepId && e.isDefault
-          ? {
-              ...e,
-              isDefault: false,
-            }
-          : e,
-      );
-
-      // Convert the requested edge to default
-      const nextEdge: SquadBuilderEdge = {
-        id: edge.id,
-        sourceStepId: edge.sourceStepId,
-        targetStepId: edge.targetStepId,
-        routingType: 'ALWAYS',
-        condition: null,
-        priority: 100,
-        isDefault: true,
-      };
-
-      updatedEdge = nextEdge;
-
-      const nextDraft: SquadBuilderDraft = {
-        ...draft,
-        edges: edgesWithDefaultCleared.map((e) => (e.id === edgeId ? nextEdge : e)),
-      };
-
-      return this.normalizeDraftInputRefs(nextDraft);
-    });
-
-    return updatedEdge;
-  }
-
   buildSavePayload(): SquadSavePayload | null {
     const draft = this.draft();
 

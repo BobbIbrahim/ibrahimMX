@@ -6,7 +6,13 @@
       <p>Pick what should run and how often it should run.</p>
     </div>
 
-    <button type="button" mat-icon-button aria-label="Close dialog" (click)="cancel()">
+    <button
+      type="button"
+      mat-icon-button
+      class="autopilot-dialog__close"
+      aria-label="Close dialog"
+      (click)="cancel()"
+    >
       <mat-icon>close</mat-icon>
     </button>
   </header>
@@ -142,7 +148,9 @@
 
       @if (frequency() === 'interval') {
         <div class="field-group">
-          <label class="field-label" for="autopilot-every-value">Every <span>*</span></label>
+          <label class="field-label" for="autopilot-every-value">
+            Every <span>*</span>
+          </label>
 
           <div class="interval-row">
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
@@ -181,25 +189,64 @@
               </label>
 
               <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                <mat-select id="autopilot-weekday" formControlName="weeklyDay">
+                <mat-select
+                  id="autopilot-weekday"
+                  formControlName="weeklyDay"
+                  panelClass="autopilot-weekday-panel"
+                  disableOptionCentering
+                >
                   @for (weekday of weekdays; track weekday.value) {
-                    <mat-option [value]="weekday.value">{{ weekday.label }}</mat-option>
+                    <mat-option [value]="weekday.value">
+                      {{ weekday.label }}
+                    </mat-option>
                   }
                 </mat-select>
+
+                @if (
+                  form.controls.weeklyDay.invalid &&
+                  form.controls.weeklyDay.touched
+                  ) {
+                  <mat-error>Choose a weekday</mat-error>
+                }
               </mat-form-field>
             </div>
           }
 
           <div class="field-group">
-            <label class="field-label" for="autopilot-time">Time <span>*</span></label>
+            <label class="field-label" for="autopilot-time">
+              Time <span>*</span>
+            </label>
 
-            <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <input id="autopilot-time" matInput type="time" formControlName="runTime" />
-            </mat-form-field>
+            <div
+              class="native-time-field"
+              [class.native-time-field--invalid]="
+                form.controls.runTime.invalid &&
+                form.controls.runTime.touched
+              "
+            >
+              <input
+                id="autopilot-time"
+                class="native-time-field__input"
+                type="time"
+                step="60"
+                formControlName="runTime"
+                aria-describedby="autopilot-time-hint"
+                required
+              />
+            </div>
+
+            @if (
+              form.controls.runTime.hasError('required') &&
+              form.controls.runTime.touched
+              ) {
+              <span class="field-error" role="alert">Choose a time</span>
+            }
           </div>
         </div>
 
-        <p class="input-hint">Calendar schedules run at this time in your time zone ({{ timeZoneLabel }}).</p>
+        <p id="autopilot-time-hint" class="input-hint">
+          Calendar schedules run at this time in your time zone ({{ timeZoneLabel }}).
+        </p>
       }
     </div>
 
@@ -225,9 +272,22 @@
     </button>
 
     <footer class="autopilot-dialog__actions">
-      <button type="button" mat-stroked-button (click)="cancel()">Cancel</button>
+      <button
+        type="button"
+        mat-stroked-button
+        class="autopilot-dialog__cancel"
+        (click)="cancel()"
+      >
+        Cancel
+      </button>
 
-      <button type="submit" mat-flat-button class="autopilot-dialog__submit">Create</button>
+      <button
+        type="submit"
+        mat-flat-button
+        class="autopilot-dialog__submit"
+      >
+        Create
+      </button>
     </footer>
   </form>
 </section>

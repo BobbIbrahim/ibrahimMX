@@ -805,13 +805,6 @@ export class SquadBuilderPage implements OnInit {
     this.deleteRouteConfirmId.set(null);
   }
 
-  replaceDefaultRoute(edgeId: string): void {
-    const updatedEdge = this.squadBuilderState.replaceConditionalDefaultRoute(edgeId);
-    if (updatedEdge) {
-      // Route successfully replaced as default
-    }
-  }
-
   deleteConditional(): void {
     this.deleteConditionalConfirmVisible.set(true);
   }

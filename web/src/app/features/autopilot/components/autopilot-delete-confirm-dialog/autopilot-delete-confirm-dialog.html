@@ -1,0 +1,43 @@
+<section
+  class="delete-dialog"
+  role="alertdialog"
+  aria-labelledby="autopilot-delete-dialog-title"
+  aria-describedby="autopilot-delete-dialog-description"
+>
+  <header class="delete-dialog__header">
+    <div class="delete-dialog__icon" aria-hidden="true">
+      <mat-icon>delete_outline</mat-icon>
+    </div>
+
+    <div class="delete-dialog__content">
+      <h2 id="autopilot-delete-dialog-title">Delete autopilot?</h2>
+
+      <p id="autopilot-delete-dialog-description">
+        <strong>{{ data.autopilotName }}</strong>
+        and its future scheduled runs will be deleted. Existing completed squad runs will remain
+        available.
+      </p>
+    </div>
+  </header>
+
+  <footer class="delete-dialog__actions">
+    <button
+      type="button"
+      mat-stroked-button
+      class="delete-dialog__cancel"
+      (click)="cancel()"
+    >
+      Cancel
+    </button>
+
+    <button
+      type="button"
+      mat-flat-button
+      class="delete-dialog__confirm"
+      (click)="confirmDelete()"
+    >
+      <mat-icon>delete</mat-icon>
+      Delete
+    </button>
+  </footer>
+</section>

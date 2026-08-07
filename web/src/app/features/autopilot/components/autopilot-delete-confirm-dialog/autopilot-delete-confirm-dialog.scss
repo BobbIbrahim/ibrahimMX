@@ -1,0 +1,121 @@
+:host {
+  display: block;
+}
+
+.delete-dialog {
+  width: min(30rem, 92vw);
+  box-sizing: border-box;
+  padding: 1.4rem;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+}
+
+.delete-dialog__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.delete-dialog__icon {
+  display: grid;
+  place-items: center;
+  width: 2.8rem;
+  height: 2.8rem;
+  flex: 0 0 2.8rem;
+  border-radius: 0.9rem;
+  background: color-mix(
+    in srgb,
+    var(--color-danger) 12%,
+    var(--color-surface)
+  );
+  color: var(--color-danger);
+}
+
+.delete-dialog__icon mat-icon {
+  width: 1.35rem;
+  height: 1.35rem;
+  font-size: 1.35rem;
+}
+
+.delete-dialog__content {
+  min-width: 0;
+  flex: 1;
+}
+
+.delete-dialog__content h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 1.35rem;
+  font-weight: 850;
+  letter-spacing: -0.03em;
+}
+
+.delete-dialog__content p {
+  margin: 0.6rem 0 0;
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+}
+
+.delete-dialog__content strong {
+  color: var(--color-text-primary);
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.delete-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  margin-top: 1.5rem;
+}
+
+.delete-dialog__cancel {
+  color: var(--color-text-primary);
+  border-color: var(--color-border);
+  font-weight: 750;
+}
+
+.delete-dialog__confirm {
+  background: var(--color-danger) !important;
+  color: white !important;
+  font-weight: 800;
+}
+
+.delete-dialog__confirm mat-icon {
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.4rem;
+  font-size: 1rem;
+}
+
+.delete-dialog__confirm:hover {
+  background: color-mix(
+    in srgb,
+    var(--color-danger) 88%,
+    black
+  ) !important;
+}
+
+.delete-dialog__confirm:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-danger) 28%, transparent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+  .delete-dialog {
+    padding: 1.2rem;
+  }
+
+  .delete-dialog__header {
+    gap: 0.8rem;
+  }
+
+  .delete-dialog__actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .delete-dialog__actions button {
+    width: 100%;
+  }
+}
