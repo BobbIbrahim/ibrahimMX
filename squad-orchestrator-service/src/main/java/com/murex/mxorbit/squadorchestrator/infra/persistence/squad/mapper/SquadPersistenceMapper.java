@@ -60,7 +60,7 @@ public interface SquadPersistenceMapper {
 
 	@Mapping(target = "squad", ignore = true)
 	@Mapping(target = "routingType", source = "routingType", defaultValue = "ALWAYS")
-	@Mapping(target = "priority", source = "priority", defaultValue = "100")
+	@Mapping(target = "priority", source = "priority", defaultValue = "" + SquadEdge.MIN_ROUTE_PRIORITY)
 	@Mapping(target = "isDefault", source = "isDefault", defaultValue = "false")
 	SquadEdgeEntity toEdgeEntity(SquadEdge edge);
 
@@ -78,7 +78,7 @@ public interface SquadPersistenceMapper {
 	}
 
 	@Mapping(target = "routingType", source = "routingType", defaultValue = "ALWAYS")
-	@Mapping(target = "priority", source = "priority", defaultValue = "100")
+	@Mapping(target = "priority", source = "priority", defaultValue = "" + SquadEdge.MIN_ROUTE_PRIORITY)
 	@Mapping(target = "isDefault", source = "isDefault", defaultValue = "false")
 	SquadEdge toEdge(SquadEdgeEntity entity);
 }

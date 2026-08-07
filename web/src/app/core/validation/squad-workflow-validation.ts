@@ -1,4 +1,4 @@
-import { SquadBuilderDraft, SquadBuilderStep } from '../models/squad-builder.model';
+import { SquadBuilderDraft, SquadBuilderStep, MAX_ROUTE_PRIORITY, MIN_ROUTE_PRIORITY } from '../models/squad-builder.model';
 import { validateSquadRoutingCondition } from './squad-routing-condition-validation';
 
 export type SquadWorkflowAgent = {
@@ -394,8 +394,10 @@ function validateEdgeRoutingProperties(
     return;
   }
 
-  if (edge.priority < 0) {
-    validationErrors.push(`${edgeLabel} must have a nonnegative priority.`);
+  if (!edge.isDefault && (edge.priority < MIN_ROUTE_PRIORITY || edge.priority > MAX_ROUTE_PRIORITY)) {
+    validationErrors.push(
+      `${edgeLabel} must have a priority between ${MIN_ROUTE_PRIORITY} and ${MAX_ROUTE_PRIORITY}.`,
+    );
   }
 
   const hasCondition =

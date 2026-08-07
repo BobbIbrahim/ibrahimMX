@@ -1,5 +1,7 @@
 package com.murex.mxorbit.squadorchestrator.core.squad.creator.request;
 
+import static com.murex.mxorbit.squadorchestrator.core.squad.model.SquadEdge.MIN_ROUTE_PRIORITY;
+
 import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadEdgeRoutingType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,7 +27,7 @@ public class SquadEdgeRequest {
 	private String condition;
 
 	@Builder.Default
-	private Integer priority = 100;
+	private Integer priority = MIN_ROUTE_PRIORITY;
 
 	@Builder.Default
 	private Boolean isDefault = false;

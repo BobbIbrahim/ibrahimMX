@@ -9,6 +9,9 @@ import {
   SquadBuilderStep,
   SquadBuilderType,
   SquadSavePayload,
+  DEFAULT_ROUTE_PRIORITY,
+  MIN_ROUTE_PRIORITY,
+  MAX_ROUTE_PRIORITY,
 } from '../models/squad-builder.model';
 import { normalizeSquadType, toSquadWireType } from '../models/squad-type';
 import { validateSquadRoutingCondition } from '../validation/squad-routing-condition-validation';
@@ -131,7 +134,7 @@ export class SquadBuilderStateService {
         targetStepId: edge.targetStepId,
         routingType: edge.routingType ?? 'ALWAYS',
         condition: edge.condition ?? null,
-        priority: edge.priority ?? 100,
+        priority: edge.priority ?? (edge.isDefault ? DEFAULT_ROUTE_PRIORITY : MIN_ROUTE_PRIORITY),
         isDefault: edge.isDefault ?? false,
       })),
     };
@@ -661,7 +664,7 @@ export class SquadBuilderStateService {
             targetStepId,
             routingType: 'ALWAYS',
             condition: null,
-            priority: 100,
+            priority: MIN_ROUTE_PRIORITY,
             isDefault: false,
           },
         ],
@@ -731,8 +734,15 @@ export class SquadBuilderStateService {
         return draft;
       }
 
-      // Validate priority
-      if (!Number.isFinite(payload.priority) || !Number.isInteger(payload.priority) || payload.priority < 0) {
+      // Validate priority: default routes are normalized below and never take a
+      // user-provided value, so only non-default priorities need range checks.
+      if (
+        !payload.isDefault &&
+        (!Number.isFinite(payload.priority) ||
+          !Number.isInteger(payload.priority) ||
+          payload.priority < MIN_ROUTE_PRIORITY ||
+          payload.priority > MAX_ROUTE_PRIORITY)
+      ) {
         return draft;
       }
 
@@ -795,14 +805,15 @@ export class SquadBuilderStateService {
         }
       }
 
-      // Create the edge
+      // Create the edge. Default routes always use the reserved priority
+      // constant; the caller's priority is never trusted for a default route.
       const edge: SquadBuilderEdge = {
         id: this.generateId('edge'),
         sourceStepId: conditional.sourceStepId,
         targetStepId: payload.targetStepId,
         routingType: payload.routingType,
         condition: payload.condition,
-        priority: payload.priority,
+        priority: payload.isDefault ? DEFAULT_ROUTE_PRIORITY : payload.priority,
         isDefault: payload.isDefault,
       };
 
@@ -866,8 +877,15 @@ export class SquadBuilderStateService {
         return draft;
       }
 
-      // Validate priority
-      if (!Number.isFinite(payload.priority) || !Number.isInteger(payload.priority) || payload.priority < 0) {
+      // Validate priority: default routes are normalized below and never take a
+      // user-provided value, so only non-default priorities need range checks.
+      if (
+        !payload.isDefault &&
+        (!Number.isFinite(payload.priority) ||
+          !Number.isInteger(payload.priority) ||
+          payload.priority < MIN_ROUTE_PRIORITY ||
+          payload.priority > MAX_ROUTE_PRIORITY)
+      ) {
         return draft;
       }
 
@@ -933,14 +951,16 @@ export class SquadBuilderStateService {
         }
       }
 
-      // Update the edge, preserving id and sourceStepId
+      // Update the edge, preserving id and sourceStepId. Default routes always
+      // use the reserved priority constant; the caller's priority is never
+      // trusted for a default route.
       const nextEdge: SquadBuilderEdge = {
         id: edge.id,
         sourceStepId: edge.sourceStepId,
         targetStepId: payload.targetStepId,
         routingType: payload.routingType,
         condition: payload.condition,
-        priority: payload.priority,
+        priority: payload.isDefault ? DEFAULT_ROUTE_PRIORITY : payload.priority,
         isDefault: payload.isDefault,
       };
 

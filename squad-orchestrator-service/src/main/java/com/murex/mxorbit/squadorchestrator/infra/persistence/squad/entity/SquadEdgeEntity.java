@@ -1,5 +1,7 @@
 package com.murex.mxorbit.squadorchestrator.infra.persistence.squad.entity;
 
+import static com.murex.mxorbit.squadorchestrator.core.squad.model.SquadEdge.MIN_ROUTE_PRIORITY;
+
 import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadEdgeRoutingType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -53,7 +55,7 @@ public class SquadEdgeEntity {
 
 	@Builder.Default
 	@Column(nullable = false)
-	private Integer priority = 100;
+	private Integer priority = MIN_ROUTE_PRIORITY;
 
 	@Builder.Default
 	@Column(name = "is_default", nullable = false)

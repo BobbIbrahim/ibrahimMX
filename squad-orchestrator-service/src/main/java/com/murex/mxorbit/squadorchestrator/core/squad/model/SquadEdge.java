@@ -12,6 +12,19 @@ import lombok.NonNull;
 @AllArgsConstructor
 public class SquadEdge {
 
+	/**
+	 * Priority forced onto every default (isDefault = true) edge, regardless of
+	 * any value a client may supply. Kept out of the 1-99 non-default range so
+	 * it can never collide with a conditional route's priority.
+	 */
+	public static final int DEFAULT_ROUTE_PRIORITY = 999;
+
+	/** Minimum accepted priority for a non-default edge. */
+	public static final int MIN_ROUTE_PRIORITY = 1;
+
+	/** Maximum accepted priority for a non-default edge. */
+	public static final int MAX_ROUTE_PRIORITY = 99;
+
 	@NonNull
 	private String id;
 
@@ -27,7 +40,7 @@ public class SquadEdge {
 	private String condition;
 
 	@Builder.Default
-	private Integer priority = 100;
+	private Integer priority = MIN_ROUTE_PRIORITY;
 
 	@Builder.Default
 	private Boolean isDefault = false;

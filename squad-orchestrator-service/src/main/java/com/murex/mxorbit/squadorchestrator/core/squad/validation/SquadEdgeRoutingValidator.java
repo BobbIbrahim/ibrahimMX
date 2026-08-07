@@ -1,6 +1,7 @@
 package com.murex.mxorbit.squadorchestrator.core.squad.validation;
 
 import com.murex.mxorbit.squadorchestrator.core.squad.creator.request.SquadEdgeRequest;
+import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadEdge;
 import com.murex.mxorbit.squadorchestrator.core.squad.model.SquadEdgeRoutingType;
 import com.murex.mxorbit.squadorchestrator.core.squad.routing.SquadRoutingConditionEvaluator;
 
@@ -44,8 +45,13 @@ public class SquadEdgeRoutingValidator {
 			throw badRequest(describeEdge(edge) + " must have a priority.");
 		}
 
-		if (priority < 0) {
-			throw badRequest(describeEdge(edge) + " must have a nonnegative priority.");
+		if (Boolean.TRUE.equals(edge.getIsDefault())) {
+			// The backend, not the client, owns the default edge's priority: normalize it
+			// to the reserved constant so it can never collide with a conditional route.
+			edge.setPriority(SquadEdge.DEFAULT_ROUTE_PRIORITY);
+		} else if (priority < SquadEdge.MIN_ROUTE_PRIORITY || priority > SquadEdge.MAX_ROUTE_PRIORITY) {
+			throw badRequest(describeEdge(edge) + " must have a priority between " + SquadEdge.MIN_ROUTE_PRIORITY
+					+ " and " + SquadEdge.MAX_ROUTE_PRIORITY + ".");
 		}
 
 		boolean hasCondition = edge.getCondition() != null && !edge.getCondition().isBlank();

@@ -11,10 +11,12 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 import { Agent } from '../../../../core/models/agent.model';
-import {
-  SquadBuilderInputRef,
+import { SquadBuilderInputRef,
   SquadBuilderStep,
   SquadBuilderEdge,
+  DEFAULT_ROUTE_PRIORITY,
+  MIN_ROUTE_PRIORITY,
+  MAX_ROUTE_PRIORITY,
 } from '../../../../core/models/squad-builder.model';
 import { AgentService } from '../../../../core/services/agent.service';
 import { SquadBuilderStateService, UpdateConditionalRoutePayload, AddConditionalRoutePayload } from '../../../../core/services/squad-builder-state.service';
@@ -108,6 +110,10 @@ export class SquadBuilderPage implements OnInit {
     priority: '',
     isDefault: false,
   });
+
+  // Last valid non-default priority entered, restored when a route is
+  // switched back from default to non-default.
+  private lastNonDefaultPriority: string | null = null;
 
   // Deletion confirmation states
   readonly deleteRouteConfirmId = signal<string | null>(null);
@@ -342,13 +348,19 @@ export class SquadBuilderPage implements OnInit {
     }
 
     if (!formState.priority) {
-      return 'Priority must be a non-negative integer.';
+      return `Route priority must be between ${MIN_ROUTE_PRIORITY} and ${MAX_ROUTE_PRIORITY}.`;
     }
 
     // Priority validation
     const priority = Number(formState.priority);
-    if (isNaN(priority) || !Number.isFinite(priority) || priority < 0 || !Number.isInteger(priority)) {
-      return 'Priority must be a non-negative integer.';
+    if (
+      isNaN(priority) ||
+      !Number.isFinite(priority) ||
+      !Number.isInteger(priority) ||
+      priority < MIN_ROUTE_PRIORITY ||
+      priority > MAX_ROUTE_PRIORITY
+    ) {
+      return `Route priority must be between ${MIN_ROUTE_PRIORITY} and ${MAX_ROUTE_PRIORITY}.`;
     }
 
     // Check for empty list items if operator is 'in'
@@ -533,6 +545,7 @@ export class SquadBuilderPage implements OnInit {
   resetAddRouteForm(): void {
     this.addRouteFormVisible.set(false);
     this.editingEdgeId.set(null);
+    this.lastNonDefaultPriority = null;
     this.addRouteFormState.set({
       targetStepId: '',
       outputField: '',
@@ -563,6 +576,10 @@ export class SquadBuilderPage implements OnInit {
       priority: edge.priority.toString(),
       isDefault: edge.isDefault,
     };
+
+    if (!edge.isDefault) {
+      this.lastNonDefaultPriority = formState.priority;
+    }
 
     // Parse condition for WHEN routes if it matches the controlled format
     if (edge.routingType === 'WHEN' && edge.condition) {
@@ -629,7 +646,7 @@ export class SquadBuilderPage implements OnInit {
       payload = {
         routingType: 'ALWAYS' as const,
         condition: null,
-        priority: 100,
+        priority: DEFAULT_ROUTE_PRIORITY,
         isDefault: true,
         targetStepId,
       };
@@ -678,15 +695,27 @@ export class SquadBuilderPage implements OnInit {
     // Handle side effects when isDefault changes
     if (field === 'isDefault') {
       if (value === true) {
-        // When becoming default: clear condition fields, set priority to 100
+        // Remember the last valid non-default priority so it can be restored
+        // if the user unchecks "Default Route" again.
+        if (currentState.priority) {
+          this.lastNonDefaultPriority = currentState.priority;
+        }
+
+        // When becoming default: clear condition fields; priority is hidden
+        // and forced to the reserved default-route priority.
         newState.outputField = '';
         newState.operator = 'equals';
         newState.expectedValue = '';
-        newState.priority = '100';
+        newState.priority = DEFAULT_ROUTE_PRIORITY.toString();
       } else {
-        // When becoming non-default: clear priority
-        newState.priority = '';
+        // When becoming non-default: restore the last valid priority, or a
+        // deterministic fallback within the valid range.
+        newState.priority = this.lastNonDefaultPriority ?? MIN_ROUTE_PRIORITY.toString();
       }
+    }
+
+    if (field === 'priority' && !newState.isDefault) {
+      this.lastNonDefaultPriority = value as string;
     }
 
     this.addRouteFormState.set(newState as AddRouteFormState);

@@ -532,10 +532,12 @@
                         </div>
                       }
 
-                      <div class="route-priority">
-                        <span class="route-label">Priority</span>
-                        <strong>{{ route.priority }}</strong>
-                      </div>
+                      @if (!route.isDefault) {
+                        <div class="route-priority">
+                          <span class="route-label">Priority</span>
+                          <strong>{{ route.priority }}</strong>
+                        </div>
+                      }
 
                       @if (deleteRouteConfirmId() === route.id) {
                         <div class="route-delete-confirm">
@@ -677,8 +679,9 @@
                           type="number"
                           [ngModel]="addRouteFormState().priority"
                           (ngModelChange)="updateAddRouteFormField('priority', $event)"
-                          placeholder="0"
-                          min="0"
+                          placeholder="1"
+                          min="1"
+                          max="99"
                         />
                       </mat-form-field>
                     </div>

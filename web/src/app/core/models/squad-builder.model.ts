@@ -4,6 +4,19 @@ export type SquadBuilderType = SquadType;
 
 export type SquadEdgeRoutingType = 'ALWAYS' | 'WHEN';
 
+/**
+ * Priority forced onto every default (isDefault = true) route. Kept out of
+ * the 1-99 non-default range so it can never collide with a conditional
+ * route's priority.
+ */
+export const DEFAULT_ROUTE_PRIORITY = 999;
+
+/** Minimum accepted priority for a non-default route. */
+export const MIN_ROUTE_PRIORITY = 1;
+
+/** Maximum accepted priority for a non-default route. */
+export const MAX_ROUTE_PRIORITY = 99;
+
 export interface SquadBuilderPosition {
   x: number;
   y: number;
