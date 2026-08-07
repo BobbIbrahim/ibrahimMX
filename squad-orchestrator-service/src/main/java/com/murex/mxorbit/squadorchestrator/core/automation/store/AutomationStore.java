@@ -1,5 +1,6 @@
 package com.murex.mxorbit.squadorchestrator.core.automation.store;
 
+import com.murex.mxorbit.squadorchestrator.core.automation.model.AssigneeType;
 import com.murex.mxorbit.squadorchestrator.core.automation.model.Automation;
 
 import java.util.List;
@@ -13,6 +14,8 @@ public interface AutomationStore {
 	List<Automation> findAll();
 
 	Optional<Automation> findById(UUID id);
+
+	List<Automation> findAllByAssignee(AssigneeType assigneeType, String assigneeId);
 
 	Optional<Automation> update(UUID id, Automation automation);
 

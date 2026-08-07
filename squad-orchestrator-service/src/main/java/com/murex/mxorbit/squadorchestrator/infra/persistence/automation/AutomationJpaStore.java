@@ -1,5 +1,6 @@
 package com.murex.mxorbit.squadorchestrator.infra.persistence.automation;
 
+import com.murex.mxorbit.squadorchestrator.core.automation.model.AssigneeType;
 import com.murex.mxorbit.squadorchestrator.core.automation.model.Automation;
 import com.murex.mxorbit.squadorchestrator.core.automation.store.AutomationStore;
 import com.murex.mxorbit.squadorchestrator.infra.persistence.automation.entity.AutomationEntity;
@@ -44,6 +45,14 @@ public class AutomationJpaStore implements AutomationStore {
 	public Optional<Automation> findById(UUID id) {
 		log.trace("Finding automation by id: {}", id);
 		return automationRepository.findById(id).map(automationPersistenceMapper::toAutomation);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<Automation> findAllByAssignee(AssigneeType assigneeType, String assigneeId) {
+		log.trace("Finding all automations by assignee. assigneeType: {}, assigneeId: {}", assigneeType, assigneeId);
+		return automationRepository.findByAssigneeTypeAndAssigneeId(assigneeType, assigneeId).stream()
+				.map(automationPersistenceMapper::toAutomation).toList();
 	}
 
 	@Override
