@@ -239,32 +239,42 @@
       </p>
 
       @if (filteredRuns().length > 0) {
-        <div
-          class="filter-pills"
-          role="group"
-          aria-label="Run display view"
-        >
-          <button
-            type="button"
-            class="filter-pill"
-            [class.filter-pill--active]="viewMode() === 'list'"
-            [attr.aria-pressed]="viewMode() === 'list'"
-            (click)="onViewModeChange('list')"
+        <div class="runs-results-controls">
+          <div
+            class="view-switch"
+            role="group"
+            aria-label="Run display view"
           >
-            <mat-icon>view_list</mat-icon>
-            <span>List</span>
-          </button>
+            <button
+              type="button"
+              class="view-switch__button"
+              [class.view-switch__button--active]="
+                viewMode() === 'list'
+              "
+              [attr.aria-pressed]="
+                viewMode() === 'list'
+              "
+              (click)="onViewModeChange('list')"
+            >
+              <mat-icon>view_list</mat-icon>
+              <span>List</span>
+            </button>
 
-          <button
-            type="button"
-            class="filter-pill"
-            [class.filter-pill--active]="viewMode() === 'cards'"
-            [attr.aria-pressed]="viewMode() === 'cards'"
-            (click)="onViewModeChange('cards')"
-          >
-            <mat-icon>grid_view</mat-icon>
-            <span>Cards</span>
-          </button>
+            <button
+              type="button"
+              class="view-switch__button"
+              [class.view-switch__button--active]="
+                viewMode() === 'cards'
+              "
+              [attr.aria-pressed]="
+                viewMode() === 'cards'
+              "
+              (click)="onViewModeChange('cards')"
+            >
+              <mat-icon>grid_view</mat-icon>
+              <span>Cards</span>
+            </button>
+          </div>
 
           <div class="runs-page-size-control">
             <label
