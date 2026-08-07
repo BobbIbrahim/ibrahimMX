@@ -1,7 +1,7 @@
 package com.murex.mxorbit.squadorchestrator.core.automation.model;
 
 import java.time.Instant;
-import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -34,7 +34,7 @@ public class Automation {
 	@NonNull
 	private AutomationFrequency frequency;
 
-	private LocalTime runTime;
+	private OffsetDateTime runTime;
 
 	private Integer weeklyDay;
 

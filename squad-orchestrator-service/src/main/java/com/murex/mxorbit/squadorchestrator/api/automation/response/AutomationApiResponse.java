@@ -5,7 +5,7 @@ import com.murex.mxorbit.squadorchestrator.core.automation.model.AutomationFrequ
 import com.murex.mxorbit.squadorchestrator.core.automation.model.AutomationStatus;
 
 import java.time.Instant;
-import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
 
@@ -38,7 +38,7 @@ public class AutomationApiResponse {
 
 	private AutomationFrequency frequency;
 
-	private LocalTime runTime;
+	private OffsetDateTime runTime;
 
 	private Integer weeklyDay;
 

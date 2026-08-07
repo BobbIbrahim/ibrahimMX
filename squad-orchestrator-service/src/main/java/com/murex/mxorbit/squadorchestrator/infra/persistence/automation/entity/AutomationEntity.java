@@ -8,11 +8,13 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+
 import java.time.Instant;
-import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -32,45 +34,46 @@ import org.hibernate.type.SqlTypes;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class AutomationEntity {
 
-	@Id
-	@EqualsAndHashCode.Include
-	@Builder.Default
-	private UUID id = UUID.randomUUID();
+    @Id
+    @EqualsAndHashCode.Include
+    @Builder.Default
+    private UUID id = UUID.randomUUID();
 
-	@Column(nullable = false)
-	private String name;
+    @Column(nullable = false)
+    private String name;
 
-	@Enumerated(EnumType.STRING)
-	@Column(name = "assignee_type", nullable = false)
-	private AssigneeType assigneeType;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "assignee_type", nullable = false)
+    private AssigneeType assigneeType;
 
-	@Column(name = "assignee_id", nullable = false)
-	private String assigneeId;
+    @Column(name = "assignee_id", nullable = false)
+    private String assigneeId;
 
-	@Column(name = "temporal_schedule_id", nullable = false, unique = true)
-	private String temporalScheduleId;
+    @Column(name = "temporal_schedule_id", nullable = false, unique = true)
+    private String temporalScheduleId;
 
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false)
-	private AutomationFrequency frequency;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AutomationFrequency frequency;
 
-	@Column(name = "run_time")
-	private LocalTime runTime;
+    @JdbcTypeCode(SqlTypes.TIMESTAMP_UTC)
+    @Column(name = "run_time")
+    private OffsetDateTime runTime;
 
-	@Column(name = "weekly_day")
-	private Integer weeklyDay;
+    @Column(name = "weekly_day")
+    private Integer weeklyDay;
 
-	@Column(name = "every_minutes")
-	private Integer everyMinutes;
+    @Column(name = "every_minutes")
+    private Integer everyMinutes;
 
-	@Builder.Default
-	@JdbcTypeCode(SqlTypes.JSON)
-	@Column(name = "initial_input", nullable = false)
-	private Map<String, Object> initialInput = new LinkedHashMap<>();
+    @Builder.Default
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "initial_input", nullable = false)
+    private Map<String, Object> initialInput = new LinkedHashMap<>();
 
-	@Column(name = "created_at", nullable = false)
-	private Instant createdAt;
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
 
-	@Column(name = "updated_at", nullable = false)
-	private Instant updatedAt;
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
 }

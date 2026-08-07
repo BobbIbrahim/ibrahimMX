@@ -12,7 +12,6 @@ import {
   AutopilotFrequency,
   AutopilotIntervalUnit,
   formatAutopilotInterval,
-  localTimeZoneLabel,
 } from '../../../../core/models/autopilot.model';
 import { AgentService } from '../../../../core/services/agent.service';
 import { SquadService } from '../../../../core/services/squad.service';
@@ -127,8 +126,6 @@ export class AutopilotCreateDialog {
   readonly intervalUnit = signal<AutopilotIntervalUnit>('minutes');
   readonly inputKeys = signal<string[]>([]);
   readonly resolvingInputs = signal(false);
-
-  readonly timeZoneLabel = localTimeZoneLabel();
 
   private readonly squads = this.squadService.getSquads();
 

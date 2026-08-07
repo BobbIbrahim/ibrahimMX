@@ -3,6 +3,7 @@ package com.murex.mxorbit.squadorchestrator.core.automation.updater;
 import com.murex.mxorbit.squadorchestrator.core.automation.assignee.AutomationAssigneeHandlers;
 import com.murex.mxorbit.squadorchestrator.core.automation.creator.request.CreateAutomationRequest;
 import com.murex.mxorbit.squadorchestrator.core.automation.model.Automation;
+import com.murex.mxorbit.squadorchestrator.core.automation.model.AutomationRunTimes;
 import com.murex.mxorbit.squadorchestrator.core.automation.scheduler.AutomationSchedulerService;
 import com.murex.mxorbit.squadorchestrator.core.automation.store.AutomationStore;
 import com.murex.mxorbit.squadorchestrator.core.automation.validation.AutomationValidator;
@@ -42,7 +43,7 @@ public class AutomationUpdaterService implements AutomationUpdater {
 		Automation updated = Automation.builder().id(existing.getId()).name(request.getName())
 				.assigneeType(request.getAssigneeType()).assigneeId(request.getAssigneeId())
 				.temporalScheduleId(existing.getTemporalScheduleId()).frequency(request.getFrequency())
-				.runTime(request.getRunTime()).weeklyDay(request.getWeeklyDay())
+				.runTime(AutomationRunTimes.anchorToUtc(request.getRunTime())).weeklyDay(request.getWeeklyDay())
 				.everyMinutes(request.getEveryMinutes()).initialInput(copyOf(request.getInitialInput()))
 				.createdAt(existing.getCreatedAt()).updatedAt(now).build();
 

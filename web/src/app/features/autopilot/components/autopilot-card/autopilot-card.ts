@@ -5,7 +5,6 @@ import {
   Autopilot,
   formatAutopilotInterval,
   formatAutopilotWeekday,
-  localTimeZoneLabel,
 } from '../../../../core/models/autopilot.model';
 
 @Component({
@@ -19,8 +18,6 @@ export class AutopilotCard {
   readonly pauseRequested = output<string>();
   readonly resumeRequested = output<string>();
   readonly deleteAutopilot = output<string>();
-
-  readonly timeZoneLabel = localTimeZoneLabel();
 
   get assigneeTypeLabel(): string {
     return this.autopilot().assigneeType === 'agent' ? 'Agent' : 'Squad';
@@ -57,7 +54,7 @@ export class AutopilotCard {
           ? `${formatAutopilotWeekday(weeklyDay ?? 1)} · `
           : '';
 
-      return `${day}${runTime ?? ''} ${this.timeZoneLabel}`;
+      return `${day}${runTime ?? ''}`;
     }
 
     return everyMinutes % 60 === 0 ? `Every ${everyMinutes / 60}h` : `Every ${everyMinutes}m`;
@@ -81,7 +78,7 @@ export class AutopilotCard {
         ? ` on ${formatAutopilotWeekday(this.autopilot().weeklyDay ?? 1)}`
         : '';
 
-    return `${this.frequencyLabel}${weeklyDay} at ${this.autopilot().runTime} ${this.timeZoneLabel}`;
+    return `${this.frequencyLabel}${weeklyDay} at ${this.autopilot().runTime}`;
   }
 
   onToggleActive(): void {

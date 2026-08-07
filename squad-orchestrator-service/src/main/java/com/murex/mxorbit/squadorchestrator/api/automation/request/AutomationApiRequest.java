@@ -3,7 +3,7 @@ package com.murex.mxorbit.squadorchestrator.api.automation.request;
 import com.murex.mxorbit.squadorchestrator.core.automation.model.AssigneeType;
 import com.murex.mxorbit.squadorchestrator.core.automation.model.AutomationFrequency;
 
-import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -32,7 +32,7 @@ public class AutomationApiRequest {
 
 	private AutomationFrequency frequency;
 
-	private LocalTime runTime;
+	private OffsetDateTime runTime;
 
 	private Integer weeklyDay;
 

@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, map, tap } from 'rxjs';
 
-import { Autopilot, toLocalScheduleTime, toUtcScheduleTime } from '../models/autopilot.model';
+import { Autopilot, fromApiRunTime, toApiRunTime, toLocalScheduleTime, toUtcScheduleTime } from '../models/autopilot.model';
 
 type AutopilotApiAssigneeType = 'SQUAD' | 'AGENT';
 
@@ -91,7 +91,7 @@ export class AutopilotService {
       assigneeType: 'SQUAD',
       assigneeId: autopilot.assigneeId,
       frequency: FRONTEND_TO_API_FREQUENCY[autopilot.frequency],
-      runTime: utcScheduleTime.runTime,
+      runTime: toApiRunTime(utcScheduleTime.runTime),
       weeklyDay: utcScheduleTime.weeklyDay,
       everyMinutes: autopilot.everyMinutes,
       input: autopilot.input,
@@ -156,7 +156,7 @@ export class AutopilotService {
     const isInterval = response.frequency === 'INTERVAL';
     const localScheduleTime = isInterval
       ? { runTime: undefined, weeklyDay: undefined }
-      : toLocalScheduleTime({ runTime: response.runTime, weeklyDay: response.weeklyDay });
+      : toLocalScheduleTime({ runTime: fromApiRunTime(response.runTime), weeklyDay: response.weeklyDay });
 
     return {
       id: response.id,

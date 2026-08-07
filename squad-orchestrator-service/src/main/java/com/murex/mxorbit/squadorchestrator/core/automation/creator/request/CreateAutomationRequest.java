@@ -3,7 +3,7 @@ package com.murex.mxorbit.squadorchestrator.core.automation.creator.request;
 import com.murex.mxorbit.squadorchestrator.core.automation.model.AssigneeType;
 import com.murex.mxorbit.squadorchestrator.core.automation.model.AutomationFrequency;
 
-import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.util.Map;
 
 import lombok.AllArgsConstructor;
@@ -25,7 +25,7 @@ public class CreateAutomationRequest {
 
 	private AutomationFrequency frequency;
 
-	private LocalTime runTime;
+	private OffsetDateTime runTime;
 
 	private Integer weeklyDay;
 

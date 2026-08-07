@@ -89,16 +89,26 @@ export function toLocalScheduleTime(utc: AutopilotScheduleTime): AutopilotSchedu
   return shiftScheduleTime(utc, -1);
 }
 
-/** Short label for the browser's zone, so times on screen are never ambiguous. */
-export function localTimeZoneLabel(): string {
-  const offsetMinutes = -new Date().getTimezoneOffset();
-  const sign = offsetMinutes < 0 ? '-' : '+';
-  const hours = Math.floor(Math.abs(offsetMinutes) / 60);
-  const minutes = Math.abs(offsetMinutes) % 60;
+/**
+ * A recurring schedule has no meaningful execution date, so the API
+ * represents runTime as an OffsetDateTime anchored to the fixed date
+ * 1970-01-01, e.g. "1970-01-01T06:00:00Z". Only the `HH:mm` clock value
+ * (already UTC) matters; the anchor date itself carries no meaning.
+ */
+const RUN_TIME_ANCHOR_DATE = '1970-01-01';
 
-  return minutes === 0
-    ? `UTC${sign}${hours}`
-    : `UTC${sign}${hours}:${String(minutes).padStart(2, '0')}`;
+export function toApiRunTime(utcRunTime: string | undefined): string | undefined {
+  return utcRunTime ? `${RUN_TIME_ANCHOR_DATE}T${utcRunTime}:00Z` : undefined;
+}
+
+export function fromApiRunTime(apiRunTime: string | undefined): string | undefined {
+  if (!apiRunTime) {
+    return undefined;
+  }
+
+  const match = /T(\d{2}:\d{2})/.exec(apiRunTime);
+
+  return match ? match[1] : undefined;
 }
 
 export function formatAutopilotInterval(everyMinutes: number): string {
