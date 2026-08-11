@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { Agent } from '../../../../core/models/agent.model';
 import { AgentService } from '../../../../core/services/agent.service';
 import { ProjectService } from '../../../../core/services/project.service';
+import { getModelTheme } from '../../../../core/utils/model-theme';
 
 @Component({
   selector: 'app-project-details-page',
@@ -39,4 +40,7 @@ export class ProjectDetailsPage {
       .map((agentId) => this.agentService.getAgentById(agentId))
       .filter((agent): agent is Agent => Boolean(agent));
   });
+
+  /** Brand color theme derived from an agent's runtime model (e.g. GPT, Claude, Gemini, MXAgents). */
+  readonly getAgentTheme = (agent: Agent) => getModelTheme(agent.model);
 }

@@ -8,8 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * Rejects an automation definition before it is persisted. Mirrors the
- * database constraints on the automations table exactly, per frequency.
+ * Rejects an automation definition before it is persisted. Mirrors the database
+ * constraints on the automations table exactly, per frequency.
  */
 @Service
 public class AutomationValidator {
@@ -45,10 +45,10 @@ public class AutomationValidator {
 		AutomationFrequency frequency = request.getFrequency();
 
 		switch (frequency) {
-		case INTERVAL -> validateInterval(request);
-		case DAILY -> validateDailyOrWeekdays(request, "DAILY");
-		case WEEKDAYS -> validateDailyOrWeekdays(request, "WEEKDAYS");
-		case WEEKLY -> validateWeekly(request);
+			case INTERVAL -> validateInterval(request);
+			case DAILY -> validateDailyOrWeekdays(request, "DAILY");
+			case WEEKDAYS -> validateDailyOrWeekdays(request, "WEEKDAYS");
+			case WEEKLY -> validateWeekly(request);
 		}
 	}
 

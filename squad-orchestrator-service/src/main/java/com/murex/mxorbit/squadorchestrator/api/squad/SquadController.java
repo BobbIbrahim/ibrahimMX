@@ -62,7 +62,9 @@ public class SquadController implements SquadApi {
 	@Override
 	public ResponseEntity<Void> deleteSquad(String squadId) {
 		log.debug("Received request to delete squad with id: {}", squadId);
-		return squadFacade.deleteSquad(squadId) ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+		return squadFacade.deleteSquad(squadId)
+				? ResponseEntity.noContent().build()
+				: ResponseEntity.notFound().build();
 	}
 
 	@Override

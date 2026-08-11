@@ -13,9 +13,9 @@ import lombok.NonNull;
 public class SquadEdge {
 
 	/**
-	 * Priority forced onto every default (isDefault = true) edge, regardless of
-	 * any value a client may supply. Kept out of the 1-99 non-default range so
-	 * it can never collide with a conditional route's priority.
+	 * Priority forced onto every default (isDefault = true) edge, regardless of any
+	 * value a client may supply. Kept out of the 1-99 non-default range so it can
+	 * never collide with a conditional route's priority.
 	 */
 	public static final int DEFAULT_ROUTE_PRIORITY = 999;
 

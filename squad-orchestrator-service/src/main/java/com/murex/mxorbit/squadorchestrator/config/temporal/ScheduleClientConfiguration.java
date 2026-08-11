@@ -10,8 +10,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * The Temporal Spring Boot starter auto-configures a {@link WorkflowClient} but not a
- * {@link ScheduleClient}, so Autopilot scheduling would otherwise have nothing to inject.
+ * The Temporal Spring Boot starter auto-configures a {@link WorkflowClient} but
+ * not a {@link ScheduleClient}, so Autopilot scheduling would otherwise have
+ * nothing to inject.
  */
 @Configuration
 public class ScheduleClientConfiguration {

@@ -19,10 +19,9 @@ import org.springframework.stereotype.Service;
 
 /**
  * Coordinates the existing automation operation services and the shared
- * {@link AutomationEnricherService} for the future REST layer. Every
- * Temporal schedule mutation happens exactly once, inside the delegated
- * operation service; this Facade only enriches the already-mutated result
- * for reads.
+ * {@link AutomationEnricherService} for the future REST layer. Every Temporal
+ * schedule mutation happens exactly once, inside the delegated operation
+ * service; this Facade only enriches the already-mutated result for reads.
  */
 @Service
 @RequiredArgsConstructor

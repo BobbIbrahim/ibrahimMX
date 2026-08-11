@@ -3,9 +3,14 @@
     eyebrow="AGENT REGISTRY"
     title="Available Agents"
     description="The agents you can drop into a squad, with the inputs they expect, the outputs they produce, and the model behind each one."
-    badgeLabel="Sample data"
-    badgeIcon="science"
   />
+
+  @if (loadAgentsError()) {
+    <section class="agent-feedback agent-feedback--error" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ loadAgentsError() }}</span>
+    </section>
+  }
 
   <section class="stats-grid" aria-label="Agent registry summary">
     <article class="stat-card">

@@ -41,10 +41,9 @@ public interface AutomationPersistenceMapper {
 	}
 
 	/**
-	 * Delegates to the shared anchor-date normalization so the database
-	 * column and the core model consistently hold
-	 * "1970-01-01T{hour}:{minute}:{second}Z" regardless of what date/offset
-	 * a caller happened to pass in.
+	 * Delegates to the shared anchor-date normalization so the database column and
+	 * the core model consistently hold "1970-01-01T{hour}:{minute}:{second}Z"
+	 * regardless of what date/offset a caller happened to pass in.
 	 */
 	@Named("toAnchoredUtc")
 	default OffsetDateTime toAnchoredUtc(OffsetDateTime runTime) {

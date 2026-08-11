@@ -68,7 +68,8 @@ public class AutomationController implements AutomationApi {
 	@Override
 	public ResponseEntity<Void> deleteAutomation(UUID automationId) {
 		log.debug("Received request to delete automation with id: {}", automationId);
-		return automationFacade.deleteAutomation(automationId) ? ResponseEntity.noContent().build()
+		return automationFacade.deleteAutomation(automationId)
+				? ResponseEntity.noContent().build()
 				: ResponseEntity.notFound().build();
 	}
 }

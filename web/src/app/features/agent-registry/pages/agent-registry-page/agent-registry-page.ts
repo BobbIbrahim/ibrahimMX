@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -30,10 +30,13 @@ type AgentSortOption =
   templateUrl: './agent-registry-page.html',
   styleUrl: './agent-registry-page.scss',
 })
-export class AgentRegistryPage {
+export class AgentRegistryPage implements OnInit {
   private readonly agentService = inject(AgentService);
 
   readonly agents = this.agentService.getAgents();
+
+  readonly isLoadingAgents = signal(false);
+  readonly loadAgentsError = signal<string | null>(null);
 
   readonly searchTerm = signal('');
   readonly selectedStatus = signal<AgentStatusFilter>('all');
@@ -115,6 +118,27 @@ export class AgentRegistryPage {
     this.searchTerm.set('');
     this.selectedStatus.set('all');
     this.selectedSort.set('name-asc');
+  }
+
+  ngOnInit(): void {
+    this.loadAgents();
+  }
+
+  private loadAgents(): void {
+    this.isLoadingAgents.set(true);
+    this.loadAgentsError.set(null);
+
+    this.agentService.loadAgentsFromApi().subscribe({
+      next: () => {
+        this.isLoadingAgents.set(false);
+      },
+      error: (error) => {
+        this.isLoadingAgents.set(false);
+        this.loadAgentsError.set('Failed to load agents from the MXAgents catalog.');
+
+        console.error('Failed to load agents:', error);
+      },
+    });
   }
 
   private sortAgents(agents: Agent[], sortOption: AgentSortOption): Agent[] {

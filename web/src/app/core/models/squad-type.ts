@@ -7,6 +7,14 @@ export interface SquadTypeDescriptor {
   description: string;
   /** Only supported types can be created and executed today. */
   supported: boolean;
+  /** Solid brand color used for icons, borders and text accents. */
+  color: string;
+  /** Secondary brand color used for gradients and hover states. */
+  secondaryColor: string;
+  /** Diagonal gradient combining color + secondaryColor, for avatars and accents. */
+  gradient: string;
+  /** Low-opacity tint of the primary color, for chip/pill backgrounds. */
+  soft: string;
 }
 
 export const SQUAD_TYPES: readonly SquadTypeDescriptor[] = [
@@ -16,6 +24,10 @@ export const SQUAD_TYPES: readonly SquadTypeDescriptor[] = [
     icon: 'account_tree',
     description: 'Deterministic graph of steps, each bound to an agent, wired with routing rules.',
     supported: true,
+    color: 'var(--color-accent)',
+    secondaryColor: 'var(--color-accent-strong)',
+    gradient: 'linear-gradient(135deg, var(--color-accent), var(--color-accent-strong))',
+    soft: 'color-mix(in srgb, var(--color-accent) 13%, transparent)',
   },
   {
     value: 'prompt-squad',
@@ -23,6 +35,10 @@ export const SQUAD_TYPES: readonly SquadTypeDescriptor[] = [
     icon: 'auto_awesome',
     description: 'An LLM plans and delegates work across agents at runtime.',
     supported: false,
+    color: '#7c3aed',
+    secondaryColor: '#a855f7',
+    gradient: 'linear-gradient(135deg, #a855f7, #7c3aed)',
+    soft: 'rgba(124, 58, 237, 0.14)',
   },
 ];
 

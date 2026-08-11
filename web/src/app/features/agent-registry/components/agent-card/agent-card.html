@@ -1,6 +1,6 @@
-<article class="agent-card">
+<article class="agent-card" [style.--model-primary]="theme().primary" [style.--model-secondary]="theme().secondary" [style.--model-soft]="theme().soft">
   <div class="agent-card__top">
-    <div class="agent-card__avatar" [style.background]="agent().accentColor">
+    <div class="agent-card__avatar" [style.background]="theme().gradient">
       {{ agent().avatar }}
     </div>
 

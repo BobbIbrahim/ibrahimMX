@@ -1722,7 +1722,8 @@
   background: var(--color-surface) !important;
   color: var(--color-text-primary) !important;
   box-shadow: var(--ui-panel-shadow) !important;
-  overflow: hidden !important;
+  max-height: 22rem !important;
+  overflow-y: auto !important;
 }
 
 .agent-select-panel.mat-mdc-select-panel,

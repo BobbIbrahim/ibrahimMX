@@ -19,62 +19,62 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class AutomationDeleterService implements AutomationDeleter {
 
-    private final AutomationStore automationStore;
-    private final AutomationSchedulerService automationSchedulerService;
+	private final AutomationStore automationStore;
+	private final AutomationSchedulerService automationSchedulerService;
 
-    @Override
-    public boolean deleteAutomation(UUID automationId) {
-        log.debug("Deleting automation with id: {}", automationId);
+	@Override
+	public boolean deleteAutomation(UUID automationId) {
+		log.debug("Deleting automation with id: {}", automationId);
 
-        Automation existing = automationStore.findById(automationId).orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Automation not found: " + automationId));
+		Automation existing = automationStore.findById(automationId).orElseThrow(
+				() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Automation not found: " + automationId));
 
-        boolean deleted = deleteAutomationAndSchedule(existing, existing.getAssigneeType(), existing.getAssigneeId());
+		boolean deleted = deleteAutomationAndSchedule(existing, existing.getAssigneeType(), existing.getAssigneeId());
 
-        log.info("Automation deleted. automationId: {}, temporalScheduleId: {}", automationId,
-                existing.getTemporalScheduleId());
-        return deleted;
-    }
+		log.info("Automation deleted. automationId: {}, temporalScheduleId: {}", automationId,
+				existing.getTemporalScheduleId());
+		return deleted;
+	}
 
-    @Override
-    public void deleteByAssignee(AssigneeType assigneeType, String assigneeId) {
-        log.debug("Deleting automations by assignee. assigneeType: {}, assigneeId: {}", assigneeType, assigneeId);
+	@Override
+	public void deleteByAssignee(AssigneeType assigneeType, String assigneeId) {
+		log.debug("Deleting automations by assignee. assigneeType: {}, assigneeId: {}", assigneeType, assigneeId);
 
-        List<Automation> matching = automationStore.findAllByAssignee(assigneeType, assigneeId);
+		List<Automation> matching = automationStore.findAllByAssignee(assigneeType, assigneeId);
 
-        for (Automation automation : matching) {
-            deleteAutomationAndSchedule(automation, assigneeType, assigneeId);
-        }
+		for (Automation automation : matching) {
+			deleteAutomationAndSchedule(automation, assigneeType, assigneeId);
+		}
 
-        log.info("Automations deleted for assignee. assigneeType: {}, assigneeId: {}, count: {}", assigneeType,
-                assigneeId, matching.size());
-    }
+		log.info("Automations deleted for assignee. assigneeType: {}, assigneeId: {}, count: {}", assigneeType,
+				assigneeId, matching.size());
+	}
 
-    /**
-     * Deletes the database row first, then the Temporal schedule. Temporal
-     * cleanup is still attempted when the database row was concurrently absent.
-     * If Temporal deletion fails unexpectedly, the failure is logged with safe
-     * identifying fields and rethrown; the database row is never restored.
-     *
-     * @return whether the Automation database row was deleted
-     */
-    private boolean deleteAutomationAndSchedule(Automation automation, AssigneeType assigneeType, String assigneeId) {
-        UUID automationId = automation.getId();
-        String temporalScheduleId = automation.getTemporalScheduleId();
+	/**
+	 * Deletes the database row first, then the Temporal schedule. Temporal cleanup
+	 * is still attempted when the database row was concurrently absent. If Temporal
+	 * deletion fails unexpectedly, the failure is logged with safe identifying
+	 * fields and rethrown; the database row is never restored.
+	 *
+	 * @return whether the Automation database row was deleted
+	 */
+	private boolean deleteAutomationAndSchedule(Automation automation, AssigneeType assigneeType, String assigneeId) {
+		UUID automationId = automation.getId();
+		String temporalScheduleId = automation.getTemporalScheduleId();
 
-        boolean deleted = automationStore.deleteById(automationId);
+		boolean deleted = automationStore.deleteById(automationId);
 
-        try {
-            automationSchedulerService.deleteSchedule(temporalScheduleId);
-        } catch (RuntimeException temporalException) {
-            log.error(
-                    "Temporal schedule deletion failed after the automation database deletion was attempted. "
-                            + "automationId: {}, temporalScheduleId: {}, assigneeType: {}, assigneeId: {}, "
-                            + "databaseRowDeleted: {}",
-                    automationId, temporalScheduleId, assigneeType, assigneeId, deleted, temporalException);
-            throw temporalException;
-        }
+		try {
+			automationSchedulerService.deleteSchedule(temporalScheduleId);
+		} catch (RuntimeException temporalException) {
+			log.error(
+					"Temporal schedule deletion failed after the automation database deletion was attempted. "
+							+ "automationId: {}, temporalScheduleId: {}, assigneeType: {}, assigneeId: {}, "
+							+ "databaseRowDeleted: {}",
+					automationId, temporalScheduleId, assigneeType, assigneeId, deleted, temporalException);
+			throw temporalException;
+		}
 
-        return deleted;
-    }
+		return deleted;
+	}
 }

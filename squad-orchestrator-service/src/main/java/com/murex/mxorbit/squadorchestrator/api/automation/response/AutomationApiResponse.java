@@ -16,9 +16,9 @@ import lombok.NoArgsConstructor;
 
 /**
  * Flat, read-only view of an {@code AutomationDetails}: the persisted
- * automation fields alongside its runtime enrichment (assignee name,
- * schedule status, next run and last run id). There is no nested
- * "automation" object in the JSON payload.
+ * automation fields alongside its runtime enrichment (assignee name, schedule
+ * status, next run and last run id). There is no nested "automation" object in
+ * the JSON payload.
  */
 @Data
 @Builder

@@ -17,8 +17,8 @@ import org.mapstruct.Named;
 /**
  * Pure data mapping between the standalone Automation API DTOs and the core
  * automation types. Does not validate frequency fields, resolve an assignee,
- * call Temporal, branch on {@code AssigneeType} or reference Squad types;
- * all of that stays in the core layer (AutomationValidator,
+ * call Temporal, branch on {@code AssigneeType} or reference Squad types; all
+ * of that stays in the core layer (AutomationValidator,
  * AutomationAssigneeHandlers, AutomationSchedulerService).
  */
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)

@@ -1,6 +1,11 @@
-<article class="squad-card">
+<article
+  class="squad-card"
+  [style.--type-primary]="typeDescriptor().color"
+  [style.--type-secondary]="typeDescriptor().secondaryColor"
+  [style.--type-soft]="typeDescriptor().soft"
+>
   <header class="squad-card__header">
-    <div class="squad-card__icon">
+    <div class="squad-card__icon" [style.background]="typeDescriptor().gradient">
       <mat-icon>{{ typeDescriptor().icon }}</mat-icon>
     </div>
 
@@ -32,7 +37,6 @@
   <section class="squad-card__details" aria-label="Squad details">
     <div
       class="squad-type-badge"
-      [class.squad-type-badge--prompt]="squad().type === 'prompt-squad'"
       [title]="typeDescriptor().description"
     >
       <mat-icon>{{ typeDescriptor().icon }}</mat-icon>

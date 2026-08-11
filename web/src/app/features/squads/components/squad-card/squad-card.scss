@@ -19,7 +19,7 @@
   border-radius: 1.25rem;
   background: radial-gradient(
     circle at top right,
-    color-mix(in srgb, var(--color-accent) 9%, transparent),
+    color-mix(in srgb, var(--type-primary, var(--color-accent)) 10%, transparent),
     transparent 15rem
   ),
   linear-gradient(
@@ -35,11 +35,21 @@
   box-shadow 180ms ease;
 }
 
+/* Top accent stripe: a quick visual cue of the squad type (hardcoded flow vs. prompt squad). */
+.squad-card::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 0.28rem;
+  background: linear-gradient(90deg, var(--type-primary, var(--color-accent)), var(--type-secondary, var(--color-accent-strong)));
+  opacity: 0.9;
+}
+
 .squad-card:hover {
   transform: translateY(-2px);
-  border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-border));
+  border-color: color-mix(in srgb, var(--type-primary, var(--color-accent)) 40%, var(--color-border));
   box-shadow: 0 1.15rem 2.5rem rgba(0, 0, 0, 0.13),
-  0 0 0 1px color-mix(in srgb, var(--color-accent) 10%, transparent);
+  0 0 0 1px color-mix(in srgb, var(--type-primary, var(--color-accent)) 12%, transparent);
 }
 
 .squad-card__header,
@@ -66,9 +76,14 @@
   height: 3.1rem;
   flex: 0 0 3.1rem;
   border-radius: 0.95rem;
-  background: linear-gradient(135deg, var(--color-accent), #7c3aed);
   color: white;
-  box-shadow: 0 0.65rem 1.4rem rgba(0, 0, 0, 0.16);
+  box-shadow: 0 0.65rem 1.4rem color-mix(in srgb, var(--type-primary, var(--color-accent)) 32%, transparent);
+  transition: transform 220ms ease, box-shadow 220ms ease;
+}
+
+.squad-card:hover .squad-card__icon {
+  transform: scale(1.06) rotate(-3deg);
+  box-shadow: 0 0.85rem 1.75rem color-mix(in srgb, var(--type-primary, var(--color-accent)) 42%, transparent);
 }
 
 .squad-card__icon mat-icon {
@@ -207,10 +222,10 @@
   gap: 0.4rem;
   max-width: 100%;
   padding: 0.45rem 0.75rem;
-  border: 1px solid color-mix(in srgb, var(--color-accent) 28%, var(--color-border));
+  border: 1px solid color-mix(in srgb, var(--type-primary, var(--color-accent)) 28%, var(--color-border));
   border-radius: 999px;
-  background: color-mix(in srgb, var(--color-accent) 9%, var(--color-surface));
-  color: var(--color-accent);
+  background: var(--type-soft, color-mix(in srgb, var(--color-accent) 9%, var(--color-surface)));
+  color: var(--type-primary, var(--color-accent));
   font-size: 0.76rem;
   font-weight: 800;
   line-height: 1;
@@ -227,12 +242,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.squad-type-badge--prompt {
-  border-color: color-mix(in srgb, #7c3aed 28%, var(--color-border));
-  background: color-mix(in srgb, #7c3aed 9%, var(--color-surface));
-  color: #7c3aed;
 }
 
 /* =========================================================
@@ -265,7 +274,7 @@
   width: 1.2rem;
   height: 1.2rem;
   flex: 0 0 auto;
-  color: var(--color-accent);
+  color: var(--type-primary, var(--color-accent));
   font-size: 1.2rem;
 }
 
@@ -312,23 +321,23 @@
   min-height: 2.65rem;
   padding-inline: 1.15rem;
   border-radius: 0.75rem;
-  background: var(--color-accent);
+  background: linear-gradient(135deg, var(--type-secondary, var(--color-accent-strong)), var(--type-primary, var(--color-accent)));
   color: white;
   font-weight: 800;
-  box-shadow: 0 0.45rem 1rem color-mix(in srgb, var(--color-accent) 20%, transparent);
-  transition: background-color 160ms ease,
+  box-shadow: 0 0.45rem 1rem color-mix(in srgb, var(--type-primary, var(--color-accent)) 24%, transparent);
+  transition: filter 160ms ease,
   box-shadow 160ms ease,
   transform 160ms ease;
 }
 
 .open-squad-button:hover {
   transform: translateY(-1px);
-  background: color-mix(in srgb, var(--color-accent) 88%, black);
-  box-shadow: 0 0.65rem 1.25rem color-mix(in srgb, var(--color-accent) 28%, transparent);
+  filter: brightness(0.94);
+  box-shadow: 0 0.65rem 1.25rem color-mix(in srgb, var(--type-primary, var(--color-accent)) 34%, transparent);
 }
 
 .open-squad-button:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--color-accent) 28%, transparent);
+  outline: 3px solid color-mix(in srgb, var(--type-primary, var(--color-accent)) 28%, transparent);
   outline-offset: 2px;
 }
 

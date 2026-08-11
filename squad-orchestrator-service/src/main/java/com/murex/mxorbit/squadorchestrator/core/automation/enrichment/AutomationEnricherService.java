@@ -18,10 +18,10 @@ import org.springframework.stereotype.Service;
  * Single, reusable place that turns a stored {@link Automation} into an
  * {@link AutomationDetails} by resolving its assignee name through
  * {@link AutomationAssigneeHandlers} and its live schedule state through
- * {@link AutomationSchedulerService}. Never branches on assignee type and
- * never references Squad-specific types, so the same logic serves get, list,
- * create, update, pause and resume without duplication. Nothing computed
- * here is persisted.
+ * {@link AutomationSchedulerService}. Never branches on assignee type and never
+ * references Squad-specific types, so the same logic serves get, list, create,
+ * update, pause and resume without duplication. Nothing computed here is
+ * persisted.
  */
 @Slf4j
 @Service

@@ -46,3 +46,11 @@ management:
 
 agent-service:
   base-url: ${AGENT_SERVICE_BASE_URL:http://localhost:8000}
+
+mxorbit:
+  security:
+    enabled: ${MXORBIT_SECURITY_ENABLED:false}
+    issuer-uri: ${MXORBIT_SECURITY_ISSUER_URI:}
+    audience: ${MXORBIT_SECURITY_AUDIENCE:}
+    required-scope: ${MXORBIT_SECURITY_REQUIRED_SCOPE:}
+    allowed-origins: ${MXORBIT_SECURITY_ALLOWED_ORIGINS:}

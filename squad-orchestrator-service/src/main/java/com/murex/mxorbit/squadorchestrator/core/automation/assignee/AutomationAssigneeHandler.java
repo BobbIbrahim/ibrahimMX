@@ -16,7 +16,9 @@ public interface AutomationAssigneeHandler {
 
 	AssigneeType supportedType();
 
-	/** Rejects with 404 if the assignee is gone, 400 if the input does not fit it. */
+	/**
+	 * Rejects with 404 if the assignee is gone, 400 if the input does not fit it.
+	 */
 	void validate(String assigneeId, Map<String, Object> input);
 
 	String resolveName(String assigneeId);

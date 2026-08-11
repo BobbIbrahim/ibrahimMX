@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, map, tap } from 'rxjs';
 
+import { environment } from '../../../environments/environment';
 import {
   SquadBuilderInputRef,
   SquadSavePayload,
@@ -48,7 +49,7 @@ export interface SquadApiResponse {
 export class SquadService {
   private readonly http = inject(HttpClient);
 
-  private readonly baseUrl = 'http://localhost:8080';
+  private readonly baseUrl = environment.apiBaseUrl;
 
   private readonly squadsSignal = signal<Squad[]>([]);
 

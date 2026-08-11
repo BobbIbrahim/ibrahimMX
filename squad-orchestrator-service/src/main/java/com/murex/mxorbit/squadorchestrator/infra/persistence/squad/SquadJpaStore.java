@@ -75,7 +75,8 @@ public class SquadJpaStore implements SquadStore {
 	@Override
 	public boolean deleteById(String squadId) {
 		log.trace("Deleting squad by id: {}", squadId);
-		// Steps and edges go with the squad; run history keeps its own copy of squadId and is left intact.
+		// Steps and edges go with the squad; run history keeps its own copy of squadId
+		// and is left intact.
 		return squadRepository.findById(squadId).map(entity -> {
 			squadRepository.delete(entity);
 			return true;

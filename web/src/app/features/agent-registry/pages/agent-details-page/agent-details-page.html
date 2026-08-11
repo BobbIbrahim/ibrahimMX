@@ -11,10 +11,10 @@
       <span>{{ selectedAgent.name }}</span>
     </nav>
 
-    <article class="details-card">
+    <article class="details-card" [style.--model-primary]="theme().primary" [style.--model-secondary]="theme().secondary" [style.--model-soft]="theme().soft">
       <section class="details-card__main">
         <header class="details-card__header">
-          <div class="details-card__avatar" [style.background]="selectedAgent.accentColor">
+          <div class="details-card__avatar" [style.background]="theme().gradient">
             {{ selectedAgent.avatar }}
           </div>
 

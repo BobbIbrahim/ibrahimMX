@@ -6,10 +6,12 @@ plugins {
 group = "com.murex.mxorbit"
 
 tasks.withType<JavaCompile> {
-    options.compilerArgs.addAll(listOf(
-        "-Amapstruct.defaultComponentModel=spring",
-        "-Amapstruct.unmappedTargetPolicy=ERROR"
-    ))
+    options.compilerArgs.addAll(
+        listOf(
+            "-Amapstruct.defaultComponentModel=spring",
+            "-Amapstruct.unmappedTargetPolicy=ERROR"
+        )
+    )
 }
 
 spotless {
@@ -30,6 +32,11 @@ dependencies {
     implementation("org.mapstruct:mapstruct")
     implementation("io.temporal:temporal-spring-boot-starter")
 
+    // Task 6: OAuth 2.0 resource-server foundation, disabled by default until the
+    // real MXORBIT API audience and delegated scope are available (see Task 7).
+    implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
     annotationProcessor("org.mapstruct:mapstruct-processor")
@@ -38,6 +45,11 @@ dependencies {
 
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("io.temporal:temporal-testing")
+    // Minimum test infrastructure needed for Task 6 context/slice tests; no
+    // security tests or context tests previously existed in this module.
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.boot:spring-boot-webmvc-test")
+    testImplementation("org.springframework.security:spring-security-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

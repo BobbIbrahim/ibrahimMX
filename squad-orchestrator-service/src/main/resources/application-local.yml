@@ -18,3 +18,7 @@ spring:
 logging:
   level:
     com.murex.mxorbit: DEBUG
+
+mxorbit:
+  security:
+    enabled: false

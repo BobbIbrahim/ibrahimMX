@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 
 import { Shell } from './core/layout/shell/shell';
+import { msalAuthGuardChild } from './core/auth/msal-auth.guard';
 import { AgentRegistryPage } from './features/agent-registry/pages/agent-registry-page/agent-registry-page';
 import { AutopilotPage } from './features/autopilot/pages/autopilot-page/autopilot-page';
 import { ProjectRegistryPage } from './features/project-registry/pages/project-registry-page/project-registry-page';
@@ -15,6 +16,7 @@ export const routes: Routes = [
   {
     path: '',
     component: Shell,
+    canActivateChild: [msalAuthGuardChild],
     children: [
       {
         path: '',

@@ -12,10 +12,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * Small lookup from {@link AssigneeType} to the {@link AutomationAssigneeHandler}
- * that knows how to validate, name and schedule that kind of assignee. Adding
- * support for a new assignee type is just adding a new handler bean; nothing
- * here needs to change.
+ * Small lookup from {@link AssigneeType} to the
+ * {@link AutomationAssigneeHandler} that knows how to validate, name and
+ * schedule that kind of assignee. Adding support for a new assignee type is
+ * just adding a new handler bean; nothing here needs to change.
  */
 @Component
 public class AutomationAssigneeHandlers {

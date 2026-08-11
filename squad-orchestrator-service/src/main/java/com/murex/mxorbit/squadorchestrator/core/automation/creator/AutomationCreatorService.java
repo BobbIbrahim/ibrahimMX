@@ -41,8 +41,8 @@ public class AutomationCreatorService implements AutomationCreator {
 				.assigneeType(request.getAssigneeType()).assigneeId(request.getAssigneeId())
 				.temporalScheduleId(temporalScheduleId).frequency(request.getFrequency())
 				.runTime(AutomationRunTimes.anchorToUtc(request.getRunTime())).weeklyDay(request.getWeeklyDay())
-				.everyMinutes(request.getEveryMinutes()).initialInput(copyOf(request.getInitialInput()))
-				.createdAt(now).updatedAt(now).build();
+				.everyMinutes(request.getEveryMinutes()).initialInput(copyOf(request.getInitialInput())).createdAt(now)
+				.updatedAt(now).build();
 
 		// Temporal Schedule is created first; the database row is only persisted
 		// once the schedule exists. If persistence then fails, the schedule is

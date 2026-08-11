@@ -57,7 +57,8 @@ public class SquadRunProviderService implements SquadRunProvider {
 
 	@Override
 	public List<String> getRunningSquadRunIds(String squadId) {
-		// The squad id lives in the memo, which Temporal visibility cannot query, so filter here.
+		// The squad id lives in the memo, which Temporal visibility cannot query, so
+		// filter here.
 		return temporalClient.listRunningWorkflowExecutions(SQUAD_EXECUTION_WORKFLOW_TYPE).stream()
 				.filter(execution -> squadId.equals(execution.getMemo().get(SquadRunMemoKeys.SQUAD_ID)))
 				.map(WorkflowExecutionSummary::getWorkflowId).toList();
@@ -133,7 +134,10 @@ public class SquadRunProviderService implements SquadRunProvider {
 				.ifPresent(terminalStep -> status.setFinalResult(terminalStep.getOutput()));
 	}
 
-	/** Several branches ended in parallel, so each terminal output is kept under its step name. */
+	/**
+	 * Several branches ended in parallel, so each terminal output is kept under its
+	 * step name.
+	 */
 	static Map<String, Object> mergeTerminalOutputs(List<SquadStepStatus> completedTerminals) {
 		Map<String, Object> mergedResult = new LinkedHashMap<>();
 

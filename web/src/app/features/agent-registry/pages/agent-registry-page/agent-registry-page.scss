@@ -171,6 +171,34 @@
 
 
 /* =========================================================
+   5b. Feedback
+   ========================================================= */
+
+.agent-feedback {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.agent-feedback mat-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+  font-size: 1.2rem;
+}
+
+.agent-feedback--error {
+  border: 1px solid color-mix(in srgb, var(--color-danger) 42%, var(--color-border));
+  background: color-mix(in srgb, var(--color-danger) 12%, var(--color-surface));
+  color: var(--color-danger);
+}
+
+
+/* =========================================================
    6. Result summary
    ========================================================= */
 

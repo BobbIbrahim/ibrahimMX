@@ -71,7 +71,7 @@
                 >
                   <span
                     class="assigned-agent__avatar"
-                    [style.background]="agent.accentColor"
+                    [style.background]="getAgentTheme(agent).gradient"
                   >
                     {{ agent.avatar }}
                   </span>

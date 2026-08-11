@@ -15,8 +15,8 @@ import lombok.NoArgsConstructor;
 /**
  * Shared create/update request body for the standalone Automation API.
  * Frequency-specific field combinations are validated by the existing
- * {@code AutomationValidator} in the core layer, not duplicated here with
- * Bean Validation.
+ * {@code AutomationValidator} in the core layer, not duplicated here with Bean
+ * Validation.
  */
 @Data
 @Builder

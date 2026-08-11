@@ -1,4 +1,9 @@
 .agent-card {
+  /* Falls back to the app's default accent when a model theme isn't supplied. */
+  --model-primary: var(--color-accent);
+  --model-secondary: var(--color-accent-strong);
+  --model-soft: color-mix(in srgb, var(--color-accent) 14%, transparent);
+
   position: relative;
   min-height: 22rem;
   height: 100%;
@@ -24,12 +29,22 @@
     background 180ms ease;
 }
 
+/* Top accent stripe: a quick visual cue of the model family (Murex, OpenAI, Anthropic, Google). */
+.agent-card::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 0.28rem;
+  background: linear-gradient(90deg, var(--model-primary), var(--model-secondary));
+  opacity: 0.9;
+}
+
 .agent-card:hover {
   transform: translateY(-3px);
-  border-color: color-mix(in srgb, var(--color-accent) 36%, var(--color-border));
+  border-color: color-mix(in srgb, var(--model-primary) 36%, var(--color-border));
   box-shadow:
     0 1.5rem 3.5rem rgba(0, 0, 0, 0.16),
-    0 0 0 1px color-mix(in srgb, var(--color-accent) 12%, transparent);
+    0 0 0 1px color-mix(in srgb, var(--model-primary) 16%, transparent);
 }
 
 .agent-card::before {
@@ -39,7 +54,7 @@
   pointer-events: none;
   background: radial-gradient(
     circle at top right,
-    color-mix(in srgb, var(--color-accent) 12%, transparent),
+    color-mix(in srgb, var(--model-primary) 14%, transparent),
     transparent 16rem
   );
   opacity: 0.85;
@@ -156,16 +171,19 @@
   gap: 0.45rem;
   margin-top: 1rem;
   padding: 0.45rem 0.65rem;
-  border: 1px solid var(--color-border);
+  border: 1px solid color-mix(in srgb, var(--model-primary) 30%, var(--color-border));
   border-radius: 999px;
-  color: var(--color-text-secondary);
+  background: var(--model-soft);
+  color: var(--model-primary);
   font-size: 0.82rem;
+  font-weight: 600;
 }
 
 .agent-card__model mat-icon {
   font-size: 1rem;
   width: 1rem;
   height: 1rem;
+  color: var(--model-primary);
 }
 
 .agent-card__description {
@@ -248,7 +266,7 @@
   gap: 0.35rem;
   margin-top: auto;
   padding-top: 1rem;
-  color: var(--color-accent);
+  color: var(--model-primary);
   font-size: 0.82rem;
   font-weight: 700;
   text-decoration: none;
@@ -265,7 +283,7 @@
 }
 
 .agent-card__details-link:hover {
-  color: var(--color-accent-strong);
+  color: var(--model-secondary);
   transform: translateX(1px);
 }
 
