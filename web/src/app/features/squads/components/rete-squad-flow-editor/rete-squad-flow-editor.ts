@@ -260,7 +260,12 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
       return;
     }
 
-    if (changes['steps'] || changes['edges'] || changes['agentNamesById'] || changes['conditionals']) {
+    if (
+      changes['steps'] ||
+      changes['edges'] ||
+      changes['agentNamesById'] ||
+      changes['conditionals']
+    ) {
       await this.syncGraphFromInputs();
       this.scheduleFollowToActiveNode();
     }
@@ -375,9 +380,7 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
         // Conditional -> Step (allow to emit event, then remove)
         if (sourceConditionalId && targetStepId) {
           // Resolve the conditional
-          const sourceConditional = this.conditionals.find(
-            (c) => c.id === sourceConditionalId,
-          );
+          const sourceConditional = this.conditionals.find((c) => c.id === sourceConditionalId);
 
           if (sourceConditional) {
             // Reject self-routing
@@ -574,7 +577,9 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
 
             return context;
           } else if (conditionalId) {
-            const conditional = this.conditionals.find((candidate) => candidate.id === conditionalId);
+            const conditional = this.conditionals.find(
+              (candidate) => candidate.id === conditionalId,
+            );
 
             if (!conditional || !this.area) {
               return context;
@@ -950,9 +955,7 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
 
     // Add visual route connections (conditional -> target step for each edge with source owning conditional)
     for (const edge of this.edges) {
-      const sourceConditional = this.conditionals.find(
-        (c) => c.sourceStepId === edge.sourceStepId,
-      );
+      const sourceConditional = this.conditionals.find((c) => c.sourceStepId === edge.sourceStepId);
 
       if (!sourceConditional) {
         continue;
@@ -1051,7 +1054,10 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
 
     // Remove deleted ownership connections
     const currentConditionalIds = new Set(this.conditionals.map((c) => c.id));
-    for (const [conditionalId, connectionId] of this.ownershipConnectionIdByConditionalId.entries()) {
+    for (const [
+      conditionalId,
+      connectionId,
+    ] of this.ownershipConnectionIdByConditionalId.entries()) {
       if (currentConditionalIds.has(conditionalId)) {
         continue;
       }
@@ -1452,8 +1458,9 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
     }
 
     const anyNodeId = [...this.nodeByStepId.values()][0]?.id;
-    const nodeViews = (this.area as unknown as { nodeViews?: Map<string, { element: HTMLElement }> })
-      ?.nodeViews;
+    const nodeViews = (
+      this.area as unknown as { nodeViews?: Map<string, { element: HTMLElement }> }
+    )?.nodeViews;
 
     return anyNodeId ? (nodeViews?.get(anyNodeId)?.element.parentElement ?? null) : null;
   }
@@ -1574,7 +1581,7 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
     return element;
   }
 
-  /** Turns the engine syntax (`output.changeType equals "BUG_FIX"`) into something readable at a glance. */
+  /** Turns the engine syntax (`output.ticketType equals "BUG_FIX"`) into something readable at a glance. */
   private humanizeCondition(condition: string): string {
     return condition
       .replace(/\boutput\./g, '')
@@ -1858,7 +1865,10 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
       return;
     }
 
-    container.classList.toggle('rete-squad-flow-editor--interaction-locked', this.interactionLocked);
+    container.classList.toggle(
+      'rete-squad-flow-editor--interaction-locked',
+      this.interactionLocked,
+    );
   }
 
   private resolveStepIdFromDomEventTarget(target: EventTarget | null): string | null {

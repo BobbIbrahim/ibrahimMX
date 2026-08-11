@@ -389,15 +389,19 @@ function validateEdgeRoutingProperties(
     return;
   }
 
-  if (edge.priority === null || edge.priority === undefined || !Number.isFinite(edge.priority)) {
-    validationErrors.push(`${edgeLabel} must have a priority.`);
-    return;
-  }
+  // Priority only matters to break ties between conditional (WHEN) routes, so
+  // it's only required and range-checked when a condition is actually in play.
+  if (!edge.isDefault && edge.routingType === 'WHEN') {
+    if (edge.priority === null || edge.priority === undefined || !Number.isFinite(edge.priority)) {
+      validationErrors.push(`${edgeLabel} must have a priority.`);
+      return;
+    }
 
-  if (!edge.isDefault && (edge.priority < MIN_ROUTE_PRIORITY || edge.priority > MAX_ROUTE_PRIORITY)) {
-    validationErrors.push(
-      `${edgeLabel} must have a priority between ${MIN_ROUTE_PRIORITY} and ${MAX_ROUTE_PRIORITY}.`,
-    );
+    if (edge.priority < MIN_ROUTE_PRIORITY || edge.priority > MAX_ROUTE_PRIORITY) {
+      validationErrors.push(
+        `${edgeLabel} must have a priority between ${MIN_ROUTE_PRIORITY} and ${MAX_ROUTE_PRIORITY}.`,
+      );
+    }
   }
 
   const hasCondition =
@@ -438,13 +442,16 @@ function validateOutgoingEdgeRouting(
   }
 
   if (outgoingEdges.length > 1) {
-    const hasNonDefaultAlwaysEdge = outgoingEdges.some(
-      (edge) => edge.routingType === 'ALWAYS' && !edge.isDefault,
-    );
+    // A non-default ALWAYS edge is an unconditional fan-out branch: it is always
+    // traversed alongside its siblings, so a normal step may have any number of
+    // them. Only mixing fan-out branches with routed edges (WHEN, or a DEFAULT
+    // ALWAYS edge) makes the source step's routing ambiguous.
+    const hasParallelEdge = outgoingEdges.some(isParallelFanOutEdge);
+    const hasRoutedEdge = outgoingEdges.some((edge) => !isParallelFanOutEdge(edge));
 
-    if (hasNonDefaultAlwaysEdge) {
+    if (hasParallelEdge && hasRoutedEdge) {
       validationErrors.push(
-        `Source step '${sourceStepId}' has a non-default ALWAYS edge together with other outgoing edges.`,
+        `Source step '${sourceStepId}' mixes parallel ALWAYS edges with conditional routing. Use either only ALWAYS edges to fan out, or WHEN edges with at most one default edge.`,
       );
     }
   }
@@ -465,6 +472,14 @@ function validateOutgoingEdgeRouting(
 
     whenPriorities.add(edge.priority);
   }
+}
+
+/**
+ * A non-default ALWAYS edge is always traversed, so siblings fan out in
+ * parallel. Mirrors SquadEdgeRoutingValidator#isParallelEdge on the backend.
+ */
+function isParallelFanOutEdge(edge: SquadBuilderDraft['edges'][number]): boolean {
+  return edge.routingType === 'ALWAYS' && !edge.isDefault;
 }
 
 function stepLabel(step: SquadBuilderStep): string {

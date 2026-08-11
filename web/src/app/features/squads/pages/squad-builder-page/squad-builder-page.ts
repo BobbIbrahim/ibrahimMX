@@ -127,6 +127,12 @@ export class SquadBuilderPage implements OnInit {
   readonly selectedStepId = computed(() => this.selectedStep()?.id ?? null);
   readonly selectedConditional = this.squadBuilderState.selectedConditional;
   readonly selectedConditionalId = computed(() => this.selectedConditional()?.id ?? null);
+
+  /** Whether the right-hand details panel should be visible; drives the canvas expansion when closed. */
+  readonly isStepDetailsPanelOpen = computed(
+    () => this.selectedStep() !== undefined || this.selectedConditional() !== undefined,
+  );
+
   readonly selectedConditionalSourceStep = computed(() => {
     const selectedConditional = this.selectedConditional();
     if (!selectedConditional) {
@@ -451,6 +457,11 @@ export class SquadBuilderPage implements OnInit {
 
   deleteSelectedStep(): void {
     this.squadBuilderState.deleteSelectedStep();
+  }
+
+  /** Closes the right-hand step/conditional details panel without touching the workflow itself. */
+  closeStepDetailsPanel(): void {
+    this.squadBuilderState.clearSelection();
   }
 
   updateSelectedStepName(name: string): void {

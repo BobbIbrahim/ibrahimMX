@@ -14,14 +14,14 @@ class TestSelectorOutput(BaseModel):
 
 
 def test_selector_chain(payload: dict[str, Any]) -> dict[str, Any]:
-    require_input(payload, ("change", "changeType"))
+    require_input(payload, ("change", "ticketType"))
     ensure_absent(payload, "test")
 
     llm = build_llm(get_settings())
     structured_llm = llm.with_structured_output(TestSelectorOutput)
     result = structured_llm.invoke(
         "Choose the single most relevant validation test to run for this change.\n"
-        f"changeType: {payload['changeType']}\n"
+        f"ticketType: {payload['ticketType']}\n"
         f"change: {payload['change']}"
     )
 

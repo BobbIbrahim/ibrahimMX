@@ -1,10 +1,10 @@
 import unittest
 from unittest.mock import patch
 
-from app.services.change_classifier import (
-    ChangeClassifierOutput,
-    ChangeType,
-    change_classifier_chain,
+from app.services.ticket_type_classifier import (
+    ticket_type_classifier_chain,
+    TicketType,
+    TicketTypeOutput,
 )
 
 
@@ -24,24 +24,24 @@ class _FakeLLM:
         return _FakeStructuredLLM(self._result)
 
 
-class ChangeClassifierChainTests(unittest.TestCase):
-    @patch("app.services.change_classifier.build_llm")
-    def test_change_classifier_preserves_existing_payload_fields(
+class TicketTypeClassifierChainTests(unittest.TestCase):
+    @patch("app.services.ticket_type_classifier.build_llm")
+    def test_ticket_type_classifier(
         self, mock_build_llm
     ) -> None:
         mock_build_llm.return_value = _FakeLLM(
-            ChangeClassifierOutput(changeType=ChangeType.BUG_FIX)
+            TicketTypeOutput(ticketType=TicketType.BUG_FIX)
         )
         payload = {"change": "fix login bug", "ticketId": "MX-123"}
 
-        output = change_classifier_chain(payload)
+        output = ticket_type_classifier_chain(payload)
 
         self.assertEqual(
             output,
             {
                 "change": "fix login bug",
                 "ticketId": "MX-123",
-                "changeType": "BUG_FIX",
+                "ticketType": "BUG_FIX",
             },
         )
 

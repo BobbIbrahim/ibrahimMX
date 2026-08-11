@@ -28,7 +28,7 @@ class TestSelectorChainTests(unittest.TestCase):
         mock_build_llm.return_value = _FakeLLM(TestSelectorOutput(test="run-login-test"))
         payload = {
             "change": "fix login bug",
-            "changeType": "BUG_FIX",
+            "ticketType": "BUG_FIX",
             "ticketId": "MX-123",
         }
 
@@ -38,7 +38,7 @@ class TestSelectorChainTests(unittest.TestCase):
             output,
             {
                 "change": "fix login bug",
-                "changeType": "BUG_FIX",
+                "ticketType": "BUG_FIX",
                 "ticketId": "MX-123",
                 "test": "run-login-test",
             },

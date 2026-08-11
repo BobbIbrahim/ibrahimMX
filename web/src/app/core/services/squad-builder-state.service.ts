@@ -734,20 +734,22 @@ export class SquadBuilderStateService {
         return draft;
       }
 
-      // Validate priority: default routes are normalized below and never take a
-      // user-provided value, so only non-default priorities need range checks.
+      // Validate routingType
+      if (payload.routingType !== 'WHEN' && payload.routingType !== 'ALWAYS') {
+        return draft;
+      }
+
+      // Priority only matters to break ties between conditional (WHEN) routes, so
+      // it's only required and range-checked when a condition is actually in play.
+      // Default routes are normalized below and never take a user-provided value.
       if (
+        payload.routingType === 'WHEN' &&
         !payload.isDefault &&
         (!Number.isFinite(payload.priority) ||
           !Number.isInteger(payload.priority) ||
           payload.priority < MIN_ROUTE_PRIORITY ||
           payload.priority > MAX_ROUTE_PRIORITY)
       ) {
-        return draft;
-      }
-
-      // Validate routingType
-      if (payload.routingType !== 'WHEN' && payload.routingType !== 'ALWAYS') {
         return draft;
       }
 
@@ -877,20 +879,22 @@ export class SquadBuilderStateService {
         return draft;
       }
 
-      // Validate priority: default routes are normalized below and never take a
-      // user-provided value, so only non-default priorities need range checks.
+      // Validate routingType
+      if (payload.routingType !== 'WHEN' && payload.routingType !== 'ALWAYS') {
+        return draft;
+      }
+
+      // Priority only matters to break ties between conditional (WHEN) routes, so
+      // it's only required and range-checked when a condition is actually in play.
+      // Default routes are normalized below and never take a user-provided value.
       if (
+        payload.routingType === 'WHEN' &&
         !payload.isDefault &&
         (!Number.isFinite(payload.priority) ||
           !Number.isInteger(payload.priority) ||
           payload.priority < MIN_ROUTE_PRIORITY ||
           payload.priority > MAX_ROUTE_PRIORITY)
       ) {
-        return draft;
-      }
-
-      // Validate routingType
-      if (payload.routingType !== 'WHEN' && payload.routingType !== 'ALWAYS') {
         return draft;
       }
 

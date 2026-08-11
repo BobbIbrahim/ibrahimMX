@@ -40,18 +40,22 @@ public class SquadEdgeRoutingValidator {
 			throw badRequest(describeEdge(edge) + " must have a routing type.");
 		}
 
-		Integer priority = edge.getPriority();
-		if (priority == null) {
-			throw badRequest(describeEdge(edge) + " must have a priority.");
-		}
-
 		if (Boolean.TRUE.equals(edge.getIsDefault())) {
 			// The backend, not the client, owns the default edge's priority: normalize it
 			// to the reserved constant so it can never collide with a conditional route.
 			edge.setPriority(SquadEdge.DEFAULT_ROUTE_PRIORITY);
-		} else if (priority < SquadEdge.MIN_ROUTE_PRIORITY || priority > SquadEdge.MAX_ROUTE_PRIORITY) {
-			throw badRequest(describeEdge(edge) + " must have a priority between " + SquadEdge.MIN_ROUTE_PRIORITY
-					+ " and " + SquadEdge.MAX_ROUTE_PRIORITY + ".");
+		} else if (routingType == SquadEdgeRoutingType.WHEN) {
+			// Priority only matters to break ties between conditional (WHEN) routes, so
+			// it's only required and range-checked when a condition is actually in play.
+			Integer priority = edge.getPriority();
+			if (priority == null) {
+				throw badRequest(describeEdge(edge) + " must have a priority.");
+			}
+
+			if (priority < SquadEdge.MIN_ROUTE_PRIORITY || priority > SquadEdge.MAX_ROUTE_PRIORITY) {
+				throw badRequest(describeEdge(edge) + " must have a priority between " + SquadEdge.MIN_ROUTE_PRIORITY
+						+ " and " + SquadEdge.MAX_ROUTE_PRIORITY + ".");
+			}
 		}
 
 		boolean hasCondition = edge.getCondition() != null && !edge.getCondition().isBlank();

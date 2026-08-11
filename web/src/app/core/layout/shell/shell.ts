@@ -26,9 +26,14 @@ export class Shell {
     { route: '/autopilot', label: 'Autopilot', icon: 'auto_awesome' },
   ];
 
+  /** Mobile drawer visibility (unchanged behaviour: closed by default, opened via the hamburger). */
   private readonly navOpen = signal(false);
 
+  /** Desktop persistent-sidebar collapse state (expanded by default, matching prior behaviour). */
+  private readonly sidebarCollapsed = signal(false);
+
   readonly isNavOpen = this.navOpen.asReadonly();
+  readonly isSidebarCollapsed = this.sidebarCollapsed.asReadonly();
 
   toggleNav(): void {
     this.navOpen.update((isOpen) => !isOpen);
@@ -36,5 +41,10 @@ export class Shell {
 
   closeNav(): void {
     this.navOpen.set(false);
+  }
+
+  /** Collapses/restores the persistent left navigation so the page content can reclaim its width. */
+  toggleSidebar(): void {
+    this.sidebarCollapsed.update((collapsed) => !collapsed);
   }
 }

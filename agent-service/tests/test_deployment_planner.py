@@ -33,7 +33,7 @@ class DeploymentPlannerChainTests(unittest.TestCase):
         )
         payload = {
             "change": "fix login bug",
-            "changeType": "BUG_FIX",
+            "ticketType": "BUG_FIX",
             "test": "run-login-test",
             "ticketId": "MX-123",
         }
@@ -44,7 +44,7 @@ class DeploymentPlannerChainTests(unittest.TestCase):
             output,
             {
                 "change": "fix login bug",
-                "changeType": "BUG_FIX",
+                "ticketType": "BUG_FIX",
                 "test": "run-login-test",
                 "ticketId": "MX-123",
                 "nextAction": "deploy to staging",

@@ -1,4 +1,8 @@
-<div class="app-shell" [class.app-shell--nav-open]="isNavOpen()">
+<div
+  class="app-shell"
+  [class.app-shell--nav-open]="isNavOpen()"
+  [class.app-shell--sidebar-collapsed]="isSidebarCollapsed()"
+>
   <header class="topbar">
     <button
       type="button"
@@ -27,7 +31,19 @@
 
   <div class="nav-backdrop" (click)="closeNav()"></div>
 
-  <aside class="sidebar">
+  <button
+    type="button"
+    class="sidebar-reveal-button"
+    aria-label="Open navigation menu"
+    aria-controls="mxorbit-sidebar"
+    [attr.aria-expanded]="!isSidebarCollapsed()"
+    title="Open navigation menu"
+    (click)="toggleSidebar()"
+  >
+    <mat-icon>menu</mat-icon>
+  </button>
+
+  <aside class="sidebar" id="mxorbit-sidebar">
     <div class="brand">
       <div class="brand__mark">
         <mat-icon>hub</mat-icon>
@@ -37,6 +53,18 @@
         <span class="brand__eyebrow">Mxorbit</span>
         <strong>Control Panel</strong>
       </div>
+
+      <button
+        type="button"
+        class="sidebar-collapse-button"
+        aria-label="Collapse navigation menu"
+        aria-controls="mxorbit-sidebar"
+        [attr.aria-expanded]="!isSidebarCollapsed()"
+        title="Collapse navigation menu"
+        (click)="toggleSidebar()"
+      >
+        <mat-icon>menu_open</mat-icon>
+      </button>
     </div>
 
     <nav class="nav">

@@ -126,7 +126,11 @@
         ></app-rete-squad-flow-editor>
       </main>
 
-      <aside class="builder-side-panel">
+      <aside
+        class="builder-side-panel"
+        [class.builder-side-panel--collapsed]="!isStepDetailsPanelOpen()"
+        [attr.aria-hidden]="!isStepDetailsPanelOpen()"
+      >
 
         @if (selectedStep(); as step) {
 
@@ -136,15 +140,29 @@
               <h2>{{ step.name }}</h2>
             </div>
 
-            <button
-              type="button"
-              mat-icon-button
-              class="delete-step-button"
-              aria-label="Delete selected step"
-              (click)="deleteSelectedStep()"
-            >
-              <mat-icon>delete</mat-icon>
-            </button>
+            <div class="side-panel-header__actions">
+              <button
+                type="button"
+                mat-icon-button
+                class="delete-step-button"
+                aria-label="Delete selected step"
+                title="Delete selected step"
+                (click)="deleteSelectedStep()"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
+
+              <button
+                type="button"
+                mat-icon-button
+                class="close-panel-button"
+                aria-label="Close step details"
+                title="Close step details"
+                (click)="closeStepDetailsPanel()"
+              >
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
           </div>
 
           @if (selectedStepValidation(); as validation) {
@@ -422,15 +440,29 @@
               <h2>{{ conditional.name }}</h2>
             </div>
 
-            <button
-              type="button"
-              mat-icon-button
-              class="delete-conditional-button"
-              aria-label="Delete selected conditional"
-              (click)="deleteConditional()"
-            >
-              <mat-icon>delete</mat-icon>
-            </button>
+            <div class="side-panel-header__actions">
+              <button
+                type="button"
+                mat-icon-button
+                class="delete-conditional-button"
+                aria-label="Delete selected conditional"
+                title="Delete selected conditional"
+                (click)="deleteConditional()"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
+
+              <button
+                type="button"
+                mat-icon-button
+                class="close-panel-button"
+                aria-label="Close step details"
+                title="Close step details"
+                (click)="closeStepDetailsPanel()"
+              >
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
           </div>
 
           <div class="conditional-form">
@@ -745,19 +777,6 @@
                </div>
              </div>
            }
-          </div>
-
-        } @else {
-
-          <div class="side-panel-empty">
-            <mat-icon>touch_app</mat-icon>
-
-            <h2>Select a step</h2>
-
-            <p>
-              Click a step node on the canvas to edit its name, assigned agent,
-              and connections.
-            </p>
           </div>
 
         }

@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from typing import Any
 
-from app.services.change_classifier import change_classifier_chain
+from app.services.ticket_type_classifier import ticket_type_classifier_chain
 from app.services.deployment_planner import deployment_planner_chain
 from app.services.test_selector import test_selector_chain
 
@@ -13,7 +13,7 @@ class AgentNotFoundError(Exception):
 AgentCallable = Callable[[dict[str, Any]], dict[str, Any]]
 
 agents: dict[str, AgentCallable] = {
-    "change-classifier": change_classifier_chain,
+    "ticket-type-classifier": ticket_type_classifier_chain,
     "test-selector": test_selector_chain,
     "deployment-planner": deployment_planner_chain,
 }
