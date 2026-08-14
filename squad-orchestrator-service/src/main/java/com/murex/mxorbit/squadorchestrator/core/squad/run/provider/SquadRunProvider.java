@@ -12,5 +12,7 @@ public interface SquadRunProvider {
 
 	List<String> getRunningSquadRunIds(String squadId);
 
+	List<String> getAllSquadRunIds(String squadId);
+
 	Optional<SquadExecutionStatus> getSquadRunStatus(String squadRunId);
 }

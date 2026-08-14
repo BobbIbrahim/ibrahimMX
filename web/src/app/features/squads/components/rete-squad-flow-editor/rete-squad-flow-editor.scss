@@ -437,6 +437,30 @@
       box-shadow: none;
     }
 
+    /* ---- Incomplete step badge -------------------------------------
+       Flags steps missing an agent or a connection directly on the
+       canvas, so issues are visible without opening the side panel. */
+    .rete-step-node--incomplete > [data-testid='node']::before {
+      content: '!';
+      position: absolute;
+      top: -0.4rem;
+      right: -0.4rem;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.1rem;
+      height: 1.1rem;
+      border-radius: 50%;
+      border: 2px solid var(--color-surface);
+      background: var(--rete-condition);
+      color: #1f2937;
+      font-size: 0.68rem;
+      font-weight: 800;
+      line-height: 1;
+      box-shadow: 0 2px 6px rgba(2, 6, 18, 0.4);
+    }
+
     /* ---- Condition node (diamond) --------------------------------
        The node box stays square and transparent; the ::before pseudo
        element is a square rotated 45deg, inscribed in that box. At
@@ -632,6 +656,51 @@
 
 .rete-canvas-toggle--active .rete-canvas-toggle__switch::after {
   transform: translateX(0.8rem);
+}
+
+.rete-zoom-controls {
+  position: absolute;
+  bottom: 0.85rem;
+  right: 0.85rem;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+}
+
+.rete-zoom-controls__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.9rem;
+  padding: 0 0.7rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 140ms ease, background 140ms ease;
+}
+
+.rete-zoom-controls__button--fit {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.rete-zoom-controls__button:hover,
+.rete-zoom-controls__button:focus-visible {
+  color: var(--color-text-primary);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  outline: none;
 }
 
 @keyframes live-node-pulse {

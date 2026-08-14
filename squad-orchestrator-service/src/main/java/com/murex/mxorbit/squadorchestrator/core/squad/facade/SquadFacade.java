@@ -29,4 +29,6 @@ public interface SquadFacade {
 	Optional<SquadExecutionStatus> getSquadRunStatus(String squadRunId);
 
 	void cancelSquadRun(String squadRunId);
+
+	boolean deleteSquadRun(String squadRunId);
 }

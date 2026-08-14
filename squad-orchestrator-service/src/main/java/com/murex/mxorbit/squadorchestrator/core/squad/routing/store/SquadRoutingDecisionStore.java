@@ -10,4 +10,8 @@ public interface SquadRoutingDecisionStore {
 	void save(SquadRoutingDecisionStoreRequest request);
 
 	List<SquadRoutingDecision> findBySquadRunId(String squadRunId);
+
+	void deleteBySquadId(String squadId);
+
+	void deleteBySquadRunId(String squadRunId);
 }

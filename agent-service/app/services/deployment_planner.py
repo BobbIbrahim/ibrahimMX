@@ -14,7 +14,7 @@ class DeploymentPlannerOutput(BaseModel):
 
 
 def deployment_planner_chain(payload: dict[str, Any]) -> dict[str, Any]:
-    require_input(payload, ("change", "ticketType", "test"))
+    require_input(payload, ("ticket", "ticketType", "test"))
     ensure_absent(payload, "nextAction")
 
     llm = build_llm(get_settings())
@@ -24,7 +24,7 @@ def deployment_planner_chain(payload: dict[str, Any]) -> dict[str, Any]:
         "classification, and test recommendation.\n"
         f"ticketType: {payload['ticketType']}\n"
         f"test: {payload['test']}\n"
-        f"change: {payload['change']}"
+        f"ticket: {payload['ticket']}"
     )
 
     return {**payload, "nextAction": result.nextAction}

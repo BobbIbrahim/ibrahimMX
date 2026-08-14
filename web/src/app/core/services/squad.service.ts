@@ -144,4 +144,8 @@ export class SquadService {
   cancelSquadRun(squadRunId: string): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/squads/runs/${squadRunId}/cancel`, {});
   }
+
+  deleteSquadRun(squadRunId: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/squads/runs/${squadRunId}`);
+  }
 }

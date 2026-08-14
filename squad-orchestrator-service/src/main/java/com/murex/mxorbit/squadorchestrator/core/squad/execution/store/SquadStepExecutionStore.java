@@ -10,4 +10,8 @@ public interface SquadStepExecutionStore {
 	void save(SaveSquadStepExecutionRequest request);
 
 	List<SquadStepExecutionData> findBySquadRunId(String squadRunId);
+
+	void deleteBySquadId(String squadId);
+
+	void deleteBySquadRunId(String squadRunId);
 }

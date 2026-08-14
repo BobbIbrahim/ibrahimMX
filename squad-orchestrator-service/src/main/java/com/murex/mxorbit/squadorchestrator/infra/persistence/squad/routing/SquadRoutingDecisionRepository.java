@@ -9,4 +9,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface SquadRoutingDecisionRepository extends JpaRepository<SquadRoutingDecisionEntity, String> {
 
 	List<SquadRoutingDecisionEntity> findBySquadRunIdOrderByDecisionSequenceAsc(String squadRunId);
+
+	void deleteBySquadId(String squadId);
+
+	void deleteBySquadRunId(String squadRunId);
 }

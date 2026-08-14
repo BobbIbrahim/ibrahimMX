@@ -2,6 +2,7 @@ package com.murex.mxorbit.squadorchestrator.core.squad.deleter;
 
 import com.murex.mxorbit.squadorchestrator.core.automation.deleter.AutomationDeleter;
 import com.murex.mxorbit.squadorchestrator.core.automation.model.AssigneeType;
+import com.murex.mxorbit.squadorchestrator.core.squad.run.deleter.SquadRunDeleter;
 import com.murex.mxorbit.squadorchestrator.core.squad.run.provider.SquadRunProvider;
 import com.murex.mxorbit.squadorchestrator.core.squad.store.SquadStore;
 
@@ -20,6 +21,7 @@ public class SquadDeleterService implements SquadDeleter {
 
 	private final SquadStore squadStore;
 	private final SquadRunProvider squadRunProvider;
+	private final SquadRunDeleter squadRunDeleter;
 	private final AutomationDeleter automationDeleter;
 
 	@Override
@@ -33,6 +35,7 @@ public class SquadDeleterService implements SquadDeleter {
 		rejectIfRunning(squadId);
 
 		automationDeleter.deleteByAssignee(AssigneeType.SQUAD, squadId);
+		squadRunDeleter.deleteSquadRuns(squadId);
 
 		boolean deleted = squadStore.deleteById(squadId);
 		log.info("Squad deleted. squadId: {}", squadId);

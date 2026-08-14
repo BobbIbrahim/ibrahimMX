@@ -377,6 +377,62 @@
   background: var(--color-surface);
 }
 
+.canvas-body {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.canvas-body app-rete-squad-flow-editor {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.canvas-empty-state {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  text-align: center;
+  pointer-events: none;
+}
+
+.canvas-empty-state mat-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: 2.5rem;
+  color: var(--color-accent);
+  opacity: 0.6;
+}
+
+.canvas-empty-state h3 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 1.05rem;
+}
+
+.canvas-empty-state p {
+  margin: 0;
+  max-width: 24rem;
+  color: var(--color-text-secondary);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.canvas-empty-state button {
+  pointer-events: auto;
+  margin-top: 0.4rem;
+}
+
 .canvas-toolbar {
   display: flex;
   align-items: flex-start;
@@ -390,6 +446,34 @@
   margin: 0;
   color: var(--color-text-primary);
   font-size: 1.1rem;
+}
+
+.canvas-toolbar__right {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.canvas-toolbar__build-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.canvas-toolbar__build-actions button {
+  font-size: 0.82rem;
+}
+
+.canvas-toolbar__build-actions button mat-icon {
+  margin-right: 0.3rem;
+}
+
+.canvas-toolbar__divider {
+  width: 1px;
+  align-self: stretch;
+  min-height: 1.5rem;
+  background: var(--color-border);
 }
 
 .canvas-toolbar__tabs {
@@ -1420,6 +1504,24 @@
 
   .canvas-toolbar {
     flex-direction: column;
+  }
+
+  .canvas-toolbar__right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .canvas-toolbar__divider {
+    display: none;
+  }
+
+  .canvas-toolbar__build-actions,
+  .canvas-toolbar__tabs {
+    width: 100%;
+  }
+
+  .canvas-toolbar__build-actions button {
+    flex: 1;
   }
 
   .connect-banner {

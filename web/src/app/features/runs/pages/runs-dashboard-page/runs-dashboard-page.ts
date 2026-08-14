@@ -1,7 +1,9 @@
 import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -11,6 +13,10 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { SquadRunListItem, SquadRunOverallStatus } from '../../../../core/models/squad-run.model';
 import { SquadService } from '../../../../core/services/squad.service';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
+import {
+  RunDeleteConfirmDialog,
+  RunDeleteConfirmDialogData,
+} from '../../components/run-delete-confirm-dialog/run-delete-confirm-dialog';
 
 type RunStatusFilter = 'all' | SquadRunOverallStatus;
 
@@ -55,6 +61,7 @@ function persistRunViewMode(viewMode: RunViewMode): void {
   imports: [
     FormsModule,
     PageHeader,
+    MatDialogModule,
     MatButtonModule,
     MatFormFieldModule,
     MatIconModule,
@@ -68,11 +75,13 @@ function persistRunViewMode(viewMode: RunViewMode): void {
 export class RunsDashboardPage implements OnInit, OnDestroy {
   private readonly squadService = inject(SquadService);
   private readonly router = inject(Router);
+  private readonly dialog = inject(MatDialog);
   private autoRefreshHandle?: number;
 
   readonly runs = signal<SquadRunListItem[]>([]);
   readonly isLoading = signal(false);
   readonly loadError = signal<string | null>(null);
+  readonly deleteRunError = signal<string | null>(null);
   readonly searchTerm = signal('');
   readonly statusFilter = signal<RunStatusFilter>('all');
   readonly copiedRunId = signal<string | null>(null);
@@ -247,6 +256,59 @@ export class RunsDashboardPage implements OnInit, OnDestroy {
   openRunFromAction(run: SquadRunListItem, event: Event): void {
     event.stopPropagation();
     this.openRun(run);
+  }
+
+  deleteRun(run: SquadRunListItem): void {
+    const dialogRef = this.dialog.open<
+      RunDeleteConfirmDialog,
+      RunDeleteConfirmDialogData,
+      boolean
+    >(RunDeleteConfirmDialog, {
+      data: {
+        squadName: run.squadName,
+        squadRunId: run.squadRunId,
+      },
+      width: '30rem',
+      maxWidth: '92vw',
+      autoFocus: false,
+      restoreFocus: true,
+      disableClose: true,
+      panelClass: 'run-delete-confirm-dialog-panel',
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (!confirmed) {
+        return;
+      }
+
+      this.deleteRunError.set(null);
+
+      this.squadService.deleteSquadRun(run.squadRunId).subscribe({
+        next: () => {
+          this.removeRun(run.squadRunId);
+        },
+        error: (error: HttpErrorResponse) => {
+          console.error('Failed to delete run:', error);
+
+          this.deleteRunError.set(
+            error.status === 409
+              ? (error.error?.message ??
+                  `Run ${run.squadRunId} is still in progress. Cancel it before deleting.`)
+              : `Failed to delete run ${run.squadRunId}. Please try again.`,
+          );
+        },
+      });
+    });
+  }
+
+  deleteRunFromAction(run: SquadRunListItem, event: Event): void {
+    event.stopPropagation();
+    this.deleteRun(run);
+  }
+
+  private removeRun(squadRunId: string): void {
+    this.runs.update((runs) => runs.filter((run) => run.squadRunId !== squadRunId));
+    this.correctCurrentPage();
   }
 
   onSearchTermChange(searchTerm: string): void {

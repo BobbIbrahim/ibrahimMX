@@ -55,6 +55,20 @@ public class SquadRoutingDecisionJpaStore implements SquadRoutingDecisionStore {
 				evaluationsByDecisionId.getOrDefault(entity.getId(), List.of()))).toList();
 	}
 
+	@Override
+	public void deleteBySquadId(String squadId) {
+		log.debug("Deleting routing decisions by squad id: {}", squadId);
+		// Edge evaluations are removed by the on-delete-cascade foreign key to squad_routing_decision.
+		squadRoutingDecisionRepository.deleteBySquadId(squadId);
+	}
+
+	@Override
+	public void deleteBySquadRunId(String squadRunId) {
+		log.debug("Deleting routing decisions by squad run id: {}", squadRunId);
+		// Edge evaluations are removed by the on-delete-cascade foreign key to squad_routing_decision.
+		squadRoutingDecisionRepository.deleteBySquadRunId(squadRunId);
+	}
+
 	private List<SquadRoutingEdgeEvaluationEntity> toEvaluationEntities(String decisionId,
 			SquadRoutingDecisionStoreRequest request) {
 		List<SquadRoutingEdgeEvaluation> checkedEdges = request.getDecision().getCheckedEdges();

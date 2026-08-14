@@ -883,6 +883,45 @@
   padding-top: 0;
 }
 
+.runs-stat-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.runs-stat-card__delete {
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  padding: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-muted);
+  transition: color 160ms ease,
+  background-color 160ms ease,
+  transform 160ms ease;
+}
+
+.runs-stat-card__delete mat-icon {
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.05rem;
+}
+
+.runs-stat-card__delete:hover {
+  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  color: var(--color-danger);
+}
+
+.runs-stat-card__delete:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-danger) 45%, transparent);
+  outline-offset: 2px;
+}
+
 @media (max-width: 1280px) {
   .runs-stats[aria-label='Squad run cards'] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1083,6 +1122,67 @@
 .runs-state__primary-action mat-icon,
 .runs-state__secondary-action mat-icon {
   margin-right: 0.4rem;
+}
+
+/* =========================================================
+   Run actions (delete)
+   ========================================================= */
+
+.runs-table__actions-heading {
+  text-align: right !important;
+}
+
+.runs-table__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.runs-table__delete {
+  /* Material sizes icon buttons from its own state-layer token, so shrinking
+     width/height alone leaves the icon and the hover circle off-centre. */
+  --mdc-icon-button-state-layer-size: 2rem;
+  --mat-icon-button-state-layer-size: 2rem;
+
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border-radius: 50%;
+  color: var(--color-text-muted);
+  line-height: 1;
+  transition: color 160ms ease,
+  background-color 160ms ease;
+}
+
+.runs-table__delete:hover {
+  background: color-mix(
+    in srgb,
+    var(--color-danger) 12%,
+    transparent
+  );
+  color: var(--color-danger);
+}
+
+.runs-table__delete:focus-visible {
+  outline: 2px solid color-mix(
+    in srgb,
+    var(--color-danger) 40%,
+    transparent
+  );
+  outline-offset: 2px;
+}
+
+.runs-table__delete mat-icon {
+  display: block;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.05rem;
 }
 
 /* =========================================================

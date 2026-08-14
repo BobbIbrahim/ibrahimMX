@@ -105,4 +105,11 @@ public class SquadController implements SquadApi {
 		squadFacade.cancelSquadRun(squadRunId);
 		return ResponseEntity.accepted().build();
 	}
+
+	@Override
+	public ResponseEntity<Void> deleteSquadRun(String squadRunId) {
+		log.debug("Received request to delete squad run with id: {}", squadRunId);
+		return squadFacade.deleteSquadRun(squadRunId) ? ResponseEntity.noContent().build()
+				: ResponseEntity.notFound().build();
+	}
 }

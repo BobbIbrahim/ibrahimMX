@@ -23,4 +23,6 @@ public interface TemporalClient {
 	<T> T getWorkflowExecutionStub(Class<T> workflowClass, String workflowId);
 
 	WorkflowStub getWorkflowStub(String workflowId);
+
+	void deleteWorkflowExecution(String workflowId);
 }

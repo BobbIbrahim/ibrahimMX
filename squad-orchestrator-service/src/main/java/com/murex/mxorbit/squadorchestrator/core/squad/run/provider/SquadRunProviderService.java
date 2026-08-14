@@ -64,6 +64,14 @@ public class SquadRunProviderService implements SquadRunProvider {
 	}
 
 	@Override
+	public List<String> getAllSquadRunIds(String squadId) {
+		// The squad id lives in the memo, which Temporal visibility cannot query, so filter here.
+		return temporalClient.listWorkflowExecutions(SQUAD_EXECUTION_WORKFLOW_TYPE).stream()
+				.filter(execution -> squadId.equals(execution.getMemo().get(SquadRunMemoKeys.SQUAD_ID)))
+				.map(WorkflowExecutionSummary::getWorkflowId).toList();
+	}
+
+	@Override
 	public Optional<SquadExecutionStatus> getSquadRunStatus(String squadRunId) {
 		log.debug("Getting squad run execution status. squadRunId: {}", squadRunId);
 

@@ -24,15 +24,15 @@ public class InMemoryAgentRegistry implements AgentRegistry {
         }
 
         register(AgentDefinition.builder().agentKey(TICKET_TYPE_CLASSIFIER).name(TICKET_TYPE_CLASSIFIER)
-                .serviceUrl(agentServiceBaseUrl).inputs(List.of("change")).outputs(List.of("change", "ticketType"))
+                .serviceUrl(agentServiceBaseUrl).inputs(List.of("ticket")).outputs(List.of("ticket", "ticketType"))
                 .build());
 
         register(AgentDefinition.builder().agentKey(TEST_SELECTOR).name(TEST_SELECTOR).serviceUrl(agentServiceBaseUrl)
-                .inputs(List.of("change", "ticketType")).outputs(List.of("change", "ticketType", "test")).build());
+                .inputs(List.of("ticket", "ticketType")).outputs(List.of("ticket", "ticketType", "test")).build());
 
         register(AgentDefinition.builder().agentKey(DEPLOYMENT_PLANNER).name(DEPLOYMENT_PLANNER)
-                .serviceUrl(agentServiceBaseUrl).inputs(List.of("change", "ticketType", "test"))
-                .outputs(List.of("change", "ticketType", "test", "nextAction")).build());
+                .serviceUrl(agentServiceBaseUrl).inputs(List.of("ticket", "ticketType", "test"))
+                .outputs(List.of("ticket", "ticketType", "test", "nextAction")).build());
     }
 
     @Override

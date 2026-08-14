@@ -32,14 +32,14 @@ class TicketTypeClassifierChainTests(unittest.TestCase):
         mock_build_llm.return_value = _FakeLLM(
             TicketTypeOutput(ticketType=TicketType.BUG_FIX)
         )
-        payload = {"change": "fix login bug", "ticketId": "MX-123"}
+        payload = {"ticket": "fix login bug", "ticketId": "MX-123"}
 
         output = ticket_type_classifier_chain(payload)
 
         self.assertEqual(
             output,
             {
-                "change": "fix login bug",
+                "ticket": "fix login bug",
                 "ticketId": "MX-123",
                 "ticketType": "BUG_FIX",
             },

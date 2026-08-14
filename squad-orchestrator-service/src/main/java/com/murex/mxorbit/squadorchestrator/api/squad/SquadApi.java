@@ -86,4 +86,12 @@ public interface SquadApi {
 	@PostMapping("/runs/{squadRunId}/cancel")
 	ResponseEntity<Void> cancelSquadRun(@PathVariable String squadRunId);
 
+	@DeleteMapping("/runs/{squadRunId}")
+	@Operation(summary = "Delete a squad run")
+	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Squad run deleted"),
+			@ApiResponse(responseCode = "404", description = "Squad run not found"),
+			@ApiResponse(responseCode = "409", description = "Squad run still in progress"),
+			@ApiResponse(responseCode = "500", description = "Internal error")})
+	ResponseEntity<Void> deleteSquadRun(@PathVariable String squadRunId);
+
 }

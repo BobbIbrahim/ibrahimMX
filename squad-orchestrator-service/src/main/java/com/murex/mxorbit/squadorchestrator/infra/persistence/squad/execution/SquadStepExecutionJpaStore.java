@@ -34,6 +34,16 @@ public class SquadStepExecutionJpaStore implements SquadStepExecutionStore {
 				.map(squadStepExecutionPersistenceMapper::toStepExecutionData).toList();
 	}
 
+	@Override
+	public void deleteBySquadId(String squadId) {
+		squadStepExecutionRepository.deleteBySquadId(squadId);
+	}
+
+	@Override
+	public void deleteBySquadRunId(String squadRunId) {
+		squadStepExecutionRepository.deleteBySquadRunId(squadRunId);
+	}
+
 	private String buildId(String squadRunId, String stepId) {
 		return squadRunId + "::" + stepId;
 	}

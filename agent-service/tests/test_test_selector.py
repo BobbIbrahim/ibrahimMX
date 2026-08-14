@@ -27,7 +27,7 @@ class TestSelectorChainTests(unittest.TestCase):
     ) -> None:
         mock_build_llm.return_value = _FakeLLM(TestSelectorOutput(test="run-login-test"))
         payload = {
-            "change": "fix login bug",
+            "ticket": "fix login bug",
             "ticketType": "BUG_FIX",
             "ticketId": "MX-123",
         }
@@ -37,7 +37,7 @@ class TestSelectorChainTests(unittest.TestCase):
         self.assertEqual(
             output,
             {
-                "change": "fix login bug",
+                "ticket": "fix login bug",
                 "ticketType": "BUG_FIX",
                 "ticketId": "MX-123",
                 "test": "run-login-test",

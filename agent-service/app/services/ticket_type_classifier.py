@@ -21,7 +21,7 @@ class TicketTypeOutput(BaseModel):
 
 
 def ticket_type_classifier_chain(payload: dict[str, Any]) -> dict[str, Any]:
-    require_input(payload, ("change",))
+    require_input(payload, ("ticket",))
     ensure_absent(payload, "ticketType")
 
     llm = build_llm(get_settings())
@@ -29,7 +29,7 @@ def ticket_type_classifier_chain(payload: dict[str, Any]) -> dict[str, Any]:
     result = structured_llm.invoke(
         "Classify the provided software change into exactly one value from "
         "BUG_FIX, ENHANCEMENT, or TECHNICAL_ENHANCEMENT.\n"
-        f"change: {payload['change']}"
+        f"ticket: {payload['ticket']}"
     )
 
     return {**payload, "ticketType": result.ticketType.value}

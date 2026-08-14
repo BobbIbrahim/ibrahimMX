@@ -30,22 +30,6 @@
       </div>
 
       <div class="builder-hero__actions">
-        <button type="button" mat-stroked-button (click)="addStep()">
-          <mat-icon>add</mat-icon>
-          Add Step
-        </button>
-
-        <button
-          type="button"
-          mat-stroked-button
-          (click)="addConditional()"
-          [disabled]="!canAddConditional()"
-          [title]="canAddConditional() ? 'Add a routing conditional after the selected step' : 'Select an executable step first'"
-        >
-          <mat-icon>account_tree</mat-icon>
-          Add Conditional
-        </button>
-
         <button
           type="button"
           mat-flat-button
@@ -98,32 +82,69 @@
             <h2>Hardcoded Flow</h2>
           </div>
 
-          <div class="canvas-toolbar__tabs">
-            <button type="button" class="builder-tab builder-tab--active">
-              Canvas
-            </button>
+          <div class="canvas-toolbar__right">
+            <div class="canvas-toolbar__build-actions">
+              <button type="button" mat-stroked-button (click)="addStep()">
+                <mat-icon>add</mat-icon>
+                Add Step
+              </button>
 
-            <button type="button" class="builder-tab" (click)="startLiveRun()">
-              Live Run
-            </button>
+              <button
+                type="button"
+                mat-stroked-button
+                (click)="addConditional()"
+                [disabled]="!canAddConditional()"
+                [title]="canAddConditional() ? 'Add a routing conditional after the selected step' : 'Select an executable step first'"
+              >
+                <mat-icon>account_tree</mat-icon>
+                Add Conditional
+              </button>
+            </div>
+
+            <div class="canvas-toolbar__divider"></div>
+
+            <div class="canvas-toolbar__tabs">
+              <button type="button" class="builder-tab builder-tab--active">
+                Canvas
+              </button>
+
+              <button type="button" class="builder-tab" (click)="startLiveRun()">
+                Live Run
+              </button>
+            </div>
           </div>
         </div>
 
-         <app-rete-squad-flow-editor
-          [steps]="steps()"
-          [edges]="edges()"
-          [agentNamesById]="agentNamesById()"
-          [conditionals]="conditionals()"
-          [selectedStepId]="selectedStepId()"
-          [selectedConditionalId]="selectedConditionalId()"
-          (stepSelected)="selectStep($event)"
-          (conditionalSelected)="selectConditional($event)"
-          (connectionCreated)="handleReteConnectionCreated($event)"
-          (connectionRemoved)="handleReteConnectionRemoved($event)"
-          (nodePositionChanged)="handleReteNodePositionChanged($event)"
-          (conditionalPositionChanged)="handleReteConditionalPositionChanged($event)"
-          (conditionalRouteRequested)="handleConditionalRouteRequested($event)"
-        ></app-rete-squad-flow-editor>
+         <div class="canvas-body">
+          @if (steps().length === 0) {
+            <div class="canvas-empty-state">
+              <mat-icon>hub</mat-icon>
+              <h3>Your flow is empty</h3>
+              <p>Add your first step to start building the execution flow for this squad.</p>
+
+              <button type="button" mat-flat-button class="save-button" (click)="addStep()">
+                <mat-icon>add</mat-icon>
+                Add Step
+              </button>
+            </div>
+          }
+
+          <app-rete-squad-flow-editor
+            [steps]="steps()"
+            [edges]="edges()"
+            [agentNamesById]="agentNamesById()"
+            [conditionals]="conditionals()"
+            [selectedStepId]="selectedStepId()"
+            [selectedConditionalId]="selectedConditionalId()"
+            (stepSelected)="selectStep($event)"
+            (conditionalSelected)="selectConditional($event)"
+            (connectionCreated)="handleReteConnectionCreated($event)"
+            (connectionRemoved)="handleReteConnectionRemoved($event)"
+            (nodePositionChanged)="handleReteNodePositionChanged($event)"
+            (conditionalPositionChanged)="handleReteConditionalPositionChanged($event)"
+            (conditionalRouteRequested)="handleConditionalRouteRequested($event)"
+          ></app-rete-squad-flow-editor>
+        </div>
       </main>
 
       <aside

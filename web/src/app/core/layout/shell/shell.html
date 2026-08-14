@@ -31,19 +31,7 @@
 
   <div class="nav-backdrop" (click)="closeNav()"></div>
 
-  <button
-    type="button"
-    class="sidebar-reveal-button"
-    aria-label="Open navigation menu"
-    aria-controls="mxorbit-sidebar"
-    [attr.aria-expanded]="!isSidebarCollapsed()"
-    title="Open navigation menu"
-    (click)="toggleSidebar()"
-  >
-    <mat-icon>menu</mat-icon>
-  </button>
-
-  <aside class="sidebar" id="mxorbit-sidebar">
+  <aside class="sidebar" id="mxorbit-sidebar" [class.sidebar--rail]="isSidebarCollapsed()">
     <div class="brand">
       <div class="brand__mark">
         <mat-icon>hub</mat-icon>
@@ -57,13 +45,14 @@
       <button
         type="button"
         class="sidebar-collapse-button"
-        aria-label="Collapse navigation menu"
+        [attr.aria-label]="sidebarToggleLabel"
         aria-controls="mxorbit-sidebar"
         [attr.aria-expanded]="!isSidebarCollapsed()"
-        title="Collapse navigation menu"
+        [matTooltip]="sidebarToggleLabel"
+        matTooltipPosition="right"
         (click)="toggleSidebar()"
       >
-        <mat-icon>menu_open</mat-icon>
+        <mat-icon>{{ isSidebarCollapsed() ? 'menu' : 'menu_open' }}</mat-icon>
       </button>
     </div>
 
@@ -74,6 +63,9 @@
           routerLinkActive="nav__link--active"
           [routerLink]="item.route"
           [routerLinkActiveOptions]="{ exact: true }"
+          [matTooltip]="item.label"
+          matTooltipPosition="right"
+          [matTooltipDisabled]="!isSidebarCollapsed()"
           (click)="closeNav()"
         >
           <mat-icon>{{ item.icon }}</mat-icon>
@@ -87,6 +79,9 @@
         type="button"
         mat-stroked-button
         class="theme-button"
+        [matTooltip]="themeService.toggleLabel()"
+        matTooltipPosition="right"
+        [matTooltipDisabled]="!isSidebarCollapsed()"
         (click)="themeService.toggleTheme()"
         >
         <mat-icon>{{ themeService.toggleIcon() }}</mat-icon>

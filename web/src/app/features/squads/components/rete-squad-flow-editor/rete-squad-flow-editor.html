@@ -5,6 +5,7 @@
     class="rete-canvas-toggle"
     [class.rete-canvas-toggle--active]="routeLabelsVisible()"
     [attr.aria-pressed]="routeLabelsVisible()"
+    title="Show or hide the branching conditions evaluated at each decision node"
     (pointerdown)="$event.stopPropagation()"
     (click)="toggleRouteLabels()"
   >
@@ -12,4 +13,16 @@
     Branch rules
   </button>
   }
+
+  <div class="rete-zoom-controls" (pointerdown)="$event.stopPropagation()">
+    <button
+      type="button"
+      class="rete-zoom-controls__button rete-zoom-controls__button--fit"
+      aria-label="Fit flow to view"
+      title="Fit flow to view"
+      (click)="zoomToFit()"
+    >
+      Fit
+    </button>
+  </div>
 </div>

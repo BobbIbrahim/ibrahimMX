@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { ThemeService } from '../../services/theme.service';
 
 interface NavigationItem {
@@ -12,7 +13,14 @@ interface NavigationItem {
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, MatButtonModule, MatIconModule],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    MatButtonModule,
+    MatIconModule,
+    MatTooltipModule,
+  ],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
 })
@@ -43,8 +51,12 @@ export class Shell {
     this.navOpen.set(false);
   }
 
-  /** Collapses/restores the persistent left navigation so the page content can reclaim its width. */
+  /** Collapses/restores the persistent left navigation between a full panel and a slim icon rail. */
   toggleSidebar(): void {
     this.sidebarCollapsed.update((collapsed) => !collapsed);
+  }
+
+  get sidebarToggleLabel(): string {
+    return this.isSidebarCollapsed() ? 'Expand navigation menu' : 'Collapse navigation menu';
   }
 }

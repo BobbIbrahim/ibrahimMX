@@ -32,7 +32,7 @@ class DeploymentPlannerChainTests(unittest.TestCase):
             DeploymentPlannerOutput(nextAction="deploy to staging")
         )
         payload = {
-            "change": "fix login bug",
+            "ticket": "fix login bug",
             "ticketType": "BUG_FIX",
             "test": "run-login-test",
             "ticketId": "MX-123",
@@ -43,7 +43,7 @@ class DeploymentPlannerChainTests(unittest.TestCase):
         self.assertEqual(
             output,
             {
-                "change": "fix login bug",
+                "ticket": "fix login bug",
                 "ticketType": "BUG_FIX",
                 "test": "run-login-test",
                 "ticketId": "MX-123",

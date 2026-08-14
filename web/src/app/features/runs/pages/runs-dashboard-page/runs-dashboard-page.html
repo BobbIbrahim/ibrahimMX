@@ -209,6 +209,18 @@
     </section>
   }
 
+  @if (deleteRunError()) {
+    <section
+      class="runs-feedback runs-feedback--error"
+      role="alert"
+    >
+      <div class="runs-feedback__message">
+        <mat-icon>error_outline</mat-icon>
+        <span>{{ deleteRunError() }}</span>
+      </div>
+    </section>
+  }
+
   @if (isLoading() && totalCount() === 0 && !loadError()) {
     <section class="runs-state" aria-live="polite">
       <div class="runs-state__icon runs-state__icon--loading">
@@ -318,6 +330,7 @@
               <th>Started</th>
               <th>Ended</th>
               <th>Duration</th>
+              <th class="runs-table__actions-heading">Actions</th>
             </tr>
             </thead>
 
@@ -415,6 +428,24 @@
                   <td>
                     {{ formatDuration(run.durationMs) }}
                   </td>
+
+                  <td>
+                    <div class="runs-table__actions">
+                      <button
+                        type="button"
+                        mat-icon-button
+                        class="runs-table__delete"
+                        [attr.aria-label]="
+                          'Delete run ' + run.squadRunId
+                        "
+                        (click)="
+                          deleteRunFromAction(run, $event)
+                        "
+                      >
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               }
             </tbody>
@@ -460,26 +491,42 @@
                 $event.preventDefault()
               "
             >
-              <span
-                class="runs-status"
-                [class.runs-status--running]="
-                  run.overallStatus === 'RUNNING'
-                "
-                [class.runs-status--completed]="
-                  run.overallStatus === 'COMPLETED'
-                "
-                [class.runs-status--failed]="
-                  run.overallStatus === 'FAILED'
-                "
-                [class.runs-status--cancelled]="
-                  run.overallStatus === 'CANCELLED'
-                "
-                [class.runs-status--unknown]="
-                  !run.overallStatus
-                "
-              >
-                {{ getStatusLabel(run.overallStatus) }}
-              </span>
+              <div class="runs-stat-card__top">
+                <span
+                  class="runs-status"
+                  [class.runs-status--running]="
+                    run.overallStatus === 'RUNNING'
+                  "
+                  [class.runs-status--completed]="
+                    run.overallStatus === 'COMPLETED'
+                  "
+                  [class.runs-status--failed]="
+                    run.overallStatus === 'FAILED'
+                  "
+                  [class.runs-status--cancelled]="
+                    run.overallStatus === 'CANCELLED'
+                  "
+                  [class.runs-status--unknown]="
+                    !run.overallStatus
+                  "
+                >
+                  {{ getStatusLabel(run.overallStatus) }}
+                </span>
+
+                <button
+                  type="button"
+                  mat-icon-button
+                  class="runs-stat-card__delete"
+                  [attr.aria-label]="
+                    'Delete run ' + run.squadRunId
+                  "
+                  (click)="
+                    deleteRunFromAction(run, $event)
+                  "
+                >
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
 
               <strong>{{ run.squadName }}</strong>
 

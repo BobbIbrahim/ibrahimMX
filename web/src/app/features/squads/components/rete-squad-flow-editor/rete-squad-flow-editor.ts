@@ -160,6 +160,21 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
     this.applyRouteLabels();
   }
 
+  /** Frames every node on screen, useful once a flow grows past the viewport. */
+  async zoomToFit(): Promise<void> {
+    if (!this.editor || !this.area) {
+      return;
+    }
+
+    const nodes = this.editor.getNodes();
+
+    if (nodes.length === 0) {
+      return;
+    }
+
+    await AreaExtensions.zoomAt(this.area, nodes, { scale: 0.85 });
+  }
+
   private readonly injector = inject(Injector);
 
   private editor: NodeEditor<ReteSchemes> | null = null;
@@ -1833,6 +1848,8 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
       return;
     }
 
+    const stepById = new Map(this.steps.map((step) => [step.id, step]));
+
     for (const [stepId, node] of this.nodeByStepId.entries()) {
       const nodeView = this.area.nodeViews.get(node.id);
 
@@ -1843,6 +1860,25 @@ export class ReteSquadFlowEditor implements AfterViewInit, OnChanges, OnDestroy 
       const nodeElement = nodeView.element;
       nodeElement.classList.remove('rete-conditional-node');
       nodeElement.classList.add('rete-step-node');
+
+      const step = stepById.get(stepId);
+      const hasAgent = Boolean(step?.assignedAgentId);
+      const hasConnections = this.edges.some(
+        (edge) => edge.sourceStepId === stepId || edge.targetStepId === stepId,
+      );
+      const isIncomplete = !hasAgent || !hasConnections;
+
+      nodeElement.classList.toggle('rete-step-node--incomplete', isIncomplete);
+
+      if (!hasAgent && !hasConnections) {
+        nodeElement.title = 'No agent assigned and not connected to the flow';
+      } else if (!hasAgent) {
+        nodeElement.title = 'No agent assigned';
+      } else if (!hasConnections) {
+        nodeElement.title = 'Not connected to the flow';
+      } else {
+        nodeElement.removeAttribute('title');
+      }
     }
 
     for (const [conditionalId, node] of this.nodeByConditionalId.entries()) {

@@ -1,0 +1,44 @@
+<section
+  class="delete-dialog"
+  role="alertdialog"
+  aria-labelledby="delete-dialog-title"
+  aria-describedby="delete-dialog-description"
+>
+  <header class="delete-dialog__header">
+    <div class="delete-dialog__icon" aria-hidden="true">
+      <mat-icon>delete_outline</mat-icon>
+    </div>
+
+    <div class="delete-dialog__content">
+      <h2 id="delete-dialog-title">Delete run?</h2>
+
+      <p id="delete-dialog-description">
+        You are about to delete the run
+        <strong>{{ data.squadRunId }}</strong>
+        for <strong>{{ data.squadName }}</strong>.
+        This action cannot be undone.
+      </p>
+    </div>
+  </header>
+
+  <footer class="delete-dialog__actions">
+    <button
+      type="button"
+      mat-stroked-button
+      class="delete-dialog__cancel"
+      (click)="cancel()"
+    >
+      Cancel
+    </button>
+
+    <button
+      type="button"
+      mat-flat-button
+      class="delete-dialog__confirm"
+      (click)="confirmDelete()"
+    >
+      <mat-icon>delete</mat-icon>
+      Delete Run
+    </button>
+  </footer>
+</section>

@@ -2,12 +2,14 @@ package com.murex.mxorbit.squadorchestrator.core.workflow.client;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Timestamp;
+import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.temporal.api.common.v1.Memo;
 import io.temporal.api.common.v1.Payload;
 import io.temporal.api.common.v1.WorkflowExecution;
 import io.temporal.api.enums.v1.WorkflowExecutionStatus;
 import io.temporal.api.workflow.v1.WorkflowExecutionInfo;
+import io.temporal.api.workflowservice.v1.DeleteWorkflowExecutionRequest;
 import io.temporal.api.workflowservice.v1.DescribeWorkflowExecutionRequest;
 import io.temporal.api.workflowservice.v1.DescribeWorkflowExecutionResponse;
 import io.temporal.api.workflowservice.v1.ListWorkflowExecutionsRequest;
@@ -27,8 +29,10 @@ import java.util.List;
 import java.util.Map;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class TemporalClientService implements TemporalClient {
@@ -105,6 +109,28 @@ public class TemporalClientService implements TemporalClient {
 	@Override
 	public WorkflowStub getWorkflowStub(String workflowId) {
 		return client.newUntypedWorkflowStub(workflowId);
+	}
+
+	@Override
+	public void deleteWorkflowExecution(String workflowId) {
+		log.debug("Deleting Temporal workflow execution. workflowId: {}", workflowId);
+
+		DeleteWorkflowExecutionRequest request = DeleteWorkflowExecutionRequest.newBuilder()
+				.setNamespace(temporalProperties.getNamespace())
+				.setWorkflowExecution(WorkflowExecution.newBuilder().setWorkflowId(workflowId).build()).build();
+
+		try {
+			workflowServiceStubs.blockingStub().deleteWorkflowExecution(request);
+		} catch (StatusRuntimeException e) {
+			if (e.getStatus().getCode() == Status.Code.NOT_FOUND) {
+				log.debug("Temporal workflow execution already absent, treating delete as success. workflowId: {}",
+						workflowId);
+				return;
+			}
+			throw e;
+		}
+
+		log.info("Temporal workflow execution deleted. workflowId: {}", workflowId);
 	}
 
 	private WorkflowExecutionInfo describeWorkflowExecution(String workflowId) {
